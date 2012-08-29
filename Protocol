@@ -1,0 +1,11 @@
+samtools view -bS toy2.sam > toy2.bam
+samtools view HuRef_chr21_l75_f6.mka.bam | head
+condition for left soft clips: #clips == 1 and Position == genomePosition
+condition for right soft clips: #clips == 1 and Length == readPosition + clipSize
+
+You got 2678676 alignments.
+You got 289372 alignments with soft clipping.
+
+#left breakpoints: 141641
+#right breakpoints: 136746
+
