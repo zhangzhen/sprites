@@ -10,7 +10,3 @@ Clip::Clip(int refId, int refPosition, int readPosition, int size, const string&
 
 Clip::~Clip() {
 }
-
-int Clip::getSize() {
-  return size;
-}

@@ -2,17 +2,15 @@
 #include <vector>
 #include "gtest/gtest.h"
 #include "api/BamReader.h"
-
-using namespace BamTools;
-
+#include "clip-sv.h"
 
 TEST(SingleClipTest, GetSoftClips) {
   std::string filename = "toy2.bam";
-  BamReader reader;
+  BamTools::BamReader reader;
   if (!reader.Open(filename)) {
     FAIL() << "Could not open input BAM file.";
   }
-  BamAlignment al;
+  BamTools::BamAlignment al;
   std::vector<int> clipSizes, readPositions, genomePositions;
   
   reader.GetNextAlignment(al);
@@ -36,6 +34,7 @@ TEST(SingleClipTest, GetSoftClips) {
 
   reader.GetNextAlignment(al);
   clipSizes.clear();
+  
   readPositions.clear();
   genomePositions.clear();
   EXPECT_TRUE(al.GetSoftClips(clipSizes, readPositions, genomePositions));
@@ -49,4 +48,10 @@ TEST(SingleClipTest, GetSoftClips) {
 
   reader.Close();
 
+}
+
+TEST(SingleClipTest, countMismatches) {
+  std::string s1 = "AGGTACT";
+  std::string s2 = "ACGTACT";
+  EXPECT_EQ(1, countMismatches(s1, s2));
 }

@@ -7,10 +7,18 @@ using namespace std;
 class Clip
 {
  public:
+  Clip() {}
+  
   Clip(int refId, int refPosition, int readPosition, int size, const string& readSeq);
   virtual ~Clip();
 
-  int getSize();
+  int getSize() const {
+    return size;
+  }
+  
+  string getReadSeq() const {
+    return readSeq;
+  }
   
  private:
   int refId;

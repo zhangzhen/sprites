@@ -1,13 +1,11 @@
-#include <string>
-#include <vector>
 #include <math.h>
-#include "api/BamReader.h"
-#include "Clip.h"
+#include "clip-sv.h"
 
 using namespace std;
 using namespace BamTools;
 
 const int MAX_BINS = 50;
+const int READ_LENGTH = 75;
 
 void CountAlignments(BamReader& reader) {
   int count = 0;
@@ -62,28 +60,38 @@ void writeData(ofstream& output, int lenValues[], int nBins) {
   output << endl;
 }
 
-int main(int argc, char *argv[]) {
-  string filename(argv[1]);
-  vector<Clip> leftClips, rightClips;
-  BamReader reader;
-  if (!reader.Open(filename)) {
-    cerr << "Could not open input BAM file." << endl;
-    exit(1);
+bool findFirstClipInRange(const vector<Clip>& clips, int min, int max, Clip& cl) {
+  for (vector<Clip>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
+    int s = (*itr).getSize();
+    if (s >= min && s <= max) {
+      cl = *itr;
+      return true;
+    }
   }
-  getClips(reader, leftClips, rightClips);
-  reader.Close();
-  cout << "#left breakpoints: " << leftClips.size() << endl;
-  cout << "#right breakpoints: " << rightClips.size() << endl;
+  
+  return false;
+}
 
-  int readLength = 75;
-  int binWidth = 5;
-  int nBins = ceil(readLength/binWidth);
-  int lenValues[MAX_BINS];
-  countClipLength(leftClips, lenValues, binWidth);
-  ofstream output;
-  output.open("results.txt");
-  writeData(output, lenValues, nBins);
+int countMismatches(const string& s1, const string& s2) {
+  int count = 0;
+  for (int i = 0; i < s1.size(); i++) {
+    if (s1[i] != s2[i]) {
+      count++;
+    }
+  }
+  return count;
+}
 
-  //CountAlignments(filename);
-  return 0;
+int countOverlappedReads(const vector<Clip>& clips, const Clip cl) {
+  int count = 0;
+  for (vector<Clip>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
+    int n = (*itr).getSize();
+    if (cl.getSize() + n > READ_LENGTH) {
+      continue;
+    }
+    if (countMismatches(cl.getReadSeq(), (*itr).getReadSeq()) < 2) {
+      count++;
+    }
+  }
+  return count;
 }
