@@ -1,6 +1,6 @@
 #include "Clip.h"
 
-Clip::Clip(int refId, int refPosition, int readPosition, int size, const string& readSeq)
+Clip::Clip(int refId, int refPosition, int readPosition, int size, const std::string& readSeq)
     :refId(refId),
      refPosition(refPosition),
      readPosition(readPosition),
@@ -9,4 +9,12 @@ Clip::Clip(int refId, int refPosition, int readPosition, int size, const string&
 }
 
 Clip::~Clip() {
+}
+
+ClipType LeftClip::getType() {
+  return Left;
+}
+
+ClipType RightClip::getType() {
+  return Right;
 }
