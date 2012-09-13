@@ -14,6 +14,7 @@ CCFLAGS = -O3
 # CCFLAGS = -g -O0
 
 OBJS = clip-sv.o Clip.o error.o
+TESTOBJS = SingleClipTest.o CallDelsTest.o
 
 # Builds the main program with the necessary libraries.
 all: clip-sv AllTests
@@ -25,8 +26,8 @@ clip-sv: main.o $(OBJS)
 %.o: %.cpp
 	g++ $^ -c -o $@ -I$(BAMTOOLS_ROOT)/include -I$(GTEST_ROOT)/include $(CCFLAGS)
 
-AllTests: AllTests.o SingleClipTest.o $(OBJS)
-	g++ AllTests.o SingleClipTest.o $(OBJS) -o AllTests -L$(GTEST_ROOT)/lib -L$(BAMTOOLS_ROOT)/lib -lgtest -lbamtools -lpthread
+AllTests: AllTests.o $(TESTOBJS) $(OBJS)
+	g++ AllTests.o $(TESTOBJS) $(OBJS) -o AllTests -L$(GTEST_ROOT)/lib -L$(BAMTOOLS_ROOT)/lib -lgtest -lbamtools -lpthread
 
 # Cleans the project by nuking emacs temporary files (*~), object files (*.o),
 # and the resulting executable.

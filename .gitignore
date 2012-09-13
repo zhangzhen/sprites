@@ -2,3 +2,5 @@ AllTests
 clip-sv
 *.bam
 *.o
+*~
+result*

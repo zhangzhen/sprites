@@ -11,6 +11,7 @@ Clip::Clip(int refId, int refPosition, int readPosition, int size, const std::st
 Clip::~Clip() {
 }
 
+
 ClipType LeftClip::getType() {
   return Left;
 }

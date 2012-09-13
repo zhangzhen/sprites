@@ -2,6 +2,7 @@
 #define CLIP_INCLUDED
 
 #include <string>
+#include <sstream>
 
 enum ClipType {
   Left, Right
@@ -19,12 +20,26 @@ class Clip
     return size;
   }
 
+  int getReadPosition() const {
+    return readPosition;
+  }
+
+  int getPosition() const {
+    return refPosition;
+  }
+
   virtual ClipType getType() = 0;
+  virtual std::string toString() {
+    std::stringstream stream;
+    stream << "Clip: " << refId << ", " << refPosition << ", " << readPosition << ", "
+           << size << ", " << readSeq;
+    return stream.str();
+  }
   
   std::string getReadSeq() const {
     return readSeq;
   }
-  
+
  private:
   int refId;
   int refPosition;                      // 0-based position
@@ -40,6 +55,9 @@ class LeftClip : public Clip {
   virtual ~LeftClip() {}
 
   virtual ClipType getType();
+  virtual std::string toString() {
+    return Clip::toString() + " - [L]";
+  }
 };
 
 class RightClip : public Clip {
@@ -49,6 +67,9 @@ class RightClip : public Clip {
   virtual ~RightClip() {}
 
   virtual ClipType getType();
+  virtual std::string toString() {
+    return Clip::toString() + " - [R]";
+  }
 
 };
 #endif // CLIP_INCLUDED
