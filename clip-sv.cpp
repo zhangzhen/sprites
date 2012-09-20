@@ -49,7 +49,7 @@ void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::v
       rightClips.push_back(new RightClip(al.RefID, genomePositions[0], readPositions[0], clipSizes[0], al.QueryBases));
     }
   }
-  outputData(std::cout, report, 5);
+  // outputData(std::cout, report, 5);
 }
 
 void countClipsInLength(const std::vector<Clip*>& clips, int stats[], int binWidth) {
@@ -106,54 +106,61 @@ int countOverlappedReads(const std::vector<Clip*>& clips, Clip* cl) {
     if (len > READ_LENGTH) {
       continue;
     }
-    std::string ls, rs;
-    if (cl->getType() == Left) {
-      ls = cl->getReadSeq().substr(0, len);
-      rs = (*itr)->getReadSeq().substr((*itr)->getReadPosition()-cl->getSize());
-      // std::cout << ls << std::endl;
-      // std::cout << rs << std::endl;
-    } else {
-      ls = (*itr)->getReadSeq().substr(0, len);
-      rs = cl->getReadSeq().substr(cl->getReadPosition()-(*itr)->getSize());
-    }
-    if (countMismatches(ls, rs) == 0) {
+    if (isOverlapped(cl, *itr)) {
       count++;
     }
   }
   return count;
 }
 
-void matchClips(const std::vector<Clip*>& cls1, const std::vector<Clip*>& cls2, std::map<Clip*, std::vector<Clip*> >& matches) {
-  for (std::vector<Clip*>::const_iterator itr = cls1.begin(); itr != cls1.end(); ++itr) {
+bool isOverlapped(Clip* c1, Clip* c2) {
+  std::string ls, rs;
+  int len = c1->getSize() + c2->getSize();
+  if (c1->getType() == Left) {
+    ls = c1->getReadSeq().substr(0, len);
+    rs = c2->getReadSeq().substr(c2->getReadPosition()-c1->getSize());
+  } else {
+    ls = c2->getReadSeq().substr(0, len);
+    rs = c1->getReadSeq().substr(c1->getReadPosition()-c2->getSize());
+  }
+  if (ls == rs) {                       // might consider mismatches between two strings
+    return true;
+  }
+  return false;
+}
+
+void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs) {
+  std::set<Clip*> LCs, RCs;
+  for (std::vector<Clip*>::iterator itr = inLCs.begin(); itr != inLCs.end(); ++itr) {
     Clip* cl = *itr;
-    for (std::vector<Clip*>::const_iterator itr2 = cls2.begin(); itr2 != cls2.end(); ++itr2) {
-      if ((*itr2)->getType() == cl->getType()) {
-        continue;
-      }
+    for (std::vector<Clip*>::iterator itr2 = inRCs.begin(); itr2 != inRCs.end(); ++itr2) {
       int len = cl->getSize() + (*itr2)->getSize();
       if (len > READ_LENGTH) {
         continue;
       }
-      std::string ls, rs;
-      if (cl->getType() == Left) {
-        ls = cl->getReadSeq().substr(0, len);
-        rs = (*itr2)->getReadSeq().substr((*itr2)->getReadPosition()-cl->getSize());
-      } else {
-        ls = (*itr2)->getReadSeq().substr(0, len);
-        rs = cl->getReadSeq().substr(cl->getReadPosition()-(*itr2)->getSize());
-      }
-      if (ls == rs) {
-        if (!matches.count(cl)) {
-          matches[cl] = std::vector<Clip *>();
+      if (isOverlapped(cl, *itr2)) {
+        if (!LCs.count(cl)) {
+          LCs.insert(cl);
         }
-        matches[cl].push_back(*itr2);
-        if (!matches.count(*itr2)) {
-          matches[*itr2] = std::vector<Clip *>();
+        if (!RCs.count(*itr2)) {
+          RCs.insert(*itr2);
         }
-        matches[*itr2].push_back(cl);
       }
     }
-  }  
+  }
+  outLCs.assign(LCs.begin(), LCs.end());
+  outRCs.assign(RCs.begin(), RCs.end());
+}
+
+void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<std::vector<int> >& g) {
+  for (size_t i = 0; i < LCs.size(); ++i) {
+    std::vector<int> nbs;
+    for (size_t j = 0; j < RCs.size(); ++j) {
+      if (isOverlapped(LCs[i], RCs[j]))
+        nbs.push_back(j);
+    }
+    g.push_back(nbs);
+  }
 }
 
 void countClipsInLengthOneToFive(const std::vector<Clip*>& clips, int stats[]) {
@@ -167,14 +174,51 @@ void countClipsInLengthOneToFive(const std::vector<Clip*>& clips, int stats[]) {
   }
 }
 
-void clusterClips(const std::vector<Clip*>& clips, std::map<int, std::set<Clip*> >& clusters) {
-  for (std::vector<Clip*>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
-    int pos = (*itr)->getPosition();
-    if (!clusters.count(pos))
-      clusters[pos] = std::set<Clip*>();
-    clusters[pos].insert(*itr);
+// void clusterClips(const std::vector<Clip*>& clips, std::map<int, std::set<Clip*> >& clusters) {
+//   for (std::vector<Clip*>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
+//     int pos = (*itr)->getPosition();
+//     if (!clusters.count(pos))
+//       clusters[pos] = std::set<Clip*>();
+//     clusters[pos].insert(*itr);
+//   }
+// }
+
+void buildBreakpoints(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps) {
+  int m, n;
+  m = LCs.size();
+  n = RCs.size();
+  std::vector<std::vector<int> > g;
+  createOverlapGraph(LCs, RCs, g);
+  Matching ma(g, m, n);
+  int cnt = ma.match();
+  for (int i = 0; i < m; ++i) {
+    int v = ma.getMateL(i);
+    if (v == -1) continue;
+    bps.push_back(Breakpoint(LCs[i]->getPosition(), RCs[v]->getPosition()));
   }
 }
 
-int commonOverlap(const std::string& s1, const std::string& s2, int startLength) {
+void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters) {
+  std::vector<int> labels(bps.size(), -1);
+  int cnt = 0;
+  for (int i = 0; i < bps.size(); ++i) {
+    if (labels[i] != -1) continue;
+    labels[i] = cnt;
+    for (int j = i+1; j < bps.size(); ++j) {
+      if(labels[j] == -1 && bps[i].inSameCluster(bps[j]))
+        labels[j] = cnt;
+    }
+    cnt++;
+  }
+  for (int i = 0; i < cnt; ++i) {
+    std::vector<Breakpoint> clu;
+    clusters.push_back(clu);
+  }
+  for (int i = 0; i < bps.size(); ++i) {
+    clusters[labels[i]].push_back(bps[i]);
+  }
+}
+
+void freeClips(std::vector<Clip*> cl) {
+  while (!cl.empty()) delete cl.back(), cl.pop_back();
 }

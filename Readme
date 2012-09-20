@@ -17,3 +17,6 @@ comments:
 All alignments (including unique, multiple, and unmapped) are kept in <NAME>.bam.
 
 The multiple.bam actually is like a mapping distribution. Once we got multiple mappings for a mate/read, we record the chromosome ids and positions of them in multiple.bam. More precisely, if -om is not enabled, only chromosome ids and positions are shown in multiple.bam. bamtools (https://github.com/pezmaster31/bamtools) can handle that bam.
+
+read position for a right clip: the first base position of the clipped sequence
+read position for a left clip: the first base position of the aligned sequence
