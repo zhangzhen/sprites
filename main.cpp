@@ -20,38 +20,34 @@ void callSVs(std::string filename) {
     std::cerr << "Could not open input BAM file." << std::endl;
     return;
   }
-  clock_t startTime, stopTime;
+  time_t startTime;
   double elapsedTime;
   
-  startTime = clock();
+  // startTime = time(NULL);
   getClips(reader, leftClips, rightClips);
-  stopTime = clock();
-  elapsedTime = double(stopTime - startTime);
-  std::cout << "getClips() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
+  // elapsedTime = difftime(time(NULL), startTime);
+  // std::cout << "getClips() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
   std::cout << "#left breakpoints: " << leftClips.size() << std::endl;
   std::cout << "#right breakpoints: " << rightClips.size() << std::endl;
   
   std::vector<Clip*> LCs, RCs;
-  startTime = clock();
+  startTime = time(NULL);
   extractClipsForDels(leftClips, rightClips, LCs, RCs);
-  stopTime = clock();
-  elapsedTime = double(stopTime - startTime);
+  elapsedTime = difftime(time(NULL), startTime);
   std::cout << "extractClipsForDels() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
   
   std::vector<Breakpoint> bps;
-  startTime = clock();
+  startTime = time(NULL);
   buildBreakpoints(LCs, RCs, bps);
-  stopTime = clock();
-  elapsedTime = double(stopTime - startTime);
+  elapsedTime = difftime(time(NULL), startTime);
   std::cout << "buildBreakpoints() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
   std::cout << "#Breakpoints: " << bps.size() << std::endl;
 
   std::vector<std::vector<Breakpoint> > clusters;
-  startTime = clock();
+  // startTime = time(NULL);
   clusterBreakpoints(bps, clusters);
-  stopTime = clock();
-  elapsedTime = double(stopTime - startTime);
-  std::cout << "clusterBreakpoints() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
+  // elapsedTime = difftime(time(NULL), startTime);
+  // std::cout << "clusterBreakpoints() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
   std::cout << "#Deletions: " << clusters.size() << std::endl;
 
   freeClips(leftClips);
