@@ -57,7 +57,7 @@ def tofile(out, events):
         if isinstance(e, Inversion):
             inv_cnt += 1
         out.write("%s\n" % str(e))
-    out.write("\n# %d deletions, %d insertions and %d inversions in the simulated sequence\n" \
+    out.write("\nSummary:\n# %d deletions, %d insertions and %d inversions in the generated sequence\n" \
               % (del_cnt, ins_cnt, inv_cnt))
     out.close()
 

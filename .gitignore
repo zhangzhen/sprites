@@ -1,5 +1,6 @@
 AllTests
 clip-sv
+*.pyc
 *.bam
 *.o
 *~
