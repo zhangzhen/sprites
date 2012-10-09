@@ -2,7 +2,7 @@
 import sys
 import ParseFastQ
 
-def filterReads(inFilename, outFilename, numN=5):
+def filterReads(inFilename, outFilename, numN):
     parser = ParseFastQ.ParseFastQ(inFilename)  # optional arg: headerSymbols allows changing the header symbols
     output = open(outFilename, 'w')
     total = 0
@@ -17,11 +17,8 @@ def filterReads(inFilename, outFilename, numN=5):
     print "remaining #reads: %d" % rest
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print "Usage: %s [input_file.fa] [output_file.fa]" % sys.argv[0]
-        sys.exit(1)
-    filterReads(sys.argv[1], sys.argv[2])
-
-        
-    
-
+    parser = argparse.ArgumentParser(description='Reads filter')
+    parser.add_argument('-i','--input', help='input fastq file', required=True)
+    parser.add_argument('-o','--output', help='output fastq file', required=True)
+    parser.add_argument('-n','--number', type=int, default=1, help='number of N')
+    filterReads(parser.input, parser.output, parser.number)
