@@ -22,4 +22,5 @@ if __name__ == "__main__":
     parser.add_argument('-i','--input', help='input fastq file', required=True)
     parser.add_argument('-o','--output', help='output fastq file', required=True)
     parser.add_argument('-n','--number', type=int, default=1, help='number of N')
-    filterReads(parser.input, parser.output, parser.number)
+    args = parser.parse_args()
+    filterReads(args.input, args.output, args.number)
