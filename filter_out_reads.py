@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import sys
 import ParseFastQ
+import argparse
 
 def filterReads(inFilename, outFilename, numN):
     parser = ParseFastQ.ParseFastQ(inFilename)  # optional arg: headerSymbols allows changing the header symbols
