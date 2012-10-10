@@ -13,21 +13,26 @@ CCFLAGS = -O3
 # If you want to turn on optimization once things get working.
 # CCFLAGS = -g -O0
 
-OBJS = clip-sv.o Clip.o error.o
-TESTOBJS = SingleClipTest.o CallDelsTest.o
+LIBS = -lz -L$(BAMTOOLS_ROOT)/lib
+TESTLIBS = -L$(GTEST_ROOT)/lib -lgtest -lpthread $(LIBS)
+
+INCLUDE = -I$(BAMTOOLS_ROOT)/include -I$(GTEST_ROOT)/include
+
+OBJS = clip-sv.o Clip.o error.o $(BAMTOOLS_ROOT)/lib/libbamtools.a
+TESTOBJS = SingleClipTest.o CallDelsTest.o $(OBJS)
 
 # Builds the main program with the necessary libraries.
 all: clip-sv AllTests
 
 clip-sv: main.o $(OBJS)
-	g++ main.o $(OBJS) -o clip-sv -L$(BAMTOOLS_ROOT)/lib -lbamtools $(CCFLAGS)
+	g++ main.o $(OBJS) -o clip-sv $(CCFLAGS) $(LIBS)
 
 # Build object files from sources.
 %.o: %.cpp
-	g++ $^ -c -o $@ -I$(BAMTOOLS_ROOT)/include -I$(GTEST_ROOT)/include $(CCFLAGS)
+	g++ $^ -c -o $@ $(CCFLAGS) $(INCLUDE)
 
-AllTests: AllTests.o $(TESTOBJS) $(OBJS)
-	g++ AllTests.o $(TESTOBJS) $(OBJS) -o AllTests -L$(GTEST_ROOT)/lib -L$(BAMTOOLS_ROOT)/lib -lgtest -lbamtools -lpthread
+AllTests: AllTests.o $(TESTOBJS)
+	g++ AllTests.o $(TESTOBJS) -o AllTests $(TESTLIBS)
 
 # Cleans the project by nuking emacs temporary files (*~), object files (*.o),
 # and the resulting executable.
