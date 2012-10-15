@@ -32,9 +32,9 @@ bool compareClips(Clip* one, Clip* two) {
   return one->getPosition() < two->getPosition();
 }
 
-void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips) {
+void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips, int cutoff) {
   BamTools::BamAlignment al;
-  int report[5] = {0};
+  // int report[5] = {0};
   while (reader.GetNextAlignment(al)) {
     std::vector<int> clipSizes, readPositions, genomePositions;
     if (!al.IsMapped()) {
@@ -43,9 +43,9 @@ void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::v
     if (!al.GetSoftClips(clipSizes, readPositions, genomePositions)) {
       continue;
     }
-    if (clipSizes.size() > 0 && clipSizes.size() <=5)
-      report[clipSizes.size()-1]++;
-    if (clipSizes.size() > 1) {
+    // if (clipSizes.size() > 0 && clipSizes.size() <=5)
+    //   report[clipSizes.size()-1]++;
+    if (clipSizes.size() > 1 or clipSizes.size() < cutoff) {
       continue;
     }
     if (al.Position == genomePositions[0]) { // left clip - or readPositions[i] == clipSizes[i]

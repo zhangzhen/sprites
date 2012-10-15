@@ -14,7 +14,7 @@ class Breakpoint;
 
 void countAlignments(BamTools::BamReader& reader);
 bool compareClips(Clip* one, Clip* two);
-void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips);
+void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips, int cutoff=6);
 void countClipsInLength(const std::vector<Clip*>& clips, int stats[], int binWidth);
 void outputData(std::ostream& output, int lenValues[], int nBins);
 Clip* findFirstClipInRange(const std::vector<Clip*>& clips, int min, int max);
