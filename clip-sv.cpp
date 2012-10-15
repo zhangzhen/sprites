@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "clip-sv.h"
 #include "error.h"
 
@@ -27,6 +28,10 @@ void countAlignments(BamTools::BamReader& reader) {
 
 }
 
+bool compareClips(Clip* one, Clip* two) {
+  return one->getPosition() < two->getPosition();
+}
+
 void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips) {
   BamTools::BamAlignment al;
   int report[5] = {0};
@@ -49,6 +54,8 @@ void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::v
       rightClips.push_back(new RightClip(al.RefID, genomePositions[0], readPositions[0], clipSizes[0], al.QueryBases));
     }
   }
+  sort(leftClips.begin(), leftClips.end(), compareClips);
+  sort(rightClips.begin(), rightClips.end(), compareClips);
   // outputData(std::cout, report, 5);
 }
 
@@ -129,21 +136,62 @@ bool isOverlapped(Clip* c1, Clip* c2) {
   return false;
 }
 
+bool findMateIndex(Clip* lc, std::vector<Clip*>& RCs, int& index) {
+  int low = 0;
+  int high = RCs.size()-1;
+  int key = lc->getPosition();
+  if ((RCs[low])->getPosition() >= key) return false;
+  if ((RCs[high])->getPosition() < key) {
+    index = high;
+    return true;
+  }
+  while (high >= low) {
+    int mid = low + (high - low)/2;
+    int mval = (RCs[mid])->getPosition();
+    if (mval < key && (RCs[mid+1])->getPosition() >= key) {
+      index = mid;
+      return true;
+    }
+    if (mval < key) low = mid + 1;
+    else high = mid - 1;
+  }
+}
+
+bool binarySearch2(int key, std::vector<int>& vec, int& index) {
+  int low = 0;
+  int high = vec.size()-1;
+  if (vec[low] >= key) return false;
+  if (vec[high] < key) {
+    index = high;
+    return true;
+  }
+  while (high >= low) {
+    int mid = low + (high-low)/2;
+    if (vec[mid] < key && vec[mid+1] >= key) {
+      index = mid;
+      return true;
+    }
+    if (vec[mid] < key) low = mid + 1;
+    else high = mid - 1;
+  }
+}
+
 void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs) {
   std::set<Clip*> LCs, RCs;
-  for (std::vector<Clip*>::iterator itr = inLCs.begin(); itr != inLCs.end(); ++itr) {
-    Clip* cl = *itr;
-    for (std::vector<Clip*>::iterator itr2 = inRCs.begin(); itr2 != inRCs.end(); ++itr2) {
-      int len = cl->getSize() + (*itr2)->getSize();
+  int index;
+  for (size_t i=0; i<inLCs.size(); ++i) {
+    if (!findMateIndex(inLCs[i], inRCs, index)) continue;
+    for (size_t j = 0; j <= index; ++j) {
+      int len = inLCs[i]->getSize() + inRCs[j]->getSize();
       if (len > READ_LENGTH) {
         continue;
       }
-      if (isOverlapped(cl, *itr2)) {
-        if (!LCs.count(cl)) {
-          LCs.insert(cl);
+      if (isOverlapped(inLCs[i], inRCs[j])) {
+        if (!LCs.count(inLCs[i])) {
+          LCs.insert(inLCs[i]);
         }
-        if (!RCs.count(*itr2)) {
-          RCs.insert(*itr2);
+        if (!RCs.count(inRCs[j])) {
+          RCs.insert(inRCs[j]);
         }
       }
     }

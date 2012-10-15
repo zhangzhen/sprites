@@ -125,3 +125,19 @@ TEST(SingleClipTest, match) {
   EXPECT_EQ(1, mat.getMateL(3));  
   EXPECT_EQ(2, mat.getMateR(0));
 }
+
+TEST(SingleClipTest, binarySearch2) {
+  int A[] = {2, 6, 11, 30, 56, 90};
+  std::vector<int> vec(A, A + sizeof(A) / sizeof(int));
+  int i;
+  EXPECT_FALSE(binarySearch2(0, vec, i));
+  EXPECT_FALSE(binarySearch2(2, vec, i));
+  EXPECT_TRUE(binarySearch2(100, vec, i));
+  EXPECT_EQ(5, i);
+  EXPECT_TRUE(binarySearch2(30, vec, i));
+  EXPECT_EQ(2, i);
+  EXPECT_TRUE(binarySearch2(8, vec, i));
+  EXPECT_EQ(1, i);
+  EXPECT_TRUE(binarySearch2(90, vec, i));
+  EXPECT_EQ(4, i);
+}

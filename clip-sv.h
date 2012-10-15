@@ -13,6 +13,7 @@ const int READ_LENGTH = 70;
 class Breakpoint;
 
 void countAlignments(BamTools::BamReader& reader);
+bool compareClips(Clip* one, Clip* two);
 void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips);
 void countClipsInLength(const std::vector<Clip*>& clips, int stats[], int binWidth);
 void outputData(std::ostream& output, int lenValues[], int nBins);
@@ -21,6 +22,8 @@ bool isOverlapped(Clip* c1, Clip* c2);
 int countMismatches(const std::string& s1, const std::string& s2);
 int countOverlappedReads(const std::vector<Clip*>& clips, Clip* cl);
 void countClipsInLengthOneToFive(const std::vector<Clip*>& clips, int stats[]);
+bool findMateIndex(Clip* lc, std::vector<Clip*>& RCs, int& index);
+bool binarySearch2(int key, std::vector<int>& vec, int& index);
 void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs);
 void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<std::vector<int> >& g);
 // void matchClips(std::vector<Clip*>& cls1, std::vector<Clip*>& cls2, std::map<Clip*, std::vector<Clip*> >& matches);
