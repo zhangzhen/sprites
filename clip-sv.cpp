@@ -45,7 +45,7 @@ void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::v
     }
     // if (clipSizes.size() > 0 && clipSizes.size() <=5)
     //   report[clipSizes.size()-1]++;
-    if (clipSizes.size() > 1 or clipSizes.size() < cutoff) {
+    if (clipSizes.size() > 1 or clipSizes[0] < cutoff) {
       continue;
     }
     if (al.Position == genomePositions[0]) { // left clip - or readPositions[i] == clipSizes[i]
