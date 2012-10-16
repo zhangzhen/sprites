@@ -68,9 +68,9 @@ std::map<int, size_t> generateClipReport(std::vector<Clip*> clips) {
 
 void outputClipReport(std::string filename, std::map<int,size_t> report) {
   std::ofstream out(filename.c_str());
-  std::cout << "length\tcount" << std::endl;
+  out << "length\tcount" << std::endl;
   for (std::map<int, size_t>::iterator itr = report.begin(); itr != report.end(); ++itr)
-    std::cout << itr->first << itr->second << std::endl;
+    out << itr->first << "\t" << itr->second << std::endl;
   out.close();
 }
 
