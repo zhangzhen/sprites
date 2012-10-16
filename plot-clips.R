@@ -1,0 +1,5 @@
+x1 <- read.table("left_clips.txt",sep="\t",header=TRUE)
+x2 <- read.table("right_clips.txt",sep="\t",header=TRUE)
+par(mfrow=c(1,2))
+hist(x1[:1])
+hist(x2[:1])

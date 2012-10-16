@@ -63,7 +63,7 @@ void tofile(std::string filename, const std::vector<Clip*>& clips) {
   std::ofstream out(filename.c_str());
   out << "length\tread_pos\tref_pos" << std::endl;
   for (size_t i = 0; i < clips.size(); ++i)
-    out << clips[i]->getSize() << clips[i]->getReadPosition() << clips[i]->getPosition() << std::endl;
+    out << clips[i]->getSize() << "\t" << clips[i]->getReadPosition() << "\t" << clips[i]->getPosition() << std::endl;
   out.close();
 }
 
