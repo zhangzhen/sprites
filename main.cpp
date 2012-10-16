@@ -3,7 +3,7 @@
 #include "clip-sv.h"
 #include "error.h"
 
-void callSVs(std::string filename);
+void callSVs(BamTools::BamReader& reader);
 void outputClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
@@ -13,8 +13,8 @@ int main(int argc, char *argv[]) {
     std::cerr << "Could not open input BAM file." << std::endl;
     return -1;
   }
-  outputClips(reader);
-  // callSVs(reader);
+  // outputClips(reader);
+  callSVs(reader);
   reader.Close();
   return 0;
 }
