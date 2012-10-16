@@ -1,6 +1,7 @@
 #include <algorithm>
 #include "clip-sv.h"
 #include "error.h"
+const int READ_LENGTH = 75;
 
 void countAlignments(BamTools::BamReader& reader) {
   int count = 0;
@@ -56,38 +57,21 @@ void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::v
   }
   sort(leftClips.begin(), leftClips.end(), compareClips);
   sort(rightClips.begin(), rightClips.end(), compareClips);
-  // outputData(std::cout, report, 5);
 }
 
-void countClipsInLength(const std::vector<Clip*>& clips, int stats[], int binWidth) {
-  for (int i = 0; i < MAX_BINS; i++) {
-    stats[i] = 0;
-  }
-  for (std::vector<Clip*>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
-    int bin = (int)((*itr)->getSize() - 1) / binWidth;
-    if (bin > 9) {
-      std::cout << (*itr)->toString() << std::endl;
-    }
-    stats[bin]++;
-  }
+std::map<int, size_t> generateClipReport(std::vector<Clip*> clips) {
+  std::map<int, size_t> result;
+  for (size_t i = 0; i < clips.size(); ++i)
+    ++result[clips[i]->getSize()];
+  return result;
 }
 
-void outputData(std::ostream& output, int lenValues[], int nBins) {
-  for (int i = 0; i < nBins; i++) {
-    output << lenValues[i] << "\t";
-  }
-  output << std::endl;
-}
-
-Clip* findFirstClipInRange(const std::vector<Clip*>& clips, int min, int max) {
-  for (std::vector<Clip*>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
-    int s = (*itr)->getSize();
-    if (s >= min && s <= max) {
-      return *itr;
-    }
-  }
-  
-  error("No such clip available.");
+void outputClipReport(std::string filename, std::map<int,size_t> report) {
+  std::ofstream out(filename.c_str());
+  std::cout << "length\tcount" << std::endl;
+  for (std::map<int, size_t>::iterator itr = report.begin(); itr != report.end(); ++itr)
+    std::cout << itr->first << itr->second << std::endl;
+  out.close();
 }
 
 int countMismatches(const std::string& s1, const std::string& s2) {

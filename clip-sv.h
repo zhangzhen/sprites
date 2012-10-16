@@ -7,17 +7,14 @@
 #include "api/BamReader.h"
 #include "Clip.h"
 
-const int MAX_BINS = 50;
-const int READ_LENGTH = 70;
 
 class Breakpoint;
 
 void countAlignments(BamTools::BamReader& reader);
 bool compareClips(Clip* one, Clip* two);
 void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips, int cutoff=6);
-void countClipsInLength(const std::vector<Clip*>& clips, int stats[], int binWidth);
-void outputData(std::ostream& output, int lenValues[], int nBins);
-Clip* findFirstClipInRange(const std::vector<Clip*>& clips, int min, int max);
+std::map<int, size_t> generateClipReport(std::vector<Clip*> clips);
+void outputClipReport(std::string filename, std::map<int,size_t> report);
 bool isOverlapped(Clip* c1, Clip* c2);
 int countMismatches(const std::string& s1, const std::string& s2);
 int countOverlappedReads(const std::vector<Clip*>& clips, Clip* cl);

@@ -4,22 +4,38 @@
 #include "error.h"
 
 void callSVs(std::string filename);
-void callSVs2(std::string filename);
+void reportClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
+  BamTools::BamReader reader;
   std::string filename(argv[1]);
-  callSVs(filename);
+  if (!reader.Open(filename)) {
+    std::cerr << "Could not open input BAM file." << std::endl;
+    return -1;
+  }
+  reportClips(reader);
+  // callSVs(reader);
+  reader.Close();
   return 0;
 }
 
-void callSVs(std::string filename) {
+void reportClips(BamTools::BamReader& reader) {
   std::vector<Clip*> leftClips;
   std::vector<Clip*> rightClips;
-  BamTools::BamReader reader;
-  if (!reader.Open(filename)) {
-    std::cerr << "Could not open input BAM file." << std::endl;
-    return;
-  }
+  getClips(reader, leftClips, rightClips);
+  std::map<int, size_t> report;
+  report = generateClipReport(leftClips);
+  outputClipReport("left_clip_report.txt", report);
+  report = generateClipReport(rightClips);
+  outputClipReport("right_clip_report.txt", report);
+
+  freeClips(leftClips);
+  freeClips(rightClips);
+}
+
+void callSVs(BamTools::BamReader& reader) {
+  std::vector<Clip*> leftClips;
+  std::vector<Clip*> rightClips;
   time_t startTime;
   double elapsedTime;
   
@@ -27,8 +43,8 @@ void callSVs(std::string filename) {
   getClips(reader, leftClips, rightClips);
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "getClips() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
-  std::cout << "#left breakpoints: " << leftClips.size() << std::endl;
-  std::cout << "#right breakpoints: " << rightClips.size() << std::endl;
+  std::cout << "#left clips: " << leftClips.size() << std::endl;
+  std::cout << "#right rights: " << rightClips.size() << std::endl;
   
   std::vector<Clip*> LCs, RCs;
   startTime = time(NULL);
@@ -52,47 +68,4 @@ void callSVs(std::string filename) {
 
   freeClips(leftClips);
   freeClips(rightClips);
-}
-
-void callSVs2(std::string filename) {
-  std::vector<Clip*> leftClips;
-  std::vector<Clip*> rightClips;
-  BamTools::BamReader reader;
-  if (!reader.Open(filename)) {
-    std::cerr << "Could not open input BAM file." << std::endl;
-    return;
-  }
-  getClips(reader, leftClips, rightClips);
-  std::cout << "#left breakpoints: " << leftClips.size() << std::endl;
-  std::cout << "#right breakpoints: " << rightClips.size() << std::endl;
-  // try {
-  //   Clip* cl = findFirstClipInRange(leftClips, 6, 10);
-  //   std::cout << "You got " << countOverlappedReads(rightClips, cl) << " clips matched." << std::endl;
-  // } catch (ErrorException & ex) {
-  //   std::cerr << ex.getMessage() << std::endl;
-  // }
-  int stats[5];
-  std::ofstream output;
-  output.open("results.txt");
-  countClipsInLengthOneToFive(leftClips, stats);
-  outputData(output, stats, 5);
-  countClipsInLengthOneToFive(rightClips, stats);
-  outputData(output, stats, 5);
-  output.close();
-  
-  int binWidth = 5;
-  int nBins = ceil(READ_LENGTH/binWidth);
-  int lenValues[MAX_BINS];
-  std::ofstream output2;
-  output2.open("results2.txt");
-
-  countClipsInLength(leftClips, lenValues, binWidth);
-  outputData(output2, lenValues, nBins);
-  countClipsInLength(rightClips, lenValues, binWidth);
-  outputData(output2, lenValues, nBins);
-  output2.close();
-  
-  // reader.Rewind();
-  // countAlignments(reader);
-  reader.Close();
 }
