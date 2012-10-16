@@ -4,7 +4,7 @@
 #include "error.h"
 
 void callSVs(std::string filename);
-void reportClips(BamTools::BamReader& reader);
+void outputClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
   BamTools::BamReader reader;
@@ -13,21 +13,18 @@ int main(int argc, char *argv[]) {
     std::cerr << "Could not open input BAM file." << std::endl;
     return -1;
   }
-  reportClips(reader);
+  outputClips(reader);
   // callSVs(reader);
   reader.Close();
   return 0;
 }
 
-void reportClips(BamTools::BamReader& reader) {
+void outputClips(BamTools::BamReader& reader) {
   std::vector<Clip*> leftClips;
   std::vector<Clip*> rightClips;
-  getClips(reader, leftClips, rightClips);
-  std::map<int, size_t> report;
-  report = generateClipReport(leftClips);
-  outputClipReport("left_clip_report.txt", report);
-  report = generateClipReport(rightClips);
-  outputClipReport("right_clip_report.txt", report);
+  getClips(reader, leftClips, rightClips, 5);
+  tofile("left_clips.txt", leftClips);
+  tofile("right_clips.txt", rightClips);
 
   freeClips(leftClips);
   freeClips(rightClips);

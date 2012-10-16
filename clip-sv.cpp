@@ -59,18 +59,11 @@ void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::v
   sort(rightClips.begin(), rightClips.end(), compareClips);
 }
 
-std::map<int, size_t> generateClipReport(std::vector<Clip*> clips) {
-  std::map<int, size_t> result;
-  for (size_t i = 0; i < clips.size(); ++i)
-    ++result[clips[i]->getSize()];
-  return result;
-}
-
-void outputClipReport(std::string filename, std::map<int,size_t> report) {
+void tofile(std::string filename, const std::vector<Clip*>& clips) {
   std::ofstream out(filename.c_str());
-  out << "length\tcount" << std::endl;
-  for (std::map<int, size_t>::iterator itr = report.begin(); itr != report.end(); ++itr)
-    out << itr->first << "\t" << itr->second << std::endl;
+  out << "length\tread_pos\tref_pos" << std::endl;
+  for (size_t i = 0; i < clips.size(); ++i)
+    out << clips[i]->getSize() << clips[i]->getReadPosition() << clips[i]->getPosition() << std::endl;
   out.close();
 }
 
