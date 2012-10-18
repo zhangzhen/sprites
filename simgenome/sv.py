@@ -49,6 +49,7 @@ def buildchrom(ref, events):
         
 def tofile(out, events):
     del_cnt = ins_cnt = inv_cnt = 0
+    out.write("chr\tstart\tend\tclass\tseq\n")
     for e in events:
         if isinstance(e, Deletion):
             del_cnt += 1
@@ -57,9 +58,9 @@ def tofile(out, events):
         if isinstance(e, Inversion):
             inv_cnt += 1
         out.write("%s\n" % str(e))
-    out.write("\nSummary:\n# %d deletions, %d insertions and %d inversions in the generated sequence\n" \
-              % (del_cnt, ins_cnt, inv_cnt))
     out.close()
+    print "\nSummary:\n# %d deletions, %d insertions and %d inversions in the generated sequence\n" \
+              % (del_cnt, ins_cnt, inv_cnt)
 
 def loadevents(reader, chrom):
     events = []
