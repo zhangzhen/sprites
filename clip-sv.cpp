@@ -1,7 +1,8 @@
 #include <algorithm>
 #include "clip-sv.h"
 #include "error.h"
-const int READ_LENGTH = 75;
+const int MIN_OVERLAP_LENGTH = 12;
+const int MAX_OVERLAP_LENGTH = 75;
 
 void countAlignments(BamTools::BamReader& reader) {
   int count = 0;
@@ -33,9 +34,8 @@ bool compareClips(Clip* one, Clip* two) {
   return one->getPosition() < two->getPosition();
 }
 
-void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips, int cutoff) {
+void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips) {
   BamTools::BamAlignment al;
-  // int report[5] = {0};
   while (reader.GetNextAlignment(al)) {
     std::vector<int> clipSizes, readPositions, genomePositions;
     if (!al.IsMapped()) {
@@ -44,9 +44,7 @@ void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::v
     if (!al.GetSoftClips(clipSizes, readPositions, genomePositions)) {
       continue;
     }
-    // if (clipSizes.size() > 0 && clipSizes.size() <=5)
-    //   report[clipSizes.size()-1]++;
-    if (clipSizes.size() > 1 or clipSizes[0] < cutoff) {
+    if (clipSizes.size() > 1) {
       continue;
     }
     if (al.Position == genomePositions[0]) { // left clip - or readPositions[i] == clipSizes[i]
@@ -74,23 +72,6 @@ int countMismatches(const std::string& s1, const std::string& s2) {
   int count = 0;
   for (int i = 0; i < s1.size(); i++) {
     if (s1[i] != s2[i]) {
-      count++;
-    }
-  }
-  return count;
-}
-
-int countOverlappedReads(const std::vector<Clip*>& clips, Clip* cl) {
-  int count = 0;
-  for (std::vector<Clip*>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
-    if ((*itr)->getType() == cl->getType()) {
-      continue;
-    }
-    int len = cl->getSize() + (*itr)->getSize();
-    if (len > READ_LENGTH) {
-      continue;
-    }
-    if (isOverlapped(cl, *itr)) {
       count++;
     }
   }
@@ -134,25 +115,6 @@ bool findMateIndex(Clip* lc, std::vector<Clip*>& RCs, int& index) {
   }
 }
 
-bool binarySearch2(int key, std::vector<int>& vec, int& index) {
-  int low = 0;
-  int high = vec.size()-1;
-  if (vec[low] >= key) return false;
-  if (vec[high] < key) {
-    index = high;
-    return true;
-  }
-  while (high >= low) {
-    int mid = low + (high-low)/2;
-    if (vec[mid] < key && vec[mid+1] >= key) {
-      index = mid;
-      return true;
-    }
-    if (vec[mid] < key) low = mid + 1;
-    else high = mid - 1;
-  }
-}
-
 void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs) {
   std::set<Clip*> LCs, RCs;
   int index;
@@ -160,7 +122,7 @@ void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, s
     if (!findMateIndex(inLCs[i], inRCs, index)) continue;
     for (size_t j = 0; j <= index; ++j) {
       int len = inLCs[i]->getSize() + inRCs[j]->getSize();
-      if (len > READ_LENGTH) {
+      if (len < MIN_OVERLAP_LENGTH || len >= MAX_OVERLAP_LENGTH) {
         continue;
       }
       if (isOverlapped(inLCs[i], inRCs[j])) {
@@ -185,17 +147,6 @@ void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>&
         nbs.push_back(j);
     }
     g.push_back(nbs);
-  }
-}
-
-void countClipsInLengthOneToFive(const std::vector<Clip*>& clips, int stats[]) {
-  for (int i=0; i<5; i++) {
-    stats[i] = 0;
-  }
-  for (std::vector<Clip*>::const_iterator itr = clips.begin(); itr != clips.end(); ++itr) {
-    if ((*itr)->getSize() <= 5) {
-      stats[(*itr)->getSize()-1]++;
-    }
   }
 }
 
@@ -242,6 +193,26 @@ void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vec
   for (int i = 0; i < bps.size(); ++i) {
     clusters[labels[i]].push_back(bps[i]);
   }
+}
+
+bool evaluateSingleCall(StructVar call, const std::vector<StructVar>& trueSvs) {
+  int low = 0;
+  int high = trueSvs.size() - 1;
+  if (call.right <= trueSvs[low].left || call.left >= trueSvs[high].right) return false;
+  while (high >= low) {
+    int mid = low + (high - low)/2;
+    if (trueSvs[mid].left < call.right && call.left < trueSvs[mid].right) return true;
+    if (trueSvs[mid].left == call.right || call.left == trueSvs[mid].right) return false;
+    if (call.right < trueSvs[mid].left) high = mid - 1;
+    else low = mid + 1;
+  }
+  return false;
+}
+
+void evaluateCalls(const std::vector<StructVar>& calls, const std::vector<StructVar>& trueSvs) {
+  int cnt = 0;
+  for (size_t i = 0; i < calls.size(); ++i)
+    if (evaluateSingleCall(calls[i], trueSvs)) ++cnt;
 }
 
 void freeClips(std::vector<Clip*> cl) {

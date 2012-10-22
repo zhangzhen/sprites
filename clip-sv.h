@@ -9,23 +9,27 @@
 
 
 class Breakpoint;
+struct StructVar {
+  std::string chr;
+  int left;
+  int right;
+};
 
 void countAlignments(BamTools::BamReader& reader);
 bool compareClips(Clip* one, Clip* two);
-void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips, int cutoff=6);
+void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips);
 void tofile(std::string filename, const std::vector<Clip*>& clips);
 bool isOverlapped(Clip* c1, Clip* c2);
 int countMismatches(const std::string& s1, const std::string& s2);
-int countOverlappedReads(const std::vector<Clip*>& clips, Clip* cl);
-void countClipsInLengthOneToFive(const std::vector<Clip*>& clips, int stats[]);
 bool findMateIndex(Clip* lc, std::vector<Clip*>& RCs, int& index);
-bool binarySearch2(int key, std::vector<int>& vec, int& index);
 void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs);
 void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<std::vector<int> >& g);
-// void matchClips(std::vector<Clip*>& cls1, std::vector<Clip*>& cls2, std::map<Clip*, std::vector<Clip*> >& matches);
 // void clusterClips(const std::vector<Clip*>& clips, std::map<int, std::set<Clip*> >& clusters);
 void buildBreakpoints(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps);
 void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters);
+void getTrueSvs(std::string filename, std::vector<StructVar>& trueSvs);
+bool evaluateSingleCall(StructVar call, const std::vector<StructVar>& trueSvs);
+void evaluateCalls(const std::vector<StructVar>& calls, const std::vector<StructVar>& trueSvs);
 void freeClips(std::vector<Clip*> cl);
 
 class Matching {

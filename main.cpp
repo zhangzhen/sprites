@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 void outputClips(BamTools::BamReader& reader) {
   std::vector<Clip*> leftClips;
   std::vector<Clip*> rightClips;
-  getClips(reader, leftClips, rightClips, 5);
+  getClips(reader, leftClips, rightClips);
   tofile("left_clips.txt", leftClips);
   tofile("right_clips.txt", rightClips);
 
