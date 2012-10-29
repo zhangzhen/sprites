@@ -191,9 +191,10 @@ void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vecto
   }
 }
 
-void flattenGroups(const std::vector<std::vector<StructVar> >& groups, std::vector<StructVar>& calls) {
+void makeCalls(const std::vector<std::vector<Breakpoint> >& groups, std::vector<StructVar>& calls) {
   for (size_t i = 0; i < groups.size(); ++i) {
-    calls.push_back(groups[i][0]);
+    StructVar sv = {"22", groups[i][0].getX(), groups[i][0].getY()};
+    calls.push_back(sv);
   }
 }
 

@@ -116,14 +116,16 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
   groupBreakpoints(bps, groups);
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "groupBreakpoints() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
-  std::cout << "#Calls: " << groups.size() << std::endl;
+  std::vector<StructVar> calls;
+  makeCalls(groups, calls);
+  
+  std::cout << "#Calls: " << calls.size() << std::endl;
 
   std::vector<StructVar> trueSvs;
   getTrueSvs(sv_filename, trueSvs);
   ShorterThan st(minlen);
   trueSvs.erase(remove_if(trueSvs.begin(), trueSvs.end(), st), trueSvs.end());
   std::cout << "#True SVs: " << trueSvs.size() << std::endl;
-  std::vector<StructVar> calls;
   evaluateCalls(calls, trueSvs);
 
   freeClips(leftClips);
