@@ -122,6 +122,7 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
   getTrueSvs(sv_filename, trueSvs);
   ShorterThan st(minlen);
   trueSvs.erase(remove_if(trueSvs.begin(), trueSvs.end(), st), trueSvs.end());
+  std::cout << "#True SVs: " << trueSvs.size() << std::endl;
   std::vector<StructVar> calls;
   evaluateCalls(calls, trueSvs);
 

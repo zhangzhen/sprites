@@ -250,6 +250,7 @@ void evaluateCalls(const std::vector<StructVar>& calls, const std::vector<Struct
   int cnt = 0;
   for (size_t i = 0; i < calls.size(); ++i)
     if (evaluateSingleCall(calls[i], trueSvs)) ++cnt;
+  std::cout << "#Identified calls: " << cnt << std::endl;
 }
 
 void freeClips(std::vector<Clip*> cl) {
