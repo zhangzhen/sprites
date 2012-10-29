@@ -157,28 +157,28 @@ void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>&
 //   }
 // }
 
-// void buildBreakpoints2(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps) {
-//   int m, n;
-//   m = LCs.size();
-//   n = RCs.size();
-//   std::vector<std::vector<int> > g;
-//   createOverlapGraph(LCs, RCs, g);
-//   Matching ma(g, m, n);
-//   int cnt = ma.match();
-//   for (int i = 0; i < m; ++i) {
-//     int v = ma.getMateL(i);
-//     if (v == -1) continue;
-//     bps.push_back(Breakpoint(LCs[i]->getPosition()+1, RCs[v]->getPosition()+1));
-//   }
-// }
-
 void buildBreakpoints(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps) {
-  for (size_t i = 0; i < LCs.size(); ++i) {
-    for (size_t j = 0; j < RCs.size(); ++j)
-      if (isOverlapped(LCs[i], RCs[j]))
-        bps.push_back(Breakpoint(LCs[i]->getPosition()+1, RCs[j]->getPosition()+1));
+  int m, n;
+  m = LCs.size();
+  n = RCs.size();
+  std::vector<std::vector<int> > g;
+  createOverlapGraph(LCs, RCs, g);
+  Matching ma(g, m, n);
+  int cnt = ma.match();
+  for (int i = 0; i < m; ++i) {
+    int v = ma.getMateL(i);
+    if (v == -1) continue;
+    bps.push_back(Breakpoint(LCs[i]->getPosition()+1, RCs[v]->getPosition()+1));
   }
 }
+
+// void buildBreakpoints(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps) {
+//   for (size_t i = 0; i < LCs.size(); ++i) {
+//     for (size_t j = 0; j < RCs.size(); ++j)
+//       if (isOverlapped(LCs[i], RCs[j]))
+//         bps.push_back(Breakpoint(LCs[i]->getPosition()+1, RCs[j]->getPosition()+1));
+//   }
+// }
 
 void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& groups) {
   groups.push_back(std::vector<Breakpoint>(1, bps[0]));
