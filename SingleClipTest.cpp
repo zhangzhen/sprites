@@ -131,3 +131,21 @@ TEST(SingleClipTest, evaluateSingleCall) {
   StructVar c6 = {"22", 300, 340};
   EXPECT_FALSE(evaluateSingleCall(c6, svs)); // the right point of this call equals the left point of a sv
 }
+
+TEST(SingleClipTest, groupBreakpoints) {
+  std::vector<Breakpoint> bps;
+  bps.push_back(Breakpoint(10, 30));
+  bps.push_back(Breakpoint(10, 40));
+  bps.push_back(Breakpoint(30, 80));
+  bps.push_back(Breakpoint(80, 150));
+  bps.push_back(Breakpoint(200, 220));
+  bps.push_back(Breakpoint(340, 410));
+  bps.push_back(Breakpoint(380, 500));
+  std::vector<std::vector<Breakpoint> > groups;
+  groupBreakpoints(bps, groups);
+  EXPECT_EQ(4, groups.size());
+  EXPECT_EQ(3, groups[0].size());
+  EXPECT_EQ(1, groups[1].size());
+  EXPECT_EQ(1, groups[2].size());
+  EXPECT_EQ(2, groups[3].size());
+}

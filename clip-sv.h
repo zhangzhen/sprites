@@ -13,6 +13,10 @@ struct StructVar {
   std::string chr;
   int left;
   int right;
+
+  int length() const {
+    return right - left;
+  }
 };
 
 void countAlignments(BamTools::BamReader& reader);
@@ -22,11 +26,13 @@ void tofile(std::string filename, const std::vector<Clip*>& clips);
 bool isOverlapped(Clip* c1, Clip* c2);
 int countMismatches(const std::string& s1, const std::string& s2);
 bool findMateIndex(Clip* lc, std::vector<Clip*>& RCs, int& index);
-void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs);
+void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs, int min, int max);
 void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<std::vector<int> >& g);
 // void clusterClips(const std::vector<Clip*>& clips, std::map<int, std::set<Clip*> >& clusters);
 void buildBreakpoints(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps);
-void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters);
+void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& groups);
+void flattenGroups(const std::vector<std::vector<StructVar> >& groups, std::vector<StructVar>& calls);
+// void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters);
 void getTrueSvs(std::string filename, std::vector<StructVar>& trueSvs);
 bool evaluateSingleCall(StructVar call, const std::vector<StructVar>& trueSvs);
 void evaluateCalls(const std::vector<StructVar>& calls, const std::vector<StructVar>& trueSvs);
@@ -79,6 +85,14 @@ class Matching {
 class Breakpoint {
  public:
   Breakpoint(int x, int y) : x(x), y(y) {
+  }
+
+  int getX() const {
+    return x;
+  }
+
+  int getY() const {
+    return y;
   }
   
   int center() const {

@@ -42,8 +42,8 @@ class Clip
 
  private:
   int refId;
-  int refPosition;                      // 0-based position
-  int readPosition;
+  int refPosition;                      // 0-based
+  int readPosition;                     // 0-based
   int size;
   std::string readSeq;
 };

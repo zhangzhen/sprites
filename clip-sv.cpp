@@ -1,8 +1,6 @@
 #include <algorithm>
 #include "clip-sv.h"
 #include "error.h"
-const int MIN_OVERLAP_LENGTH = 12;
-const int MAX_OVERLAP_LENGTH = 75;
 
 void countAlignments(BamTools::BamReader& reader) {
   int count = 0;
@@ -115,14 +113,14 @@ bool findMateIndex(Clip* lc, std::vector<Clip*>& RCs, int& index) {
   }
 }
 
-void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs) {
+void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, std::vector<Clip*>& outLCs, std::vector<Clip*>& outRCs, int min, int max) {
   std::set<Clip*> LCs, RCs;
   int index;
   for (size_t i=0; i<inLCs.size(); ++i) {
     if (!findMateIndex(inLCs[i], inRCs, index)) continue;
     for (size_t j = 0; j <= index; ++j) {
       int len = inLCs[i]->getSize() + inRCs[j]->getSize();
-      if (len < MIN_OVERLAP_LENGTH || len >= MAX_OVERLAP_LENGTH) {
+      if (len < min || len >= max) {
         continue;
       }
       if (isOverlapped(inLCs[i], inRCs[j])) {
@@ -159,39 +157,78 @@ void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>&
 //   }
 // }
 
+// void buildBreakpoints2(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps) {
+//   int m, n;
+//   m = LCs.size();
+//   n = RCs.size();
+//   std::vector<std::vector<int> > g;
+//   createOverlapGraph(LCs, RCs, g);
+//   Matching ma(g, m, n);
+//   int cnt = ma.match();
+//   for (int i = 0; i < m; ++i) {
+//     int v = ma.getMateL(i);
+//     if (v == -1) continue;
+//     bps.push_back(Breakpoint(LCs[i]->getPosition()+1, RCs[v]->getPosition()+1));
+//   }
+// }
+
 void buildBreakpoints(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps) {
-  int m, n;
-  m = LCs.size();
-  n = RCs.size();
-  std::vector<std::vector<int> > g;
-  createOverlapGraph(LCs, RCs, g);
-  Matching ma(g, m, n);
-  int cnt = ma.match();
-  for (int i = 0; i < m; ++i) {
-    int v = ma.getMateL(i);
-    if (v == -1) continue;
-    bps.push_back(Breakpoint(LCs[i]->getPosition(), RCs[v]->getPosition()));
+  for (size_t i = 0; i < LCs.size(); ++i) {
+    for (size_t j = 0; j < RCs.size(); ++j)
+      if (isOverlapped(LCs[i], RCs[j]))
+        bps.push_back(Breakpoint(LCs[i]->getPosition()+1, RCs[j]->getPosition()+1));
   }
 }
 
-void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters) {
-  std::vector<int> labels(bps.size(), -1);
-  int cnt = 0;
-  for (int i = 0; i < bps.size(); ++i) {
-    if (labels[i] != -1) continue;
-    labels[i] = cnt;
-    for (int j = i+1; j < bps.size(); ++j) {
-      if(labels[j] == -1 && bps[i].inSameCluster(bps[j]))
-        labels[j] = cnt;
+void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& groups) {
+  groups.push_back(std::vector<Breakpoint>(1, bps[0]));
+  for (size_t i = 0; i < bps.size()-1; ++i) {
+    if (bps[i].getY() > bps[i+1].getX())
+      groups.back().push_back(bps[i+1]);
+    else {
+      groups.push_back(std::vector<Breakpoint>(1, bps[i+1]));
     }
-    cnt++;
   }
-  for (int i = 0; i < cnt; ++i) {
-    std::vector<Breakpoint> clu;
-    clusters.push_back(clu);
+}
+
+void flattenGroups(const std::vector<std::vector<StructVar> >& groups, std::vector<StructVar>& calls) {
+  for (size_t i = 0; i < groups.size(); ++i) {
+    calls.push_back(groups[i][0]);
   }
-  for (int i = 0; i < bps.size(); ++i) {
-    clusters[labels[i]].push_back(bps[i]);
+}
+
+// void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters) {
+//   std::vector<int> labels(bps.size(), -1);
+//   int cnt = 0;
+//   for (int i = 0; i < bps.size(); ++i) {
+//     if (labels[i] != -1) continue;
+//     labels[i] = cnt;
+//     for (int j = i+1; j < bps.size(); ++j) {
+//       if(labels[j] == -1 && bps[i].inSameCluster(bps[j]))
+//         labels[j] = cnt;
+//     }
+//     cnt++;
+//   }
+//   for (int i = 0; i < cnt; ++i) {
+//     std::vector<Breakpoint> clu;
+//     clusters.push_back(clu);
+//   }
+//   for (int i = 0; i < bps.size(); ++i) {
+//     clusters[labels[i]].push_back(bps[i]);
+//   }
+// }
+
+void getTrueSvs(std::string filename, std::vector<StructVar>& trueSvs) {
+  std::ifstream input(filename.c_str());  
+  std::string line;
+  getline(input, line);                 // skip the header line
+
+  std::string chr, cls, seq;
+  int begin, end;
+  while (input >> chr >> begin >> end >> cls >> seq) {
+    if (cls != "DEL") continue;
+    StructVar sv = {chr, begin, end};
+    trueSvs.push_back(sv);
   }
 }
 
