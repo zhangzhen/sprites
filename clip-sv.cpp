@@ -191,8 +191,9 @@ void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vecto
   }
 }
 
-void makeCalls(const std::vector<std::vector<Breakpoint> >& groups, std::vector<StructVar>& calls) {
+void makeCalls(const std::vector<std::vector<Breakpoint> >& groups, std::vector<StructVar>& calls, int minlen) {
   for (size_t i = 0; i < groups.size(); ++i) {
+    if (groups[i][0].getY() - groups[i][0].getX() < minlen) continue;
     StructVar sv = {"22", groups[i][0].getX(), groups[i][0].getY()};
     calls.push_back(sv);
   }

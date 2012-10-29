@@ -117,7 +117,7 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "groupBreakpoints() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
   std::vector<StructVar> calls;
-  makeCalls(groups, calls);
+  makeCalls(groups, calls, minlen);
   
   std::cout << "#Calls: " << calls.size() << std::endl;
 

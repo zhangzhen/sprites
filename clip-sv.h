@@ -31,7 +31,7 @@ void createOverlapGraph(const std::vector<Clip*>& LCs, const std::vector<Clip*>&
 // void clusterClips(const std::vector<Clip*>& clips, std::map<int, std::set<Clip*> >& clusters);
 void buildBreakpoints(const std::vector<Clip*>& LCs, const std::vector<Clip*>& RCs, std::vector<Breakpoint>& bps);
 void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& groups);
-void makeCalls(const std::vector<std::vector<Breakpoint> >& groups, std::vector<StructVar>& calls);
+void makeCalls(const std::vector<std::vector<Breakpoint> >& groups, std::vector<StructVar>& calls, int minlen);
 // void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters);
 void getTrueSvs(std::string filename, std::vector<StructVar>& trueSvs);
 bool evaluateSingleCall(StructVar call, const std::vector<StructVar>& trueSvs);
