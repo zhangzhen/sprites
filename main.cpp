@@ -101,6 +101,8 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
   extractClipsForDels(leftClips, rightClips, LCs, RCs, 12, 75);
   elapsedTime = difftime(time(NULL), startTime);
   std::cout << "extractClipsForDels() elapsed execution time: " << elapsedTime << " (sec)" << std::endl;
+  std::cout << "#left clips for deletions: " << LCs.size() << std::endl;
+  std::cout << "#right rights for deletions: " << RCs.size() << std::endl;
   
   std::vector<Breakpoint> bps;
   startTime = time(NULL);

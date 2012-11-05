@@ -120,7 +120,7 @@ void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, s
       if (len < min || len >= max) {
         continue;
       }
-      if (isOverlapped(inLCs[i], inRCs[j]), 1) {
+      if (isOverlapped(inLCs[i], inRCs[j], 1)) {
         if (!LCs.count(inLCs[i])) {
           LCs.insert(inLCs[i]);
         }

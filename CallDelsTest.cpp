@@ -40,7 +40,7 @@ TEST_F(CallDelsTest, createOverlapGraph) {
   extractClipsForDels(lclips, rclips, LCs, RCs, 4, 10);
   std::vector<std::vector<int> > g;
   createOverlapGraph(LCs, RCs, g);
-  EXPECT_EQ(3, g.size());
+  EXPECT_EQ(2, g.size());
   EXPECT_EQ(2, g[0].size());
   EXPECT_EQ(2, g[1].size());
   EXPECT_EQ(0, g[0][0]);
@@ -60,7 +60,7 @@ TEST_F(CallDelsTest, createOverlapGraph) {
 TEST_F(CallDelsTest, extractClipsForDels) {
   std::vector<Clip*> LCs, RCs;
   extractClipsForDels(lclips, rclips, LCs, RCs, 4, 10);
-  EXPECT_EQ(3, LCs.size());
+  EXPECT_EQ(2, LCs.size());
   EXPECT_EQ(2, RCs.size());
 }
 
