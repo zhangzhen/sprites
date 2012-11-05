@@ -63,20 +63,17 @@ void tofile(std::string filename, const std::vector<Clip*>& clips) {
   out.close();
 }
 
-int countMismatches(const std::string& s1, const std::string& s2) {
-  if (s1.size() != s2.size()) {
-    error("Two strings must have the same size");
+bool equals(const std::string s1, const std::string s2, int mismatches) {
+  int cnt = 0;
+  if (s1.size() != s2.size()) return false;
+  for (int i = 0; i < s1.size(); ++i) {
+    if (s1[i] != s2[i]) ++cnt;
+    if (cnt > mismatches) return false;
   }
-  int count = 0;
-  for (int i = 0; i < s1.size(); i++) {
-    if (s1[i] != s2[i]) {
-      count++;
-    }
-  }
-  return count;
+  return true;
 }
 
-bool isOverlapped(Clip* c1, Clip* c2) {
+bool isOverlapped(Clip* c1, Clip* c2, int mismatches) {
   std::string ls, rs;
   int len = c1->getSize() + c2->getSize();
   if (c1->getType() == Left) {
@@ -86,7 +83,7 @@ bool isOverlapped(Clip* c1, Clip* c2) {
     ls = c2->getReadSeq().substr(0, len);
     rs = c1->getReadSeq().substr(c1->getReadPosition()-c2->getSize());
   }
-  if (ls == rs) {                       // might consider mismatches between two strings
+  if (equals(ls, rs, mismatches)) {                       // might consider mismatches between two strings
     return true;
   }
   return false;
@@ -123,7 +120,7 @@ void extractClipsForDels(std::vector<Clip*>& inLCs, std::vector<Clip*>& inRCs, s
       if (len < min || len >= max) {
         continue;
       }
-      if (isOverlapped(inLCs[i], inRCs[j])) {
+      if (isOverlapped(inLCs[i], inRCs[j]), 1) {
         if (!LCs.count(inLCs[i])) {
           LCs.insert(inLCs[i]);
         }

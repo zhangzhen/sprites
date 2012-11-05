@@ -51,11 +51,11 @@
 
 // }
 
-TEST(SingleClipTest, countMismatches) {
+TEST(SingleClipTest, equals) {
   std::string s1 = "AGGTACT";
   std::string s2 = "ACGTACT";
-  EXPECT_EQ(0, countMismatches(s1, s1));  
-  EXPECT_EQ(1, countMismatches(s1, s2));
+  EXPECT_FALSE(equals(s1, s2));
+  EXPECT_TRUE(equals(s1, s2, 1));
 }
 
 TEST(SingleClipTest, toString) {
