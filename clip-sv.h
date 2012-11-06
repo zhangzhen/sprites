@@ -24,7 +24,7 @@ struct StructVar {
   }
 
   int length() const {
-    return right - left;
+    return right - left + 1;
   }
 
   bool operator== (const StructVar& other) {
