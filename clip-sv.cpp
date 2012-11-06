@@ -191,7 +191,7 @@ void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vecto
 void makeCalls(const std::vector<std::vector<Breakpoint> >& groups, std::vector<StructVar>& calls, int minlen) {
   for (size_t i = 0; i < groups.size(); ++i) {
     if (groups[i][0].getY() - groups[i][0].getX() < minlen) continue;
-    StructVar sv = {"22", groups[i][0].getX(), groups[i][0].getY()};
+    StructVar sv("22", groups[i][0].getX(), groups[i][0].getY()-1);
     calls.push_back(sv);
   }
 }
@@ -226,30 +226,49 @@ void getTrueSvs(std::string filename, std::vector<StructVar>& trueSvs) {
   int begin, end;
   while (input >> chr >> begin >> end >> cls >> seq) {
     if (cls != "DEL") continue;
-    StructVar sv = {chr, begin, end};
+    StructVar sv(chr, begin, end-1);
     trueSvs.push_back(sv);
   }
 }
 
-bool evaluateSingleCall(StructVar call, const std::vector<StructVar>& trueSvs) {
-  int low = 0;
-  int high = trueSvs.size() - 1;
-  if (call.right <= trueSvs[low].left || call.left >= trueSvs[high].right) return false;
-  while (high >= low) {
-    int mid = low + (high - low)/2;
-    if (trueSvs[mid].left < call.right && call.left < trueSvs[mid].right) return true;
-    if (trueSvs[mid].left == call.right || call.left == trueSvs[mid].right) return false;
-    if (call.right < trueSvs[mid].left) high = mid - 1;
-    else low = mid + 1;
+std::set<StructVar> findOverlaps(StructVar t, const std::vector<StructVar>& cs1, const std::vector<StructVar>& cs2) {
+  std::set<StructVar> s;
+  for (size_t i = 0; i < cs1.size(); ++i) {
+    if (cs1[i].right < t.left) continue;
+    if (cs1[i].left > t.left) break;
+    s.insert(cs1[i]);
   }
-  return false;
+  for (size_t j = 0; j < cs2.size(); ++j) {
+    if (cs2[j].left > t.right) continue;
+    if (cs2[j].right < t.right) break;
+    s.insert(cs2[j]);
+  }
+  return s;
+}
+
+bool cmp1(StructVar sv1, StructVar sv2) {
+  if (sv1.left != sv2.left)
+    return sv1.left < sv2.left;
+  return sv1.right < sv2.right;
+}
+
+bool cmp2(StructVar sv1, StructVar sv2) {
+  if (sv1.right != sv2.right)
+    return sv1.right > sv2.right;
+  return sv1.left > sv2.left;
 }
 
 void evaluateCalls(const std::vector<StructVar>& calls, const std::vector<StructVar>& trueSvs) {
-  int cnt = 0;
-  for (size_t i = 0; i < calls.size(); ++i)
-    if (evaluateSingleCall(calls[i], trueSvs)) ++cnt;
-  std::cout << "#Identified calls: " << cnt << std::endl;
+  std::vector<std::set<StructVar> > result;
+  std::vector<StructVar> cs1 = calls;
+  std::vector<StructVar> cs2 = calls;
+  sort(cs1.begin(), cs1.end(), cmp1);
+  sort(cs2.begin(), cs2.end(), cmp2);  
+  for (size_t i = 0; i < trueSvs.size(); ++i) {
+    std::set<StructVar> s = findOverlaps(trueSvs[i], cs1, cs2);
+    if (s.size() > 0) result.push_back(s);
+  }
+  std::cout << "#Identified calls: " << result.size() << std::endl;
 }
 
 void freeClips(std::vector<Clip*> cl) {

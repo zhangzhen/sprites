@@ -11,13 +11,35 @@
 class Breakpoint;
 struct StructVar {
   std::string chr;
-  int left;
-  int right;
+  int left;                             // 1-based, included
+  int right;                            // 1-based, included
+
+  StructVar(std::string chr, int left, int right) : chr(chr), left(left), right(right) {
+  }
+
+  StructVar(const StructVar& other) {
+    chr = other.chr;
+    left = other.left;
+    right = other.right;
+  }
 
   int length() const {
     return right - left;
   }
+
+  bool operator== (const StructVar& other) {
+    return chr == other.chr && left == other.left && right == other.right;
+  }
+
+  bool operator< (const StructVar& other) const {
+    if (chr != other.chr)
+      return chr < other.chr;
+    if (left != other.left)
+      return left < other.left;
+    return right < other.right;
+  }
 };
+
 
 void countAlignments(BamTools::BamReader& reader);
 bool compareClips(Clip* one, Clip* two);
@@ -34,7 +56,9 @@ void groupBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vecto
 void makeCalls(const std::vector<std::vector<Breakpoint> >& groups, std::vector<StructVar>& calls, int minlen);
 // void clusterBreakpoints(const std::vector<Breakpoint>& bps, std::vector<std::vector<Breakpoint> >& clusters);
 void getTrueSvs(std::string filename, std::vector<StructVar>& trueSvs);
-bool evaluateSingleCall(StructVar call, const std::vector<StructVar>& trueSvs);
+std::set<StructVar> findOverlaps(StructVar t, const std::vector<StructVar>& cs1, const std::vector<StructVar>& cs2);
+bool cmp1(StructVar sv1, StructVar sv2);
+bool cmp2(StructVar sv1, StructVar sv2);
 void evaluateCalls(const std::vector<StructVar>& calls, const std::vector<StructVar>& trueSvs);
 void freeClips(std::vector<Clip*> cl);
 
@@ -87,11 +111,11 @@ class Breakpoint {
   Breakpoint(int x, int y) : x(x), y(y) {
   }
 
-  int getX() const {
+  int getX() const {                    // 1-based, included
     return x;
   }
 
-  int getY() const {
+  int getY() const {                    // 1-based, not included
     return y;
   }
   

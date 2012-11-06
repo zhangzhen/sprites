@@ -112,24 +112,29 @@ TEST(SingleClipTest, match) {
   EXPECT_EQ(2, mat.getMateR(0));
 }
 
-TEST(SingleClipTest, evaluateSingleCall) {
-  std::vector<StructVar> svs;
-  StructVar sv1 = {"22", 30, 80};
-  svs.push_back(sv1);
-  StructVar sv2 = {"22", 340, 410};
-  svs.push_back(sv2);
-  StructVar c1 = {"22", 200, 220};
-  EXPECT_FALSE(evaluateSingleCall(c1, svs));
-  StructVar c2 = {"22", 10, 40};
-  EXPECT_TRUE(evaluateSingleCall(c2, svs));
-  StructVar c3 = {"22", 10, 30};
-  EXPECT_FALSE(evaluateSingleCall(c3, svs)); // this call lies on the left side of the leftmost sv
-  StructVar c4 = {"22", 410, 500};
-  EXPECT_FALSE(evaluateSingleCall(c4, svs)); // this call lies on the right side of the rightmost sv
-  StructVar c5 = {"22", 80, 150};
-  EXPECT_FALSE(evaluateSingleCall(c5, svs)); // the left point of this call equals the right point of a sv
-  StructVar c6 = {"22", 300, 340};
-  EXPECT_FALSE(evaluateSingleCall(c6, svs)); // the right point of this call equals the left point of a sv
+TEST(SingleClipTest, findOverlaps) {
+  StructVar t1("22", 30, 80);
+  StructVar t2("22", 340, 410);
+  std::vector<StructVar> cs1;
+  StructVar c1("22", 200, 220);
+  cs1.push_back(c1);
+  StructVar c2("22", 10, 40);
+  cs1.push_back(c2);
+  StructVar c3("22", 10, 30);
+  cs1.push_back(c3);
+  StructVar c4("22", 410, 500);
+  cs1.push_back(c4);
+  StructVar c5("22", 80, 150);
+  cs1.push_back(c5);
+  StructVar c6("22", 300, 340);
+  cs1.push_back(c6);
+  std::vector<StructVar> cs2 = cs1;
+  sort(cs1.begin(), cs1.end(), cmp1);
+  sort(cs2.begin(), cs2.end(), cmp2);
+  std::set<StructVar> s1 = findOverlaps(t1, cs1, cs2);
+  EXPECT_EQ(3, s1.size());
+  EXPECT_EQ(1, s1.count(c2));
+  EXPECT_EQ(0, s1.count(c4));
 }
 
 TEST(SingleClipTest, groupBreakpoints) {
