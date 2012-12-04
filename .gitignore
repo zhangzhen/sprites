@@ -5,3 +5,4 @@ clip-sv
 *.o
 *~
 result*
+output

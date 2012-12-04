@@ -1,3 +1,0 @@
-seq1	1	homozygous_indel	38	52	.	+	.	.	CCATGGCCCAGCAT	Homozygous_Deletion
-seq1	2	assembly_comparison_inversion	489	514	.	-	.	.
-seq1	3	homozygous_indel	700	700	.	-	.	.	AACAATGGGCTTCTCAGCAGAAACCTTACAAGCCAGAAGAG	Homozygous_Insertion
