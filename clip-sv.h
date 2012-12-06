@@ -1,6 +1,9 @@
 #ifndef CLIPSV_INCLUDED
 #define CLIPSV_INCLUDED
 
+#include "SingleClipped.h"
+#include "ClusterCreator.h"
+#include "Region.h"
 #include <string>
 #include <vector>
 #include <set>
@@ -40,6 +43,16 @@ struct StructVar {
   }
 };
 
+void loadClippeds(BamTools::BamReader& reader,
+                  std::vector<SingleClipped*>& lefts,
+                  std::vector<SingleClipped*>& rights);
+void clusterClippeds(std::vector<SingleClipped*>& clis,
+                     std::vector<SingleClippedCluster*>& clus,
+                     ClusterCreator& creator,
+                     int cutoff);
+void callDeletions(const std::vector<Contig>& con1,
+                   const std::vector<Contig>& con2,
+                   std::vector<Region>& calls);
 
 void countAlignments(BamTools::BamReader& reader);
 bool compareClips(Clip* one, Clip* two);

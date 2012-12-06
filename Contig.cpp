@@ -16,6 +16,7 @@ Contig::Contig(const std::string& seq, const Locus& anchor, int marker, int num)
 Contig::~Contig() {}
 
 bool Contig::overlaps(const Contig& other, int mismatches) const {
+  if (anchor.chrom() != other.anchor.chrom()) return false;
   int s1, s2;
   if (marker <= other.marker) {
     s1 = 0;
@@ -28,11 +29,15 @@ bool Contig::overlaps(const Contig& other, int mismatches) const {
   return equals2(seq.substr(s1, len), other.seq.substr(s2, len), mismatches);
 }
 
-bool Contig::operator==(const Contig& other) const {
+bool Contig::operator== (const Contig& other) const {
   return seq == other.seq &&
       anchor == other.anchor &&
       marker == other.marker &&
       num == other.num;
+}
+
+bool Contig::operator< (const Contig& other) const {
+  return anchor < other.anchor;
 }
 
 std::string Contig::sequence() const {

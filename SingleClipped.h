@@ -14,6 +14,7 @@ class SingleClipped {
  public:
   SingleClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen);
   virtual ~SingleClipped();
+  Locus anchor() const;
   // std::string chr() const;
   // int position() const;
   std::string clippedSeq() const;

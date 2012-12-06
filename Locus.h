@@ -10,11 +10,13 @@ class Locus
   int pos;
   
  public:
-  Locus(std::string chr, int pos);
+  Locus(const std::string& chr, int pos);
   virtual ~Locus();
   std::string chrom() const;
   int position() const;
-  bool operator==(const Locus& other) const;
+  bool operator== (const Locus& other) const;
+  bool operator!= (const Locus& other) const;
+  bool operator< (const Locus& other) const;
 };
 
 #endif /* LOCUS_H */

@@ -18,7 +18,8 @@ class Contig
   Contig(const std::string& seq, const Locus& anchor, int marker, int num);
   virtual ~Contig();
   bool overlaps(const Contig& other, int mismatches = 0) const;
-  bool operator==(const Contig& other) const;
+  bool operator== (const Contig& other) const;
+  bool operator< (const Contig& other) const;
   std::string sequence() const;
 };
 

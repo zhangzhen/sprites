@@ -4,6 +4,12 @@
 #include "gtest/gtest.h"
 #include "api/BamReader.h"
 #include "clip-sv.h"
+#include "LeftClipped.h"
+#include "RightClipped.h"
+#include "ClippedCreator.h"
+#include "LeftClippedCluster.h"
+#include "RightClippedCluster.h"
+#include "ClusterCreator.h"
 
 // TEST(SingleClipTest, GetSoftClips) {
 //   std::string filename = "toy2.bam";
@@ -153,4 +159,42 @@ TEST(SingleClipTest, groupBreakpoints) {
   EXPECT_EQ(1, groups[1].size());
   EXPECT_EQ(1, groups[2].size());
   EXPECT_EQ(2, groups[3].size());
+}
+
+TEST(SingleClipTest, loadClippeds) {
+  std::string filename = "toy2.bam";
+  BamTools::BamReader reader;
+  reader.Open(filename);
+  std::vector<SingleClipped*> lefts, rights;
+  loadClippeds(reader, lefts, rights);
+  EXPECT_EQ(1, lefts.size());
+  EXPECT_EQ(1, rights.size());
+}
+
+TEST(SingleClipTest, clusterClippeds) {
+  Locus a1("1", 27);
+  Locus a2("1", 54);
+  StandardClippedCreator<LeftClipped> cliCreator;
+  std::vector<SingleClipped*> lefts;
+  lefts.push_back(cliCreator.createClipped(a1, "ATAGTAGGCA", 20, 0, 3));
+  lefts.push_back(cliCreator.createClipped(a1, "AGATAGTAGG", 20, 0, 5));
+  lefts.push_back(cliCreator.createClipped(a2, "CCATAACTAC", 20, 0, 4));
+  lefts.push_back(cliCreator.createClipped(a2, "ATAACTACGC", 20, 0, 2));
+  StandardClusterCreator<LeftClippedCluster> cluCreator;
+  std::vector<SingleClippedCluster*> clus;
+  clusterClippeds(lefts, clus, cluCreator, 2);
+  EXPECT_EQ(2, clus.size());
+  EXPECT_EQ(2, clus[0]->size());
+  EXPECT_EQ(2, clus[1]->size());
+
+  Locus a3("1", 13);
+  StandardClippedCreator<RightClipped> cliCreator2;
+  std::vector<SingleClipped*> rights;
+  rights.push_back(cliCreator2.createClipped(a3, "TAGATAGTAG", 20, 6, 4));
+  rights.push_back(cliCreator2.createClipped(a3, "TTAGATAGTA", 20, 7, 3));
+  StandardClusterCreator<RightClippedCluster> cluCreator2;
+  std::vector<SingleClippedCluster*> clus2;
+  clusterClippeds(rights, clus2, cluCreator2, 2);
+  EXPECT_EQ(1, clus2.size());
+  EXPECT_EQ(2, clus2[0]->size());
 }

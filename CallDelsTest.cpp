@@ -10,10 +10,10 @@ class CallDelsTest : public testing::Test {
  protected:
   virtual void SetUp() {
     // donor: AGCATGTTAGATA*GTAGGCAGTCAGCGCCAT*AACTACGCG
-    // ref: AGCATGTTAGATA(AGATAGCTGTGCTA)GTAGGCAGTCAGCGCCAT-CTACAGAGC-AACTACGCG
+    // ref: AGCATGTTAGATA(AGATAGCTGTGCTA)GTAGGCAGTCAGCGCCAT(CTACAGAGC)AACTACGCG
     lclips.push_back(new LeftClip(0, 27, 3, 3, "ATAGTAGGCA"));
     lclips.push_back(new LeftClip(0, 27, 5, 5, "AGATAGTAGG"));
-    lclips.push_back(new LeftClip(0, 32, 4, 4, "CCATAACTAC"));
+    lclips.push_back(new LeftClip(0, 54, 4, 4, "CCATAACTAC"));
     rclips.push_back(new RightClip(0, 13, 6, 4, "TAGATAGTAG"));
     rclips.push_back(new RightClip(0, 13, 7, 3, "TTAGATAGTA"));
   }

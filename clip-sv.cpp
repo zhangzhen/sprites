@@ -1,3 +1,6 @@
+#include "LeftClipped.h"
+#include "RightClipped.h"
+#include "ClippedCreator.h"
 #include <algorithm>
 #include "clip-sv.h"
 #include "error.h"
@@ -30,6 +33,57 @@ void countAlignments(BamTools::BamReader& reader) {
 
 bool compareClips(Clip* one, Clip* two) {
   return one->getPosition() < two->getPosition();
+}
+
+void loadClippeds(BamTools::BamReader& reader,
+                  std::vector<SingleClipped*>& lefts,
+                  std::vector<SingleClipped*>& rights) {
+  BamTools::BamAlignment al;
+  StandardClippedCreator<LeftClipped> lCreator;
+  StandardClippedCreator<RightClipped> rCreator;
+  
+  while (reader.GetNextAlignment(al)) {
+    std::vector<int> lens, cutpoints, anchors;
+    if (!al.IsMapped()) {
+      continue;
+    }
+    if (!al.GetSoftClips(lens, cutpoints, anchors)) {
+      continue;
+    }
+    if (lens.size() > 1) {
+      continue;
+    }
+    std::stringstream ss;
+    ss << al.RefID;
+    Locus anchor(ss.str(), anchors[0]);
+    if (cutpoints[0] == lens[0]) { // left clipped
+      lefts.push_back(lCreator.createClipped(anchor, al.QueryBases, al.MapQuality, 0, lens[0]));
+    } else if (al.Length == cutpoints[0] + lens[0]) { // right clipped
+      rights.push_back(rCreator.createClipped(anchor, al.QueryBases, al.MapQuality, cutpoints[0], lens[0]));
+    }
+  }  
+}
+
+void clusterClippeds(std::vector<SingleClipped*>& clis,
+                     std::vector<SingleClippedCluster*>& clus,
+                     ClusterCreator& creator,
+                     int cutoff) {
+  assert(clis.size() > 0);
+  SingleClippedCluster *clu = creator.createCluster(clis[0]->anchor());
+  for (int i = 0; i < clis.size() - 1; ++i) {
+    clu->add(clis[i]);
+    if (clis[i]->anchor() != clis[i + 1]->anchor()) {
+      if (clu->size() >= cutoff) clus.push_back(clu);
+      clu = creator.createCluster(clis[i + 1]->anchor());
+    }
+  }
+  clu->add(clis.back());
+  if (clu->size() >= cutoff) clus.push_back(clu);
+}
+
+void callDeletions(const std::vector<Contig>& con1,
+                   const std::vector<Contig>& con2,
+                   std::vector<Region>& calls) {
 }
 
 void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips) {

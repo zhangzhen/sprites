@@ -14,8 +14,8 @@ class Region
   virtual ~Region();
 
   std::string chrom() const;
-  int start() const;
-  int end() const;
+  int getStart() const;
+  int getEnd() const;
 
  private:
   bool checkRep();

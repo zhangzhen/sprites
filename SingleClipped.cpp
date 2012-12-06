@@ -12,6 +12,8 @@ SingleClipped::SingleClipped(const Locus& loc, const std::string& seq, int qual,
 
 SingleClipped::~SingleClipped() {}
 
+Locus SingleClipped::anchor() const { return loc; }
+
 std::string SingleClipped::clippedSeq() const {
   return seq.substr(start, clippedLen);
 }
