@@ -68,7 +68,7 @@ class LengthSelector
   explicit LengthSelector(int min, int max) : min(min), max(max) {}
   bool operator() (const Region& reg) const
   {
-    return reg.length() >= min and reg.length() < max;
+    return reg.length() < min || reg.length() >= max;
   }
  private:
   const int min;
