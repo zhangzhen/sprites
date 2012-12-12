@@ -17,10 +17,11 @@ class Contig
  public:
   Contig(const std::string& seq, const Locus& anchor, int marker, int num);
   virtual ~Contig();
-  bool overlaps(const Contig& other, int mismatches = 0) const;
+  bool overlaps(const Contig& other, double mismatchRate) const;
   bool operator== (const Contig& other) const;
   bool operator< (const Contig& other) const;
   std::string sequence() const;
+  Locus getAnchor() const;
 };
 
 #endif /* CONTIG_H */

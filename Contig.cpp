@@ -1,4 +1,5 @@
 #include "Contig.h"
+#include <math.h>
 
 bool equals2(const std::string s1, const std::string s2, int mismatches) {
   int cnt = 0;
@@ -15,7 +16,7 @@ Contig::Contig(const std::string& seq, const Locus& anchor, int marker, int num)
 
 Contig::~Contig() {}
 
-bool Contig::overlaps(const Contig& other, int mismatches) const {
+bool Contig::overlaps(const Contig& other, double mismatchRate) const {
   if (anchor.chrom() != other.anchor.chrom()) return false;
   int s1, s2;
   if (marker <= other.marker) {
@@ -26,6 +27,7 @@ bool Contig::overlaps(const Contig& other, int mismatches) const {
     s2 = 0;
   }
   int len = std::min(marker, other.marker) + std::min(seq.size() - marker, other.seq.size() - other.marker);
+  int mismatches = (int)ceil(mismatchRate*len);
   return equals2(seq.substr(s1, len), other.seq.substr(s2, len), mismatches);
 }
 
@@ -42,4 +44,8 @@ bool Contig::operator< (const Contig& other) const {
 
 std::string Contig::sequence() const {
   return seq;
+}
+
+Locus Contig::getAnchor() const {
+  return anchor;
 }

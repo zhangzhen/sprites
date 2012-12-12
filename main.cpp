@@ -3,51 +3,69 @@
 #include <algorithm>
 #include "clip-sv.h"
 #include "error.h"
+#include "ClusterCreator.h"
+#include "LeftClippedCluster.h"
+#include "RightClippedCluster.h"
 
+void callDelsFromBam(BamTools::BamReader& reader,
+                     std::string output,
+                     double mismatchRate,
+                     int minClusterSize,
+                     int minLen,
+                     int maxLen);
 void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen);
 void outputClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
-  char *sv_filename = NULL;
-  char *sv_minlen = NULL;
-  int c;
+  char *progname;
+  int minClusterSize = 2;
+  int minCallLen = 0;
+  int maxCallLen = 5000000;
+  double mismatchRate = 0.0;
+  std::string outFilename;
+  int c, status = 0;
 
-  opterr = 0;
-  while ((c = getopt(argc, argv, "f:l:")) != -1)
+  progname = argv[0];
+  while ((c = getopt(argc, argv, "c:l:m:x:o:")) != -1)
     switch (c) {
-      case 'f':
-        sv_filename = optarg;
+      case 'c':
+        minClusterSize = atoi(optarg);
         break;
       case 'l':
-        sv_minlen = optarg;
+        minCallLen = atoi(optarg);
+        break;
+      case 'm':
+        maxCallLen = atoi(optarg);
+        break;
+      case 'x':
+        mismatchRate = atof(optarg);
+        break;
+      case 'o':
+        outFilename = std::string(optarg);
         break;
       case '?':
-        if (optopt == 'f' || optopt =='l')
-          fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-        else if (isprint(optopt))
-          fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-        else
-          fprintf(stderr,
-                   "Unknown option character `\\x%x'.\n",
-                   optopt);
-        return 1;
       default:
-        abort();        
+        status = 1;
+        break;
     }
 
-  if (optind == argc)
-  {
-    fprintf(stderr, "A bam file is required.\n");
-    return 1;
+  if (optind == argc || outFilename.empty()) { status = 1; }
+  if (status) {
+    std::cerr << "Usage: "
+              << progname
+              << " [-c minimalClusterSize] [-l minimalCallLength] [-m maximalCallLength] [-x mismatchRate] -o outputFilename bamFilename"
+              << std::endl;
+    return status;
   }
-  std::string bam_name(argv[optind]);
+  
   BamTools::BamReader reader;
-  if (!reader.Open(bam_name)) {
+  std::string bamFilename(argv[optind]);
+  if (!reader.Open(bamFilename)) {
     std::cerr << "Could not open input BAM file." << std::endl;
     return 1;
   }
-  // outputClips(reader);
-  callSVs(reader, std::string(sv_filename), atoi(sv_minlen));
+
+  callDelsFromBam(reader, outFilename, mismatchRate, minClusterSize, minCallLen, maxCallLen);
   reader.Close();
   return 0;
 }
@@ -132,4 +150,68 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
 
   freeClips(leftClips);
   freeClips(rightClips);
+}
+
+void callDelsFromBam(BamTools::BamReader& reader,
+                     std::string output,
+                     double mismatchRate,
+                     int minClusterSize,
+                     int minLen,
+                     int maxLen) {
+  time_t startTime;
+  double elapsedTime;
+
+  // Step 1: Loading clipped reads
+  std::vector<SingleClipped*> lefts, rights;
+  startTime = time(NULL);
+  loadClippeds(reader, lefts, rights);
+  elapsedTime = difftime(time(NULL), startTime);
+  std::cout << "Execution time of Step 1: "
+            << elapsedTime
+            << " (sec)"
+            << std::endl;
+
+  // Step 2: Clustering two collections of clipped reads respectively
+  StandardClusterCreator<RightClippedCluster> cluCreator1;
+  StandardClusterCreator<LeftClippedCluster> cluCreator2;
+  std::vector<SingleClippedCluster*> clus1, clus2;
+  startTime = time(NULL);
+  clusterClippeds(rights, clus1, cluCreator1, minClusterSize);
+  clusterClippeds(lefts, clus2, cluCreator2, minClusterSize);
+  elapsedTime = difftime(time(NULL), startTime);
+  std::cout << "Execution time of Step 2: "
+            << elapsedTime
+            << " (sec)"
+            << std::endl;
+
+  // Step 3: Obtaining contigs from two collections of clusters
+  std::vector<Contig> cons1, cons2;
+  startTime = time(NULL);
+  obtainContigs(clus1, cons1);
+  obtainContigs(clus2, cons2);
+  elapsedTime = difftime(time(NULL), startTime);
+  std::cout << "Execution time of Step 3: "
+            << elapsedTime
+            << " (sec)"
+            << std::endl;
+
+  // Step 4: Calling SVs and selecting them by length
+  std::vector<Region> calls;
+  startTime = time(NULL);
+  callDeletions(cons1, cons2, calls, mismatchRate);
+  selectCallsByLength(calls, minLen, maxLen);
+  elapsedTime = difftime(time(NULL), startTime);
+  std::cout << "Execution time of Step 4: "
+            << elapsedTime
+            << " (sec)"
+            << std::endl;
+
+  // Step 5: Outputing results to a file
+  startTime = time(NULL);
+  outputCalls(output, calls);
+  elapsedTime = difftime(time(NULL), startTime);
+  std::cout << "Execution time of Step 5: "
+            << elapsedTime
+            << " (sec)"
+            << std::endl;
 }

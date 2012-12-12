@@ -1,5 +1,7 @@
 #include "Locus.h"
 
+Locus::Locus() {}
+
 Locus::Locus(const std::string& chr, int pos)
     : chr(chr), pos(pos) {}
 

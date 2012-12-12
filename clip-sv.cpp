@@ -81,9 +81,62 @@ void clusterClippeds(std::vector<SingleClipped*>& clis,
   if (clu->size() >= cutoff) clus.push_back(clu);
 }
 
-void callDeletions(const std::vector<Contig>& con1,
-                   const std::vector<Contig>& con2,
-                   std::vector<Region>& calls) {
+void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
+                   std::vector<Contig> contigs) {
+  for (int i = 0; i < clus.size(); ++i)
+    contigs.push_back(clus[i]->contig());
+}
+
+bool findFirstRegion(std::vector<Contig>::iterator first,
+                     std::vector<Contig>::iterator last,
+                     const Contig& con,
+                     double mismatchRate,
+                     Region& region) {
+  for (std::vector<Contig>::iterator itr = first; itr != last; ++itr) {
+    if (con.overlaps(*itr, mismatchRate)) {
+      region = Region(con.getAnchor(), (*itr).getAnchor());
+      return true;
+    }
+  }
+  return false;
+}
+
+void callDeletions(std::vector<Contig>& cons1,
+                   std::vector<Contig>& cons2,
+                   std::vector<Region>& calls,
+                   double mismatchRate) {
+  std::vector<Contig>::iterator last = cons2.end();
+  for (std::vector<Contig>::reverse_iterator ritr = cons1.rbegin();
+       ritr != cons1.rend();
+       ++ritr) {
+    std::vector<Contig>::iterator first = upper_bound(cons2.begin(), last, *ritr);
+    if (first == last) return;
+    Region reg;
+    if (findFirstRegion(first, last, *ritr, mismatchRate, reg)) {
+      calls.push_back(reg);
+      if (first == cons2.begin()) return;
+      last = first;
+    }
+  }
+}
+
+void selectCallsByLength(std::vector<Region>& calls,
+                         int minLen,
+                         int maxLen) {
+  LengthSelector ls(minLen, maxLen);
+  calls.erase(remove_if(calls.begin(), calls.end(), ls), calls.end());  
+}
+
+void outputCalls(std::string filename,
+                 const std::vector<Region>& calls) {
+  std::ofstream out(filename.c_str());
+  out << "chromosome\ttype\tstart\tend" << std::endl;
+  for (size_t i = calls.size() - 1; i >= 0; --i)
+    out << calls[i].chrom() << "\t"
+        << "deletion" << "\t"
+        << calls[i].getStart() << "\t"
+        << calls[i].getEnd() << std::endl;
+  out.close();
 }
 
 void getClips(BamTools::BamReader& reader, std::vector<Clip*>& leftClips, std::vector<Clip*>& rightClips) {

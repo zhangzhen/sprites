@@ -10,6 +10,7 @@ class Locus
   int pos;
   
  public:
+  Locus();
   Locus(const std::string& chr, int pos);
   virtual ~Locus();
   std::string chrom() const;

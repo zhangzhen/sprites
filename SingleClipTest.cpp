@@ -198,3 +198,45 @@ TEST(SingleClipTest, clusterClippeds) {
   EXPECT_EQ(1, clus2.size());
   EXPECT_EQ(2, clus2[0]->size());
 }
+
+TEST(SingleClipTest, findFirstRegion) {
+  std::vector<Contig> cons;
+  Locus a1("1", 13);
+  Contig c1("TTAGATAGTAG", a1, 7, 2);
+  Locus a2("1", 27);
+  Contig c2("AGATAGTAGGCA", a2, 5, 2);
+  cons.push_back(c2);
+  Locus a3("1", 54);
+  Contig c3("CCATAACTACGC", a3, 4, 2);
+  cons.push_back(c3);
+
+  Region r1;
+  EXPECT_TRUE(findFirstRegion(cons.begin(), cons.end(), c1, 0.0, r1));
+  Region r2(a1, a2);
+  EXPECT_EQ(r2, r1);
+}
+
+TEST(SingleClipTest, callDeletions) {
+  std::vector<Contig> cons1;
+  std::vector<Contig> cons2;
+  
+  Locus fstA1("1", 13);
+  Contig fstC1("TTAGATAGTAG", fstA1, 7, 2);
+  cons1.push_back(fstC1);
+  Locus fstA2("1", 45);
+  Contig fstC2("CAGCGCCATAACTA", fstA2, 9, 2);
+  cons1.push_back(fstC2);
+  
+  Locus sndA1("1", 27);
+  Contig sndC1("AGATAGTAGGCA", sndA1, 5, 2);
+  cons2.push_back(sndC1);
+  Locus sndA2("1", 54);
+  Contig sndC2("CCATAACTACGC", sndA2, 4, 2);
+  cons2.push_back(sndC2);
+
+  std::vector<Region> calls;
+  callDeletions(cons1, cons2, calls, 0.0);
+  EXPECT_EQ(2, calls.size());
+  EXPECT_EQ(Region(fstA2, sndA2), calls[0]);
+  EXPECT_EQ(Region(fstA1, sndA1), calls[1]);
+}

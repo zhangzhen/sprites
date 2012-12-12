@@ -10,12 +10,17 @@ class Region
   Locus end;
   
  public:
+  Region();
   Region(const Locus& start, const Locus& end);
   virtual ~Region();
 
   std::string chrom() const;
   int getStart() const;
   int getEnd() const;
+  int length() const;
+
+  bool operator== (const Region& other) const;
+  bool operator!= (const Region& other) const;
 
  private:
   bool checkRep();
