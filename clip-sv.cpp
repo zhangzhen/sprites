@@ -131,11 +131,13 @@ void outputCalls(std::string filename,
                  const std::vector<Region>& calls) {
   std::ofstream out(filename.c_str());
   out << "chromosome\ttype\tstart\tend" << std::endl;
-  for (size_t i = calls.size() - 1; i >= 0; --i)
-    out << calls[i].chrom() << "\t"
+  for (std::vector<Region>::const_reverse_iterator ritr = calls.rbegin();
+       ritr != calls.rend();
+       ++ritr)
+    out << (*ritr).chrom() << "\t"
         << "deletion" << "\t"
-        << calls[i].getStart() << "\t"
-        << calls[i].getEnd() << std::endl;
+        << (*ritr).getStart() << "\t"
+        << (*ritr).getEnd() << std::endl;
   out.close();
 }
 
