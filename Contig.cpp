@@ -4,7 +4,7 @@
 bool equals2(const std::string s1, const std::string s2, int mismatches) {
   int cnt = 0;
   if (s1.size() != s2.size()) return false;
-  for (int i = 0; i < s1.size(); ++i) {
+  for (size_t i = 0; i < s1.size(); ++i) {
     if (s1[i] != s2[i]) ++cnt;
     if (cnt > mismatches) return false;
   }

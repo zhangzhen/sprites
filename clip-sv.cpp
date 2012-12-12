@@ -61,7 +61,9 @@ void loadClippeds(BamTools::BamReader& reader,
     } else if (al.Length == cutpoints[0] + lens[0]) { // right clipped
       rights.push_back(rCreator.createClipped(anchor, al.QueryBases, al.MapQuality, cutpoints[0], lens[0]));
     }
-  }  
+  }
+  std::cout << "#lefts: " << lefts.size() << std::endl;
+  std::cout << "#rights: " << rights.size() << std::endl;
 }
 
 void clusterClippeds(std::vector<SingleClipped*>& clis,
@@ -79,6 +81,7 @@ void clusterClippeds(std::vector<SingleClipped*>& clis,
   }
   clu->add(clis.back());
   if (clu->size() >= cutoff) clus.push_back(clu);
+  std::cout << "#clusters: " << clus.size() << std::endl;
 }
 
 void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
@@ -118,13 +121,15 @@ void callDeletions(std::vector<Contig>& cons1,
       last = first;
     }
   }
+  std::cout << "#calls: " << calls.size() << std::endl;
 }
 
 void selectCallsByLength(std::vector<Region>& calls,
                          int minLen,
                          int maxLen) {
   LengthSelector ls(minLen, maxLen);
-  calls.erase(remove_if(calls.begin(), calls.end(), ls), calls.end());  
+  calls.erase(remove_if(calls.begin(), calls.end(), ls), calls.end());
+  std::cout << "#selected calls: " << calls.size() << std::endl;
 }
 
 void outputCalls(std::string filename,
