@@ -18,6 +18,7 @@ class Locus
   bool operator== (const Locus& other) const;
   bool operator!= (const Locus& other) const;
   bool operator< (const Locus& other) const;
+  friend std::ostream& operator <<(std::ostream& stream, const Locus& self);
 };
 
 #endif /* LOCUS_H */

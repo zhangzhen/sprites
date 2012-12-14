@@ -14,8 +14,18 @@ SingleClipped::~SingleClipped() {}
 
 Locus SingleClipped::anchor() const { return loc; }
 
+std::string SingleClipped::sequence() const { return seq; }
+
 std::string SingleClipped::clippedSeq() const {
   return seq.substr(start, clippedLen);
+}
+
+int SingleClipped::getClippedLen() const {
+  return clippedLen;
+}
+
+int SingleClipped::getMappedLen() const {
+  return seq.size() - clippedLen;
 }
 
 bool SingleClipped::checkRep() {

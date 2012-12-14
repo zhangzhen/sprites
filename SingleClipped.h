@@ -17,7 +17,10 @@ class SingleClipped {
   Locus anchor() const;
   // std::string chr() const;
   // int position() const;
+  std::string sequence() const;
   std::string clippedSeq() const;
+  int getClippedLen() const;
+  int getMappedLen() const;
   virtual std::string mappedSeq() const = 0;
   virtual std::string type() const = 0;
 

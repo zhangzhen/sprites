@@ -5,8 +5,6 @@
 #include "Contig.h"
 #include <vector>
 
-bool comp(const std::string& s1, const std::string& s2);
-
 class SingleClippedCluster {
  protected:
   Locus anchor;
@@ -17,6 +15,8 @@ class SingleClippedCluster {
   size_t size();
   virtual ~SingleClippedCluster();
   virtual Contig contig() = 0;
+  virtual std::string str();
+  friend std::ostream& operator <<(std::ostream& stream, SingleClippedCluster& self);
  protected:
   std::string assembleClipped();
   std::string assembleMapped();

@@ -1,4 +1,10 @@
 #include "Locus.h"
+#include <iostream>
+
+std::ostream& operator <<(std::ostream& stream, const Locus& self) {
+  stream << self.chr << ":" << self.pos;
+  return stream;
+}
 
 Locus::Locus() {}
 

@@ -1,5 +1,11 @@
 #include "SingleClippedCluster.h"
 #include <algorithm>
+#include <sstream>
+
+std::ostream& operator <<(std::ostream& stream, SingleClippedCluster& self) {
+  stream << self.str();
+  return stream;
+}
 
 bool comp(const std::string& s1, const std::string& s2) {
   return s1.size() < s2.size();
@@ -34,4 +40,10 @@ std::string SingleClippedCluster::assembleMapped() {
 
 std::string SingleClippedCluster::assemble(const std::vector<std::string>& seqs) {
   return *max_element(seqs.begin(), seqs.end(), comp);
+}
+
+std::string SingleClippedCluster::str() {
+  std::stringstream sstream;
+  sstream << contig().sequence() << std::endl;
+  return sstream.str();
 }

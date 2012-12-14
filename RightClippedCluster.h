@@ -8,6 +8,7 @@ class RightClippedCluster : public SingleClippedCluster {
   RightClippedCluster(const Locus& anchor);
   virtual ~RightClippedCluster();
   Contig contig();
+  std::string str();
 };
 
 #endif /* RIGHT_CLIPPED_CLUSTER_H */

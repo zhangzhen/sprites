@@ -158,60 +158,71 @@ void callDelsFromBam(BamTools::BamReader& reader,
                      int minClusterSize,
                      int minLen,
                      int maxLen) {
-  time_t startTime;
-  double elapsedTime;
+  // time_t startTime;
+  // double elapsedTime;
 
   // Step 1: Loading clipped reads
   std::vector<SingleClipped*> lefts, rights;
-  startTime = time(NULL);
+  // startTime = time(NULL);
   loadClippeds(reader, lefts, rights);
-  elapsedTime = difftime(time(NULL), startTime);
-  std::cout << "Execution time of Step 1: "
-            << elapsedTime
-            << " (sec)"
-            << std::endl;
+  std::cout << "#rights: " << rights.size() << std::endl;  
+  std::cout << "#lefts " << lefts.size() << std::endl;  
+  
+  // elapsedTime = difftime(time(NULL), startTime);
+  // std::cout << "Execution time of Step 1: "
+  //           << elapsedTime
+  //           << " (sec)"
+  //           << std::endl;
 
   // Step 2: Clustering two collections of clipped reads respectively
   StandardClusterCreator<RightClippedCluster> cluCreator1;
   StandardClusterCreator<LeftClippedCluster> cluCreator2;
   std::vector<SingleClippedCluster*> clus1, clus2;
-  startTime = time(NULL);
+  // startTime = time(NULL);
   clusterClippeds(rights, clus1, cluCreator1, minClusterSize);
+  std::cout << "#clusters1: " << clus1.size() << std::endl;
+  // std::cout << *clus1[0];
   clusterClippeds(lefts, clus2, cluCreator2, minClusterSize);
-  elapsedTime = difftime(time(NULL), startTime);
-  std::cout << "Execution time of Step 2: "
-            << elapsedTime
-            << " (sec)"
-            << std::endl;
+  std::cout << "#clusters2: " << clus2.size() << std::endl;
+  // std::cout << *clus2[0];
+  // elapsedTime = difftime(time(NULL), startTime);
+  // std::cout << "Execution time of Step 2: "
+  //           << elapsedTime
+  //           << " (sec)"
+  //           << std::endl;
 
   // Step 3: Obtaining contigs from two collections of clusters
   std::vector<Contig> cons1, cons2;
-  startTime = time(NULL);
+  // startTime = time(NULL);
   obtainContigs(clus1, cons1);
+  std::cout << "#contigs1: " << cons1.size() << std::endl;    
   obtainContigs(clus2, cons2);
-  elapsedTime = difftime(time(NULL), startTime);
-  std::cout << "Execution time of Step 3: "
-            << elapsedTime
-            << " (sec)"
-            << std::endl;
+  std::cout << "#contigs2: " << cons2.size() << std::endl;  
+  // elapsedTime = difftime(time(NULL), startTime);
+  // std::cout << "Execution time of Step 3: "
+  //           << elapsedTime
+  //           << " (sec)"
+  //           << std::endl;
 
   // Step 4: Calling SVs and selecting them by length
   std::vector<Region> calls;
-  startTime = time(NULL);
+  // startTime = time(NULL);
   callDeletions(cons1, cons2, calls, mismatchRate);
+  std::cout << "#calls: " << calls.size() << std::endl;
   selectCallsByLength(calls, minLen, maxLen);
-  elapsedTime = difftime(time(NULL), startTime);
-  std::cout << "Execution time of Step 4: "
-            << elapsedTime
-            << " (sec)"
-            << std::endl;
+  std::cout << "#selected calls: " << calls.size() << std::endl;
+  // elapsedTime = difftime(time(NULL), startTime);
+  // std::cout << "Execution time of Step 4: "
+  //           << elapsedTime
+  //           << " (sec)"
+  //           << std::endl;
 
   // Step 5: Outputing results to a file
-  startTime = time(NULL);
+  // startTime = time(NULL);
   outputCalls(output, calls);
-  elapsedTime = difftime(time(NULL), startTime);
-  std::cout << "Execution time of Step 5: "
-            << elapsedTime
-            << " (sec)"
-            << std::endl;
+  // elapsedTime = difftime(time(NULL), startTime);
+  // std::cout << "Execution time of Step 5: "
+  //           << elapsedTime
+  //           << " (sec)"
+  //           << std::endl;
 }

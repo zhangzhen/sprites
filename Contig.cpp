@@ -1,14 +1,24 @@
 #include "Contig.h"
 #include <math.h>
+#include <assert.h>
+#include <iostream>
 
 bool equals2(const std::string s1, const std::string s2, int mismatches) {
   int cnt = 0;
   if (s1.size() != s2.size()) return false;
+  // assert(s1.size() == s2.size());
   for (size_t i = 0; i < s1.size(); ++i) {
     if (s1[i] != s2[i]) ++cnt;
     if (cnt > mismatches) return false;
   }
   return true;
+}
+
+std::ostream& operator <<(std::ostream& stream, const Contig& self) {
+  stream << self.anchor;
+  // stream << self.marker << std::endl;
+  // stream << self.seq << std::endl;
+  return stream;
 }
 
 Contig::Contig(const std::string& seq, const Locus& anchor, int marker, int num)

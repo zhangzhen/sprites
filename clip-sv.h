@@ -43,6 +43,26 @@ struct StructVar {
   }
 };
 
+template<class ForwardIt>
+ForwardIt is_sorted_until(ForwardIt first, ForwardIt last)
+{
+  if (first != last) {
+    ForwardIt next = first;
+    while (++next != last) {
+      if (*next < *first)
+        return next;
+      first = next;
+    }
+  }
+  return last;
+}
+
+template<class ForwardIt>
+bool is_sorted(ForwardIt first, ForwardIt last)
+{
+  return is_sorted_until(first, last) == last;
+}
+
 void loadClippeds(BamTools::BamReader& reader,
                   std::vector<SingleClipped*>& lefts,
                   std::vector<SingleClipped*>& rights);
@@ -51,7 +71,7 @@ void clusterClippeds(std::vector<SingleClipped*>& clis,
                      ClusterCreator& creator,
                      int cutoff);
 void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
-                   std::vector<Contig> contigs);
+                   std::vector<Contig>& contigs);
 bool findFirstRegion(std::vector<Contig>::iterator first,
                      std::vector<Contig>::iterator last,
                      const Contig& con,

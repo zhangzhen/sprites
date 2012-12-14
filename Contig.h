@@ -20,6 +20,7 @@ class Contig
   bool overlaps(const Contig& other, double mismatchRate) const;
   bool operator== (const Contig& other) const;
   bool operator< (const Contig& other) const;
+  friend std::ostream& operator <<(std::ostream& stream, const Contig& self);
   std::string sequence() const;
   Locus getAnchor() const;
 };
