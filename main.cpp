@@ -10,32 +10,27 @@
 void callDelsFromBam(BamTools::BamReader& reader,
                      std::string output,
                      double mismatchRate,
-                     int minClusterSize,
-                     int minLen,
-                     int maxLen);
+                     int minSupportSize,
+                     int minOverlapLen);
 void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen);
 void outputClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
   char *progname;
-  int minClusterSize = 2;
-  int minCallLen = 0;
-  int maxCallLen = 5000000;
+  int minSupportSize = 2;
+  int minOverlapLen = 10;
   double mismatchRate = 0.0;
   std::string outFilename;
   int c, status = 0;
 
   progname = argv[0];
-  while ((c = getopt(argc, argv, "c:l:m:x:o:")) != -1)
+  while ((c = getopt(argc, argv, "k:l:x:o:")) != -1)
     switch (c) {
-      case 'c':
-        minClusterSize = atoi(optarg);
+      case 'k':
+        minSupportSize = atoi(optarg);
         break;
       case 'l':
-        minCallLen = atoi(optarg);
-        break;
-      case 'm':
-        maxCallLen = atoi(optarg);
+        minOverlapLen = atoi(optarg);
         break;
       case 'x':
         mismatchRate = atof(optarg);
@@ -53,7 +48,7 @@ int main(int argc, char *argv[]) {
   if (status) {
     std::cerr << "Usage: "
               << progname
-              << " [-c minimalClusterSize] [-l minimalCallLength] [-m maximalCallLength] [-x mismatchRate] -o outputFilename bamFilename"
+              << " [-k minimalSupportSize] [-l minimalOverlapLength] [-x mismatchRate] -o outputFilename bamFilename"
               << std::endl;
     return status;
   }
@@ -65,7 +60,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  callDelsFromBam(reader, outFilename, mismatchRate, minClusterSize, minCallLen, maxCallLen);
+  callDelsFromBam(reader, outFilename, mismatchRate, minSupportSize, minOverlapLen);
   reader.Close();
   return 0;
 }
@@ -155,9 +150,8 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
 void callDelsFromBam(BamTools::BamReader& reader,
                      std::string output,
                      double mismatchRate,
-                     int minClusterSize,
-                     int minLen,
-                     int maxLen) {
+                     int minSupportSize,
+                     int minOverlapLen) {
   // time_t startTime;
   // double elapsedTime;
 
@@ -179,10 +173,10 @@ void callDelsFromBam(BamTools::BamReader& reader,
   StandardClusterCreator<LeftClippedCluster> cluCreator2;
   std::vector<SingleClippedCluster*> clus1, clus2;
   // startTime = time(NULL);
-  clusterClippeds(rights, clus1, cluCreator1, minClusterSize);
+  clusterClippeds(rights, clus1, cluCreator1);
   std::cout << "#clusters1: " << clus1.size() << std::endl;
   // std::cout << *clus1[0];
-  clusterClippeds(lefts, clus2, cluCreator2, minClusterSize);
+  clusterClippeds(lefts, clus2, cluCreator2);
   std::cout << "#clusters2: " << clus2.size() << std::endl;
   // std::cout << *clus2[0];
   // elapsedTime = difftime(time(NULL), startTime);
@@ -204,13 +198,11 @@ void callDelsFromBam(BamTools::BamReader& reader,
   //           << " (sec)"
   //           << std::endl;
 
-  // Step 4: Calling SVs and selecting them by length
+  // Step 4: Calling SVs
   std::vector<Region> calls;
   // startTime = time(NULL);
-  callDeletions(cons1, cons2, calls, mismatchRate);
+  callDeletions(cons1, cons2, calls, minSupportSize, minOverlapLen, mismatchRate);
   std::cout << "#calls: " << calls.size() << std::endl;
-  selectCallsByLength(calls, minLen, maxLen);
-  std::cout << "#selected calls: " << calls.size() << std::endl;
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "Execution time of Step 4: "
   //           << elapsedTime

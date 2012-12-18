@@ -17,7 +17,7 @@ class Contig
  public:
   Contig(const std::string& seq, const Locus& anchor, int marker, int num);
   virtual ~Contig();
-  bool overlaps(const Contig& other, double mismatchRate) const;
+  bool overlaps(const Contig& other, int minSupportSize, int minOverlapLen, double mismatchRate) const;
   bool operator== (const Contig& other) const;
   bool operator< (const Contig& other) const;
   friend std::ostream& operator <<(std::ostream& stream, const Contig& self);

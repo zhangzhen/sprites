@@ -68,35 +68,22 @@ void loadClippeds(BamTools::BamReader& reader,
                   std::vector<SingleClipped*>& rights);
 void clusterClippeds(std::vector<SingleClipped*>& clis,
                      std::vector<SingleClippedCluster*>& clus,
-                     ClusterCreator& creator,
-                     int cutoff);
+                     ClusterCreator& creator);
 void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
                    std::vector<Contig>& contigs);
 bool findFirstRegion(std::vector<Contig>::iterator first,
                      std::vector<Contig>::iterator last,
                      const Contig& con,
+                     int minSupportSize,
+                     int minOverlapLen,
                      double mismatchRate,
                      Region& region);
 void callDeletions(std::vector<Contig>& cons1,
                    std::vector<Contig>& cons2,
                    std::vector<Region>& calls,
+                   int minSupportSize,
+                   int minOverlapLen,
                    double mismatchRate);
-class LengthSelector
-{
- public:
-  // the length interval is [min, max)
-  explicit LengthSelector(int min, int max) : min(min), max(max) {}
-  bool operator() (const Region& reg) const
-  {
-    return reg.length() < min || reg.length() >= max;
-  }
- private:
-  const int min;
-  const int max;
-};
-void selectCallsByLength(std::vector<Region>& calls,
-                         int minLen,
-                         int maxLen);
 void outputCalls(std::string filename,
                  const std::vector<Region>& calls);
 

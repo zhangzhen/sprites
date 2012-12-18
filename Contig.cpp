@@ -26,8 +26,10 @@ Contig::Contig(const std::string& seq, const Locus& anchor, int marker, int num)
 
 Contig::~Contig() {}
 
-bool Contig::overlaps(const Contig& other, double mismatchRate) const {
-  if (anchor.chrom() != other.anchor.chrom()) return false;
+bool Contig::overlaps(const Contig& other, int minSupportSize, int minOverlapLen, double mismatchRate) const {
+  if (anchor.chrom() != other.anchor.chrom() ||
+      num + other.num < minSupportSize)
+    return false;
   int s1, s2;
   if (marker <= other.marker) {
     s1 = 0;
@@ -37,6 +39,7 @@ bool Contig::overlaps(const Contig& other, double mismatchRate) const {
     s2 = 0;
   }
   int len = std::min(marker, other.marker) + std::min(seq.size() - marker, other.seq.size() - other.marker);
+  if (len < minOverlapLen) return false;
   int mismatches = (int)ceil(mismatchRate*len);
   return equals2(seq.substr(s1, len), other.seq.substr(s2, len), mismatches);
 }

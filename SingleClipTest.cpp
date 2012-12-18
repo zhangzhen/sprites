@@ -182,7 +182,7 @@ TEST(SingleClipTest, clusterClippeds) {
   lefts.push_back(cliCreator.createClipped(a2, "ATAACTACGC", 20, 0, 2));
   StandardClusterCreator<LeftClippedCluster> cluCreator;
   std::vector<SingleClippedCluster*> clus;
-  clusterClippeds(lefts, clus, cluCreator, 2);
+  clusterClippeds(lefts, clus, cluCreator);
   EXPECT_EQ(2, clus.size());
   EXPECT_EQ(2, clus[0]->size());
   EXPECT_EQ(2, clus[1]->size());
@@ -194,7 +194,7 @@ TEST(SingleClipTest, clusterClippeds) {
   rights.push_back(cliCreator2.createClipped(a3, "TTAGATAGTA", 20, 7, 3));
   StandardClusterCreator<RightClippedCluster> cluCreator2;
   std::vector<SingleClippedCluster*> clus2;
-  clusterClippeds(rights, clus2, cluCreator2, 2);
+  clusterClippeds(rights, clus2, cluCreator2);
   EXPECT_EQ(1, clus2.size());
   EXPECT_EQ(2, clus2[0]->size());
 }
@@ -211,7 +211,7 @@ TEST(SingleClipTest, findFirstRegion) {
   cons.push_back(c3);
 
   Region r1;
-  EXPECT_TRUE(findFirstRegion(cons.begin(), cons.end(), c1, 0.0, r1));
+  EXPECT_TRUE(findFirstRegion(cons.begin(), cons.end(), c1, 2, 8, 0.0, r1));
   Region r2(a1, a2);
   EXPECT_EQ(r2, r1);
 }
@@ -235,7 +235,7 @@ TEST(SingleClipTest, callDeletions) {
   cons2.push_back(sndC2);
 
   std::vector<Region> calls;
-  callDeletions(cons1, cons2, calls, 0.0);
+  callDeletions(cons1, cons2, calls, 2, 8, 0.0);
   EXPECT_EQ(2, calls.size());
   EXPECT_EQ(Region(fstA2, sndA2), calls[0]);
   EXPECT_EQ(Region(fstA1, sndA1), calls[1]);

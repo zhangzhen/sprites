@@ -44,17 +44,13 @@ void loadClippeds(BamTools::BamReader& reader,
   
   while (reader.GetNextAlignment(al)) {
     std::vector<int> lens, cutpoints, anchors;
-    if (!al.IsMapped()) {
-      continue;
-    }
-    if (!al.GetSoftClips(lens, cutpoints, anchors)) {
-      continue;
-    }
-    if (lens.size() > 1) {
-      continue;
-    }
+    if (!al.IsMapped() ||
+        !al.GetSoftClips(lens, cutpoints, anchors) ||
+        lens.size() > 1 ||
+        lens[0] < 2 ||
+        2 * lens[0] > al.Length) continue; 
     std::stringstream ss;
-    ss << al.RefID;
+    ss << 22;
     Locus anchor(ss.str(), anchors[0]);
     if (cutpoints[0] == lens[0]) { // left clipped
       lefts.push_back(lCreator.createClipped(anchor, al.QueryBases, al.MapQuality, 0, lens[0]));
@@ -66,19 +62,18 @@ void loadClippeds(BamTools::BamReader& reader,
 
 void clusterClippeds(std::vector<SingleClipped*>& clis,
                      std::vector<SingleClippedCluster*>& clus,
-                     ClusterCreator& creator,
-                     int cutoff) {
+                     ClusterCreator& creator) {
   assert(clis.size() > 0);
   SingleClippedCluster *clu = creator.createCluster(clis[0]->anchor());
   for (int i = 0; i < clis.size() - 1; ++i) {
     clu->add(clis[i]);
     if (clis[i]->anchor() != clis[i + 1]->anchor()) {
-      if (clu->size() >= cutoff) clus.push_back(clu);
+      clus.push_back(clu);
       clu = creator.createCluster(clis[i + 1]->anchor());
     }
   }
   clu->add(clis.back());
-  if (clu->size() >= cutoff) clus.push_back(clu);
+  clus.push_back(clu);
 }
 
 void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
@@ -90,10 +85,12 @@ void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
 bool findFirstRegion(std::vector<Contig>::iterator first,
                      std::vector<Contig>::iterator last,
                      const Contig& con,
+                     int minSupportSize,
+                     int minOverlapLen,
                      double mismatchRate,
                      Region& region) {
   for (std::vector<Contig>::iterator itr = first; itr != last; ++itr) {
-    if (con.overlaps(*itr, mismatchRate)) {
+    if (con.overlaps(*itr, minSupportSize, minOverlapLen, mismatchRate)) {
       region = Region(con.getAnchor(), (*itr).getAnchor());
       return true;
     }
@@ -104,6 +101,8 @@ bool findFirstRegion(std::vector<Contig>::iterator first,
 void callDeletions(std::vector<Contig>& cons1,
                    std::vector<Contig>& cons2,
                    std::vector<Region>& calls,
+                   int minSupportSize,
+                   int minOverlapLen,
                    double mismatchRate) {
   std::vector<Contig>::iterator last = cons2.end();
   for (std::vector<Contig>::reverse_iterator ritr = cons1.rbegin();
@@ -111,20 +110,12 @@ void callDeletions(std::vector<Contig>& cons1,
        ++ritr) {
     std::vector<Contig>::iterator first = upper_bound(cons2.begin(), last, *ritr);
     if (first == cons2.end()) continue;
-    // if (first == last) return;
     Region reg;
-    if (findFirstRegion(first, last, *ritr, mismatchRate, reg)) {
+    if (findFirstRegion(first, last, *ritr, minSupportSize, minOverlapLen, mismatchRate, reg)) {
       calls.push_back(reg);
     }
     last = first;
   }
-}
-
-void selectCallsByLength(std::vector<Region>& calls,
-                         int minLen,
-                         int maxLen) {
-  LengthSelector ls(minLen, maxLen);
-  calls.erase(remove_if(calls.begin(), calls.end(), ls), calls.end());
 }
 
 void outputCalls(std::string filename,
