@@ -118,14 +118,14 @@ bool showSingleAnchorContext(SingleClippedCluster* clu,
   }
   Contig c = (*up)->contig();
   Contig c2 = (*(up-1))->contig();
+  std::cout << **(up-1) << std::endl;
+  std::cout << **up << std::endl;
   if (c.getProximal() &&
       c.getAnchor().position() - l.position() <= c.getMarker()) {
-    std::cout << **up << std::endl;
     return true;
   }
   if (!c2.getProximal() &&
       l.position() - c2.getAnchor().position() + c2.getMarker() + 1 <= c2.sequence().size()) {
-    std::cout << **(up-1) << std::endl;
     return true;
   }
   return false;
