@@ -1,6 +1,8 @@
 #include "LeftClipped.h"
 #include "RightClipped.h"
 #include "ClippedCreator.h"
+#include "RightClippedCluster.h"
+#include "LeftClippedCluster.h"
 #include <algorithm>
 #include "clip-sv.h"
 #include "error.h"
@@ -41,14 +43,16 @@ void loadClippeds(BamTools::BamReader& reader,
   BamTools::BamAlignment al;
   StandardClippedCreator<LeftClipped> lCreator;
   StandardClippedCreator<RightClipped> rCreator;
+  int numOfMismatches, editDist;
   
   while (reader.GetNextAlignment(al)) {
     std::vector<int> lens, cutpoints, anchors;
     if (!al.IsMapped() ||
         !al.GetSoftClips(lens, cutpoints, anchors) ||
-        lens.size() > 1 ||
-        lens[0] < 2 ||
-        2 * lens[0] > al.Length) continue; 
+        lens.size() > 1) continue; 
+    // if (al.GetTag("XM", numOfMismatches) &&
+    //     al.GetTag("NM", editDist) &&
+    //     numOfMismatches < editDist) continue;
     std::stringstream ss;
     ss << 22;
     Locus anchor(ss.str(), anchors[0]);
@@ -60,20 +64,94 @@ void loadClippeds(BamTools::BamReader& reader,
   }
 }
 
+bool compSC(SingleClipped* sc1, SingleClipped* sc2) {
+  return sc1->anchor() < sc2->anchor();
+}
+
 void clusterClippeds(std::vector<SingleClipped*>& clis,
                      std::vector<SingleClippedCluster*>& clus,
                      ClusterCreator& creator) {
   assert(clis.size() > 0);
+  assert(is_sorted(clis.begin(), clis.end(), compSC));
   SingleClippedCluster *clu = creator.createCluster(clis[0]->anchor());
   for (int i = 0; i < clis.size() - 1; ++i) {
     clu->add(clis[i]);
-    if (clis[i]->anchor() != clis[i + 1]->anchor()) {
+    if (clu->getAnchor() < clis[i + 1]->anchor()) {
       clus.push_back(clu);
       clu = creator.createCluster(clis[i + 1]->anchor());
     }
   }
   clu->add(clis.back());
   clus.push_back(clu);
+}
+
+void loadControls(const std::string& filename,
+                  std::vector<Region>& controls,
+                  int minLen) {
+  std::ifstream input(filename.c_str());  
+  std::string line;
+  getline(input, line);                 // skip the header line
+
+  std::string chr, cls, seq;
+  int start, end;
+  while (input >> chr >> start >> end >> cls >> seq) {
+    if (cls != "DEL" ||
+        end - start < minLen) continue;
+    controls.push_back(Region(Locus(chr, start), Locus(chr, end)));
+  }
+}
+
+bool comp(SingleClippedCluster* clu1, SingleClippedCluster* clu2) {
+  return clu1->getAnchor() < clu2->getAnchor();
+}
+
+bool showSingleAnchorContext(SingleClippedCluster* clu,
+                             std::vector<SingleClippedCluster*>& clus) {
+  Locus l = clu->getAnchor();
+  std::cout << l << std::endl;
+  std::vector<SingleClippedCluster*>::iterator low, up;
+  low = lower_bound(clus.begin(), clus.end(), clu, comp);
+  up = upper_bound(clus.begin(), clus.end(), clu, comp);
+  if (low != up) {
+    std::cout << **low << std::endl;
+    return true;
+  }
+  Contig c = (*up)->contig();
+  Contig c2 = (*(up-1))->contig();
+  if (c.getProximal() &&
+      c.getAnchor().position() - l.position() <= c.getMarker()) {
+    std::cout << **up << std::endl;
+    return true;
+  }
+  if (!c2.getProximal() &&
+      l.position() - c2.getAnchor().position() + c2.getMarker() + 1 <= c2.sequence().size()) {
+    std::cout << **(up-1) << std::endl;
+    return true;
+  }
+  return false;
+}
+
+void showControlContexts(const std::vector<Region>& controls,
+                         std::vector<SingleClippedCluster*>& clus1,
+                         std::vector<SingleClippedCluster*>& clus2) {
+  assert(is_sorted(clus1.begin(), clus1.end(), comp));
+  assert(is_sorted(clus2.begin(), clus2.end(), comp));
+  StandardClusterCreator<RightClippedCluster> cluCreator1;
+  StandardClusterCreator<LeftClippedCluster> cluCreator2;
+  int cnt = 0;
+  for (size_t i = 0; i < controls.size(); ++i) {
+    std::cout << "> Control: " << i << "\tLength: " << controls[i].length() << std::endl;
+    Locus start(controls[i].chrom(), controls[i].getStart());
+    SingleClippedCluster* clu1 = cluCreator1.createCluster(start);
+    bool b1 = showSingleAnchorContext(clu1, clus1);
+    std::cout << "---------------------------" << std::endl;
+    Locus end(controls[i].chrom(), controls[i].getEnd());
+    SingleClippedCluster* clu2 = cluCreator2.createCluster(end);
+    bool b2 = showSingleAnchorContext(clu2, clus2);
+    std::cout << std::endl;
+    if (!b1 || !b2) cnt++;
+  }
+  std::cout << cnt << std::endl;
 }
 
 void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
@@ -113,8 +191,8 @@ void callDeletions(std::vector<Contig>& cons1,
     Region reg;
     if (findFirstRegion(first, last, *ritr, minSupportSize, minOverlapLen, mismatchRate, reg)) {
       calls.push_back(reg);
+      last = first;
     }
-    last = first;
   }
 }
 

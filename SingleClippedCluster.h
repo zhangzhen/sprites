@@ -13,6 +13,7 @@ class SingleClippedCluster {
   SingleClippedCluster(const Locus& anchor);
   void add(SingleClipped* cl);
   size_t size();
+  Locus getAnchor();
   virtual ~SingleClippedCluster();
   virtual Contig contig() = 0;
   virtual std::string str();

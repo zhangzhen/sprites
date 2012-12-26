@@ -7,6 +7,9 @@
 #include "LeftClippedCluster.h"
 #include "RightClippedCluster.h"
 
+const std::string ControlFilename = "chr22_report.txt";
+const int MinDelLen = 5;
+
 void callDelsFromBam(BamTools::BamReader& reader,
                      std::string output,
                      double mismatchRate,
@@ -173,11 +176,26 @@ void callDelsFromBam(BamTools::BamReader& reader,
   StandardClusterCreator<LeftClippedCluster> cluCreator2;
   std::vector<SingleClippedCluster*> clus1, clus2;
   // startTime = time(NULL);
+  sort(rights.begin(), rights.end(), compSC);
   clusterClippeds(rights, clus1, cluCreator1);
   std::cout << "#clusters1: " << clus1.size() << std::endl;
+  // for (size_t i = 0; i < clus1.size(); ++i)
+  //   std::cout << *clus1[i] << std::endl;
+  // return;
   // std::cout << *clus1[0];
+  sort(lefts.begin(), lefts.end(), compSC);
   clusterClippeds(lefts, clus2, cluCreator2);
   std::cout << "#clusters2: " << clus2.size() << std::endl;
+  std::vector<Region> controls;
+  loadControls(ControlFilename, controls, MinDelLen);
+  showControlContexts(controls, clus1, clus2);
+  return;
+  // Locus anc1("22", 15000726);
+  // SingleClippedCluster* clu1 = cluCreator1.createCluster(anc1);
+  // std::cout << **lower_bound(clus1.begin(), clus1.end(), clu1, comp) << std::endl;
+  // Locus anc2("22", 15001350);
+  // SingleClippedCluster* clu2 = cluCreator2.createCluster(anc2);
+  // std::cout << **lower_bound(clus2.begin(), clus2.end(), clu2, comp) << std::endl;
   // std::cout << *clus2[0];
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "Execution time of Step 2: "
@@ -191,7 +209,8 @@ void callDelsFromBam(BamTools::BamReader& reader,
   obtainContigs(clus1, cons1);
   std::cout << "#contigs1: " << cons1.size() << std::endl;    
   obtainContigs(clus2, cons2);
-  std::cout << "#contigs2: " << cons2.size() << std::endl;  
+  std::cout << "#contigs2: " << cons2.size() << std::endl;
+  // return;
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "Execution time of Step 3: "
   //           << elapsedTime

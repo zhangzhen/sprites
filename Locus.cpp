@@ -18,15 +18,14 @@ std::string Locus::chrom() const { return chr; }
 int Locus::position() const { return pos; }
 
 bool Locus::operator== (const Locus& other) const {
-  return chr == other.chr &&
-      pos == other.pos;
+  return !(*this < other) && !(other < *this);
 }
 
 bool Locus::operator!= (const Locus& other) const {
-  return !(*this == other);
+  return *this < other || other < *this;
 }
 
 bool Locus::operator< (const Locus& other) const {
-  if (chr != other.chr) return chr < other.chr;
+  // if (chr != other.chr) return chr < other.chr;
   return pos < other.pos;
 }

@@ -79,8 +79,8 @@ TEST_F(CallDelsTest, extractClipsForDels) {
 // }
 
 TEST_F(CallDelsTest, overlaps) {
-  Contig c1("AGATAGTAGGCA", Locus("1", 27), 5, 2);
-  Contig c2("TTAGATAGTA", Locus("1", 13), 7, 2);
+  Contig c1("AGATAGTAGGCA", Locus("1", 27), 5, 2, false);
+  Contig c2("TTAGATAGTA", Locus("1", 13), 7, 2, true);
   EXPECT_TRUE(c1.overlaps(c2, 2, 8, 0.0));
   EXPECT_TRUE(c2.overlaps(c1, 2, 8, 0.0));
 }
@@ -93,7 +93,7 @@ TEST_F(CallDelsTest, assembleContigs) {
   SingleClipped *p2 = new LeftClipped(a1, "AGATAGTAGG", 20, 0, 5);
   cls1.add(p1);
   cls1.add(p2);
-  Contig c1("AGATAGTAGGCA", a1, 5, 2);
+  Contig c1("AGATAGTAGGCA", a1, 5, 2, false);
   EXPECT_EQ(c1, cls1.contig());
   delete p1;
   delete p2;
@@ -105,7 +105,7 @@ TEST_F(CallDelsTest, assembleContigs) {
   SingleClipped *p4 = new RightClipped(a2, "TTAGATAGTA", 13, 7, 3);
   cls2.add(p3);
   cls2.add(p4);
-  Contig c2("TTAGATAGTAG", a2, 7, 2);
+  Contig c2("TTAGATAGTAG", a2, 7, 2, true);
   EXPECT_EQ("TTAGATAGTAG", c2.sequence());
   EXPECT_EQ(c2, cls2.contig());
   delete p3;

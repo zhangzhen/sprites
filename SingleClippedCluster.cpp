@@ -22,6 +22,8 @@ void SingleClippedCluster::add(SingleClipped* cl) {
 
 size_t SingleClippedCluster::size() { return cls.size(); }
 
+Locus SingleClippedCluster::getAnchor() { return anchor; }
+
 std::string SingleClippedCluster::assembleClipped() {
   std::vector<std::string> seqs;
   for (int i = 0; i < cls.size(); ++i) {
@@ -44,6 +46,7 @@ std::string SingleClippedCluster::assemble(const std::vector<std::string>& seqs)
 
 std::string SingleClippedCluster::str() {
   std::stringstream sstream;
-  sstream << contig().sequence() << std::endl;
+  sstream << anchor << "\t[" << size() << "]" << std::endl;
+  sstream << contig().sequence();
   return sstream.str();
 }

@@ -44,8 +44,7 @@ struct StructVar {
 };
 
 template<class ForwardIt>
-ForwardIt is_sorted_until(ForwardIt first, ForwardIt last)
-{
+ForwardIt is_sorted_until(ForwardIt first, ForwardIt last) {
   if (first != last) {
     ForwardIt next = first;
     while (++next != last) {
@@ -58,17 +57,44 @@ ForwardIt is_sorted_until(ForwardIt first, ForwardIt last)
 }
 
 template<class ForwardIt>
-bool is_sorted(ForwardIt first, ForwardIt last)
-{
+bool is_sorted(ForwardIt first, ForwardIt last) {
   return is_sorted_until(first, last) == last;
+}
+
+template< class ForwardIt, class Compare>
+ForwardIt is_sorted_until(ForwardIt first, ForwardIt last, Compare comp) {
+  if (first != last) {
+    ForwardIt next = first;
+    while (++next != last) {
+      if (comp(*next, *first))
+        return next;
+      first = next;
+    }
+  }
+  return last;
+}
+
+template<class ForwardIt, class Compare>
+bool is_sorted(ForwardIt first, ForwardIt last, Compare comp) {
+  return is_sorted_until(first, last, comp) == last;
 }
 
 void loadClippeds(BamTools::BamReader& reader,
                   std::vector<SingleClipped*>& lefts,
                   std::vector<SingleClipped*>& rights);
+bool compSC(SingleClipped* sc1, SingleClipped* sc2);
 void clusterClippeds(std::vector<SingleClipped*>& clis,
                      std::vector<SingleClippedCluster*>& clus,
                      ClusterCreator& creator);
+void loadControls(const std::string& filename,
+                  std::vector<Region>& controls,
+                  int minLen);
+bool comp(SingleClippedCluster* clu1, SingleClippedCluster* clu2);
+bool showSingleAnchorContext(SingleClippedCluster* clu,
+                             std::vector<SingleClippedCluster*>& clus);
+void showControlContexts(const std::vector<Region>& controls,
+                         std::vector<SingleClippedCluster*>& clus1,
+                         std::vector<SingleClippedCluster*>& clus2);
 void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
                    std::vector<Contig>& contigs);
 bool findFirstRegion(std::vector<Contig>::iterator first,

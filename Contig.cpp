@@ -21,27 +21,39 @@ std::ostream& operator <<(std::ostream& stream, const Contig& self) {
   return stream;
 }
 
-Contig::Contig(const std::string& seq, const Locus& anchor, int marker, int num)
-    : seq(seq), anchor(anchor), marker(marker), num(num) {}
+Contig::Contig(const std::string& seq, const Locus& anchor, int marker, int num, bool proximal)
+    : seq(seq), anchor(anchor), marker(marker), num(num), proximal(proximal) {}
 
 Contig::~Contig() {}
 
 bool Contig::overlaps(const Contig& other, int minSupportSize, int minOverlapLen, double mismatchRate) const {
-  if (anchor.chrom() != other.anchor.chrom() ||
-      num + other.num < minSupportSize)
-    return false;
+  assert(proximal ^ other.proximal);
+  if (proximal) return Contig::overlaps2(*this, other, minSupportSize, minOverlapLen, mismatchRate);
+  return Contig::overlaps2(other, *this, minSupportSize, minOverlapLen, mismatchRate);
+}
+
+bool Contig::overlaps2(const Contig& c1, const Contig& c2, int minSupportSize, int minOverlapLen, double mismatchRate) {
+  if (c1.anchor.chrom() != c2.anchor.chrom() ||
+      c1.num + c2.num < minSupportSize) return false;
+  int m = c2.marker;
   int s1, s2;
-  if (marker <= other.marker) {
-    s1 = 0;
-    s2 = other.marker - marker;
-  } else {
-    s1 = marker - other.marker;
-    s2 = 0;
+  while (m <= c2.seq.size()) {
+    if (c1.marker <= m) {
+      s1 = 0;
+      s2 = m - c1.marker;
+    } else {
+      s1 = c1.marker - m;
+      s2 = 0;
+    }
+    int len = std::min(c1.marker, m) + std::min(c1.seq.size() - c1.marker, c2.seq.size() - m);
+    m++;
+    if (len < minOverlapLen) continue;
+    int mismatches = (int)ceil(mismatchRate * len);
+    std::cout << c1.seq.substr(s1, len) << std::endl;
+    std::cout << c2.seq.substr(s2, len) << std::endl << std::endl;    
+    if (equals2(c1.seq.substr(s1, len), c2.seq.substr(s2, len), mismatches)) return true;
   }
-  int len = std::min(marker, other.marker) + std::min(seq.size() - marker, other.seq.size() - other.marker);
-  if (len < minOverlapLen) return false;
-  int mismatches = (int)ceil(mismatchRate*len);
-  return equals2(seq.substr(s1, len), other.seq.substr(s2, len), mismatches);
+  return false;
 }
 
 bool Contig::operator== (const Contig& other) const {

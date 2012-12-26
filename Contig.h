@@ -13,9 +13,10 @@ class Contig
   Locus anchor;
   int marker;
   int num;
+  bool proximal;
   
  public:
-  Contig(const std::string& seq, const Locus& anchor, int marker, int num);
+  Contig(const std::string& seq, const Locus& anchor, int marker, int num, bool proximal);
   virtual ~Contig();
   bool overlaps(const Contig& other, int minSupportSize, int minOverlapLen, double mismatchRate) const;
   bool operator== (const Contig& other) const;
@@ -23,6 +24,10 @@ class Contig
   friend std::ostream& operator <<(std::ostream& stream, const Contig& self);
   std::string sequence() const;
   Locus getAnchor() const;
+  int getMarker() const { return marker; }
+  bool getProximal() const { return proximal; }
+ private:
+  static bool overlaps2(const Contig& c1, const Contig& c2, int minSupportSize, int minOverlapLen, double mismatchRate);
 };
 
 #endif /* CONTIG_H */
