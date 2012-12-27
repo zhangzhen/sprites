@@ -44,12 +44,18 @@ void loadClippeds(BamTools::BamReader& reader,
   StandardClippedCreator<LeftClipped> lCreator;
   StandardClippedCreator<RightClipped> rCreator;
   int numOfMismatches, editDist;
+  // int max = 0;
+  int n = 0;
   
   while (reader.GetNextAlignment(al)) {
     std::vector<int> lens, cutpoints, anchors;
     if (!al.IsMapped() ||
         !al.GetSoftClips(lens, cutpoints, anchors) ||
-        lens.size() > 1) continue; 
+        lens.size() > 1) {
+      if (lens.size() == 2) { n++; }
+      // if (max < lens.size()) { max = lens.size(); }
+      continue;
+    }
     // if (al.GetTag("XM", numOfMismatches) &&
     //     al.GetTag("NM", editDist) &&
     //     numOfMismatches < editDist) continue;
@@ -62,6 +68,13 @@ void loadClippeds(BamTools::BamReader& reader,
       rights.push_back(rCreator.createClipped(anchor, al.QueryBases, al.MapQuality, cutpoints[0], lens[0]));
     }
   }
+
+  std::cout << "Number of split-reads that have exactly two soft clips: "
+            << n
+            << std::endl;
+  // std::cout << "Maximal number of soft clips on a split-read: "
+  //           << max
+  //           << std::endl;
 }
 
 bool compSC(SingleClipped* sc1, SingleClipped* sc2) {
@@ -101,6 +114,19 @@ void loadControls(const std::string& filename,
   }
 }
 
+int minDistance(const std::vector<Region>& controls) {
+  std::vector<Region>::const_iterator first = controls.begin();
+  std::vector<Region>::const_iterator last = controls.end();
+  assert(first + 1 < last);
+  std::vector<Region>::const_iterator next = first;
+  std::vector<int> distances;
+  while (++next != last) {
+    distances.push_back((*next).getStart() - (*first).getEnd());
+    first = next;
+  }
+  return *min_element(distances.begin(), distances.end());
+}
+
 bool comp(SingleClippedCluster* clu1, SingleClippedCluster* clu2) {
   return clu1->getAnchor() < clu2->getAnchor();
 }
@@ -118,14 +144,14 @@ bool showSingleAnchorContext(SingleClippedCluster* clu,
   }
   Contig c = (*up)->contig();
   Contig c2 = (*(up-1))->contig();
-  std::cout << **(up-1) << std::endl;
-  std::cout << **up << std::endl;
   if (c.getProximal() &&
       c.getAnchor().position() - l.position() <= c.getMarker()) {
+    std::cout << **up << std::endl;
     return true;
   }
   if (!c2.getProximal() &&
       l.position() - c2.getAnchor().position() + c2.getMarker() + 1 <= c2.sequence().size()) {
+    std::cout << **(up-1) << std::endl;
     return true;
   }
   return false;

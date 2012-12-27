@@ -164,6 +164,7 @@ void callDelsFromBam(BamTools::BamReader& reader,
   loadClippeds(reader, lefts, rights);
   std::cout << "#rights: " << rights.size() << std::endl;  
   std::cout << "#lefts " << lefts.size() << std::endl;  
+  return;
   
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "Execution time of Step 1: "
@@ -188,8 +189,10 @@ void callDelsFromBam(BamTools::BamReader& reader,
   std::cout << "#clusters2: " << clus2.size() << std::endl;
   std::vector<Region> controls;
   loadControls(ControlFilename, controls, MinDelLen);
+  // std::cout << "Minimal Distance between two adjacent variants: "
+  //           << minDistance(controls)
+  //           << std::endl;
   showControlContexts(controls, clus1, clus2);
-  return;
   // Locus anc1("22", 15000726);
   // SingleClippedCluster* clu1 = cluCreator1.createCluster(anc1);
   // std::cout << **lower_bound(clus1.begin(), clus1.end(), clu1, comp) << std::endl;

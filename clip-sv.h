@@ -89,6 +89,7 @@ void clusterClippeds(std::vector<SingleClipped*>& clis,
 void loadControls(const std::string& filename,
                   std::vector<Region>& controls,
                   int minLen);
+int minDistance(const std::vector<Region>& controls);
 bool comp(SingleClippedCluster* clu1, SingleClippedCluster* clu2);
 bool showSingleAnchorContext(SingleClippedCluster* clu,
                              std::vector<SingleClippedCluster*>& clus);
