@@ -44,16 +44,13 @@ void loadClippeds(BamTools::BamReader& reader,
   StandardClippedCreator<LeftClipped> lCreator;
   StandardClippedCreator<RightClipped> rCreator;
   int numOfMismatches, editDist;
-  // int max = 0;
-  int n = 0;
+  // int n = 0;
   
   while (reader.GetNextAlignment(al)) {
     std::vector<int> lens, cutpoints, anchors;
     if (!al.IsMapped() ||
         !al.GetSoftClips(lens, cutpoints, anchors) ||
-        lens.size() > 1) {
-      if (lens.size() == 2) { n++; }
-      // if (max < lens.size()) { max = lens.size(); }
+        lens.size() > 2) {
       continue;
     }
     // if (al.GetTag("XM", numOfMismatches) &&
@@ -61,20 +58,26 @@ void loadClippeds(BamTools::BamReader& reader,
     //     numOfMismatches < editDist) continue;
     std::stringstream ss;
     ss << 22;
+    if (lens.size() == 2) {
+      // std::cout << lens[0] << "\t" << cutpoints[0] << "\t" << anchors[0] << std::endl;
+      // std::cout << lens[1] << "\t" << cutpoints[1] << "\t" << anchors[1] << std::endl;
+      // std::cout << al.QueryBases << std::endl;
+      Locus anc0(ss.str(), anchors[0]);
+      // std::cout << al.QueryBases.substr(0, cutpoints[1]) << std::endl;
+      lefts.push_back(lCreator.createClipped(anc0,al.QueryBases.substr(0, al.Length - lens[1]), al.MapQuality, 0, lens[0]));
+      Locus anc1(ss.str(), anchors[1]);
+      // std::cout << std::string(lens[0], ' ') << al.QueryBases.substr(lens[0]) << std::endl;
+      rights.push_back(rCreator.createClipped(anc1, al.QueryBases.substr(lens[0]), al.MapQuality, al.Length - lens[0] - lens[1], lens[1]));
+      continue;
+    }
     Locus anchor(ss.str(), anchors[0]);
     if (cutpoints[0] == lens[0]) { // left clipped
       lefts.push_back(lCreator.createClipped(anchor, al.QueryBases, al.MapQuality, 0, lens[0]));
-    } else if (al.Length == cutpoints[0] + lens[0]) { // right clipped
-      rights.push_back(rCreator.createClipped(anchor, al.QueryBases, al.MapQuality, cutpoints[0], lens[0]));
+    } else { // right clipped
+      rights.push_back(rCreator.createClipped(anchor, al.QueryBases, al.MapQuality, al.Length - lens[0], lens[0]));
     }
   }
 
-  std::cout << "Number of split-reads that have exactly two soft clips: "
-            << n
-            << std::endl;
-  // std::cout << "Maximal number of soft clips on a split-read: "
-  //           << max
-  //           << std::endl;
 }
 
 bool compSC(SingleClipped* sc1, SingleClipped* sc2) {
@@ -144,14 +147,22 @@ bool showSingleAnchorContext(SingleClippedCluster* clu,
   }
   Contig c = (*up)->contig();
   Contig c2 = (*(up-1))->contig();
-  if (c.getProximal() &&
-      c.getAnchor().position() - l.position() <= c.getMarker()) {
-    std::cout << **up << std::endl;
+  if ((!c2.getProximal() &&
+       l.position() > c2.getAnchor().position() &&
+       l.position() - c2.getAnchor().position() + c2.getMarker() + 1 <= c2.sequence().size()) ||
+      (c2.getProximal() &&
+       l.position() > c2.getAnchor().position() &&
+       l.position() - c2.getAnchor().position() < c2.sequence().size() - c2.getMarker())) {
+    std::cout << **(up-1) << std::endl;
     return true;
   }
-  if (!c2.getProximal() &&
-      l.position() - c2.getAnchor().position() + c2.getMarker() + 1 <= c2.sequence().size()) {
-    std::cout << **(up-1) << std::endl;
+  if ((c.getProximal() &&
+       c.getAnchor().position() > l.position() &&
+       c.getAnchor().position() - l.position() <= c.getMarker()) ||
+      (!c.getProximal() &&
+       c.getAnchor().position() > l.position() &&
+       c.getAnchor().position() - l.position() < c.getMarker())) {
+    std::cout << **up << std::endl;
     return true;
   }
   return false;

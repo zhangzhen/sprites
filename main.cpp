@@ -164,7 +164,6 @@ void callDelsFromBam(BamTools::BamReader& reader,
   loadClippeds(reader, lefts, rights);
   std::cout << "#rights: " << rights.size() << std::endl;  
   std::cout << "#lefts " << lefts.size() << std::endl;  
-  return;
   
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "Execution time of Step 1: "
@@ -182,7 +181,6 @@ void callDelsFromBam(BamTools::BamReader& reader,
   std::cout << "#clusters1: " << clus1.size() << std::endl;
   // for (size_t i = 0; i < clus1.size(); ++i)
   //   std::cout << *clus1[i] << std::endl;
-  // return;
   // std::cout << *clus1[0];
   sort(lefts.begin(), lefts.end(), compSC);
   clusterClippeds(lefts, clus2, cluCreator2);
@@ -193,6 +191,7 @@ void callDelsFromBam(BamTools::BamReader& reader,
   //           << minDistance(controls)
   //           << std::endl;
   showControlContexts(controls, clus1, clus2);
+  return;
   // Locus anc1("22", 15000726);
   // SingleClippedCluster* clu1 = cluCreator1.createCluster(anc1);
   // std::cout << **lower_bound(clus1.begin(), clus1.end(), clu1, comp) << std::endl;
@@ -213,7 +212,6 @@ void callDelsFromBam(BamTools::BamReader& reader,
   std::cout << "#contigs1: " << cons1.size() << std::endl;    
   obtainContigs(clus2, cons2);
   std::cout << "#contigs2: " << cons2.size() << std::endl;
-  // return;
   // elapsedTime = difftime(time(NULL), startTime);
   // std::cout << "Execution time of Step 3: "
   //           << elapsedTime

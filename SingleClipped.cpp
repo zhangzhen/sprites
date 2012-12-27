@@ -1,5 +1,6 @@
 #include "SingleClipped.h"
 #include <assert.h>
+#include <iostream>
 
 SingleClipped::SingleClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen)
     : loc(loc),
@@ -29,5 +30,6 @@ int SingleClipped::getMappedLen() const {
 }
 
 bool SingleClipped::checkRep() {
+  // std::cout << start << "\t" << clippedLen << "\t" << seq << std::endl;  
   return start >= 0 && start + clippedLen <= seq.size();
 }

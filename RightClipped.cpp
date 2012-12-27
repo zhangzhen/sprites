@@ -1,5 +1,6 @@
 #include "RightClipped.h"
 #include <assert.h>
+#include <iostream>
 
 RightClipped::RightClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen)
     : SingleClipped(loc, seq, qual, start, clippedLen) {
