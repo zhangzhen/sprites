@@ -155,8 +155,8 @@ void callDelsFromBam(BamTools::BamReader& reader,
                      double mismatchRate,
                      int minSupportSize,
                      int minOverlapLen) {
-  // time_t startTime;
-  // double elapsedTime;
+  time_t startTime;
+  double elapsedTime;
 
   // Step 1: Loading clipped reads
   std::vector<SingleClipped*> lefts, rights;
@@ -186,12 +186,12 @@ void callDelsFromBam(BamTools::BamReader& reader,
   clusterClippeds(lefts, clus2, cluCreator2);
   std::cout << "#clusters2: " << clus2.size() << std::endl;
   std::vector<Region> controls;
-  loadControls(ControlFilename, controls, MinDelLen);
+  // loadControls(ControlFilename, controls, MinDelLen);
   // std::cout << "Minimal Distance between two adjacent variants: "
   //           << minDistance(controls)
   //           << std::endl;
-  showControlContexts(controls, clus1, clus2);
-  return;
+  // showControlContexts(controls, clus1, clus2);
+  // return;
   // Locus anc1("22", 15000726);
   // SingleClippedCluster* clu1 = cluCreator1.createCluster(anc1);
   // std::cout << **lower_bound(clus1.begin(), clus1.end(), clu1, comp) << std::endl;
@@ -220,14 +220,14 @@ void callDelsFromBam(BamTools::BamReader& reader,
 
   // Step 4: Calling SVs
   std::vector<Region> calls;
-  // startTime = time(NULL);
+  startTime = time(NULL);
   callDeletions(cons1, cons2, calls, minSupportSize, minOverlapLen, mismatchRate);
   std::cout << "#calls: " << calls.size() << std::endl;
-  // elapsedTime = difftime(time(NULL), startTime);
-  // std::cout << "Execution time of Step 4: "
-  //           << elapsedTime
-  //           << " (sec)"
-  //           << std::endl;
+  elapsedTime = difftime(time(NULL), startTime);
+  std::cout << "Execution time of Step 4: "
+            << elapsedTime
+            << " (sec)"
+            << std::endl;
 
   // Step 5: Outputing results to a file
   // startTime = time(NULL);

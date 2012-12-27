@@ -205,8 +205,10 @@ bool findFirstRegion(std::vector<Contig>::iterator first,
                      double mismatchRate,
                      Region& region) {
   for (std::vector<Contig>::iterator itr = first; itr != last; ++itr) {
-    if (con.overlaps(*itr, minSupportSize, minOverlapLen, mismatchRate)) {
-      region = Region(con.getAnchor(), (*itr).getAnchor());
+    int offset = 0;
+    if (con.overlaps(*itr, minSupportSize, minOverlapLen, mismatchRate, offset)) {
+      Locus end = (*itr).getAnchor();
+      region = Region(con.getAnchor(), Locus(end.chrom(), end.position() + offset));
       return true;
     }
   }

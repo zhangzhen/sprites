@@ -81,8 +81,10 @@ TEST_F(CallDelsTest, extractClipsForDels) {
 TEST_F(CallDelsTest, overlaps) {
   Contig c1("AGATAGTAGGCA", Locus("1", 27), 5, 2, false);
   Contig c2("TTAGATAGTA", Locus("1", 13), 7, 2, true);
-  EXPECT_TRUE(c1.overlaps(c2, 2, 8, 0.0));
-  EXPECT_TRUE(c2.overlaps(c1, 2, 8, 0.0));
+  int offset = 0;
+  EXPECT_TRUE(c1.overlaps(c2, 2, 8, 0.0, offset));
+  offset = 0;
+  EXPECT_TRUE(c2.overlaps(c1, 2, 8, 0.0, offset));
 }
 
 TEST_F(CallDelsTest, assembleContigs) {

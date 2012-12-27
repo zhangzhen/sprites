@@ -247,13 +247,17 @@ TEST(SingleClipTest, overlaps) {
             Locus("22", 15247409), 36, 1, true);
   Contig a2("GCCGCGGCTTTTTGCCTGTCCCGGCTTTTTGCCCCCCACCCCCGCCGCTGCGGCTTTTTACCCCCCGCG",
             Locus("22", 15247423), 21, 2, false);
-  EXPECT_TRUE(a1.overlaps(a2, 2, 10, 0.05));
+  int offset = 0;
+  EXPECT_TRUE(a1.overlaps(a2, 2, 10, 0.05, offset));
+  EXPECT_EQ(10, offset);
   // Case 2: The proximal cutpoint is exact, while the distal one is inexact
   Contig b1("CCAAGCCACCCAGCCAGCAAAGCCACCCGGCCAGCCAAACCATCCAAGCC",
             Locus("22", 15428683), 37, 1, true);
   Contig b2("AGCCCCCCAGCCAGCATAGCCACCCGGCCAGCCAAGCCATCCAAGCCACC",
             Locus("22", 15428676), 6, 1, false);
-  EXPECT_TRUE(b1.overlaps(b2, 2, 10, 0.05));
+  offset = 0;
+  EXPECT_TRUE(b1.overlaps(b2, 2, 10, 0.05, offset));
+  EXPECT_EQ(28, offset);
   // EXPECT_TRUE(b2.overlaps(b1, 2, 10, 0.05));
   
   // Case 3: Both cutpoints are inexact
@@ -261,5 +265,7 @@ TEST(SingleClipTest, overlaps) {
             Locus("22", 15247597), 46, 1, true);
   Contig c2("TTTTTGTAAGCCAGGGCTTTCTCCCCACCGCGGCTTTTTGTCCCCCGCCA",
             Locus("22", 15247599), 14, 1, false);
-  EXPECT_TRUE(c1.overlaps(c2, 2, 10, 0.08));
+  offset = 0;
+  EXPECT_TRUE(c1.overlaps(c2, 2, 10, 0.08, offset));
+  EXPECT_EQ(21, offset);
 }
