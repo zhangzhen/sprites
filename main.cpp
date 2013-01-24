@@ -7,8 +7,8 @@
 #include "LeftClippedCluster.h"
 #include "RightClippedCluster.h"
 
-const std::string ControlFilename = "chr22_report.txt";
-const int MinDelLen = 5;
+const std::string ControlFilename = "../sv/chr22_report.txt";
+const int MinDelLen = 50;
 
 void callDelsFromBam(BamTools::BamReader& reader,
                      std::string output,
@@ -55,9 +55,19 @@ int main(int argc, char *argv[]) {
               << std::endl;
     return status;
   }
-  
+
+  BamTools::BamReader r1, r2;  
   BamTools::BamReader reader;
   std::string bamFilename(argv[optind]);
+  std::vector<Window> windows;
+  r1.Open(bamFilename);
+  r2.Open(bamFilename);
+  r1.LocateIndex();
+  r2.LocateIndex();
+  loadWindowsFromBam(r1, r2, windows, 240);
+  std::cout << windows.size() << std::endl;
+  return 0;
+  
   if (!reader.Open(bamFilename)) {
     std::cerr << "Could not open input BAM file." << std::endl;
     return 1;
@@ -186,12 +196,12 @@ void callDelsFromBam(BamTools::BamReader& reader,
   clusterClippeds(lefts, clus2, cluCreator2);
   std::cout << "#clusters2: " << clus2.size() << std::endl;
   std::vector<Region> controls;
-  // loadControls(ControlFilename, controls, MinDelLen);
+  loadControls(ControlFilename, controls, MinDelLen);
   // std::cout << "Minimal Distance between two adjacent variants: "
   //           << minDistance(controls)
   //           << std::endl;
-  // showControlContexts(controls, clus1, clus2);
-  // return;
+  showControlContexts(controls, clus1, clus2);
+  return;
   // Locus anc1("22", 15000726);
   // SingleClippedCluster* clu1 = cluCreator1.createCluster(anc1);
   // std::cout << **lower_bound(clus1.begin(), clus1.end(), clu1, comp) << std::endl;

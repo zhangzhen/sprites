@@ -8,16 +8,18 @@ class Region
  private:
   Locus start;
   Locus end;
+  int overlapLen;
   
  public:
   Region();
-  Region(const Locus& start, const Locus& end);
+  Region(const Locus& start, const Locus& end, int overlapLen);
   virtual ~Region();
 
   std::string chrom() const;
   int getStart() const;
   int getEnd() const;
   int length() const;
+  int overlapLength() const;
 
   bool operator== (const Region& other) const;
   bool operator!= (const Region& other) const;

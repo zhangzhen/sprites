@@ -37,6 +37,73 @@ bool compareClips(Clip* one, Clip* two) {
   return one->getPosition() < two->getPosition();
 }
 
+void loadWindowsFromBam(BamTools::BamReader& r1,
+                        BamTools::BamReader& r2,
+                        std::vector<Window>& windows,
+                        unsigned int distCutoff) {
+  const BamTools::RefVector references = r1.GetReferenceData();
+  BamTools::BamAlignment ba1;
+  while (r1.GetNextAlignment(ba1)) {
+    // std::cout << ba1.IsPaired() << "\t"
+    //           << ba1.IsMapped() << "\t"
+    //           << ba1.IsMateMapped() << "\t"
+    //           << (ba1.RefID == ba1.MateRefID) << "\t"
+    //           << !ba1.IsReverseStrand() << "\t"
+    //           << ba1.IsMateReverseStrand() << "\t"
+    //           << (t1 == 'U') << "\t"
+    //           << r2.Jump(ba1.MateRefID, ba1.MatePosition) << "\t"
+    //           << ba1.Position << "\t"
+    //           << ba1.MatePosition << "\t"
+    //           << std::endl;
+    if (!ba1.IsPaired() ||
+        !ba1.IsMapped() ||
+        !ba1.IsMateMapped() ||
+        ba1.RefID != ba1.MateRefID ||
+        ba1.Position >= ba1.MatePosition ||
+        ba1.InsertSize <= distCutoff) continue;
+        
+    if (!ba1.IsReverseStrand() &&
+        ba1.IsMateReverseStrand() &&
+        r2.Jump(ba1.MateRefID, ba1.Position + ba1.InsertSize - 1)) {
+      // std::vector<int> lens, cutpoints, anchors;
+      // ba1.GetSoftClips(lens, cutpoints, anchors);
+      bool found = false;
+      BamTools::BamAlignment ba2;
+      while (r2.GetNextAlignment(ba2)) {
+        if (ba2.Position > ba1.MatePosition) break;
+        if (ba1.Name == ba2.Name &&
+            ba1.IsFirstMate() != ba2.IsFirstMate()) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) continue;
+      uint8_t t1, t2;
+      if (!ba1.GetTag("XT", t1) || !ba2.GetTag("XT", t2)) continue;
+      if ((t1 == 'U' && t2 == 'U') ||
+          (t1 == 'U' && ba2.CigarData[0].Type == 'S') ||
+          (ba1.CigarData[ba2.CigarData.size() - 1].Type == 'S' && t2 == 'U')) {
+        windows.push_back(Window(ba1.Name,
+                                 references[ba1.RefID].RefName,
+                                 ba1.GetEndPosition() + 1,
+                                 ba1.MatePosition,
+                                 ba1.InsertSize));
+        std::cout << ba1.Name << "\t"
+                  // << anchors[0] << "\t"
+                  << ba1.GetEndPosition() << "\t"
+                  // << ba1.Position << "\t"
+                  << ba1.MatePosition << "\t"
+                  << ba1.InsertSize << "\t";
+        if (ba1.CigarData[ba2.CigarData.size() - 1].Type == 'S' && t2 == 'U')
+          std::cout << "I\t";
+        if (t1 == 'U' && ba2.CigarData[0].Type == 'S')
+          std::cout << "III\t";
+        std::cout << std::endl;
+      }
+    }
+  }
+}
+
 void loadClippeds(BamTools::BamReader& reader,
                   std::vector<SingleClipped*>& lefts,
                   std::vector<SingleClipped*>& rights) {
@@ -45,7 +112,8 @@ void loadClippeds(BamTools::BamReader& reader,
   StandardClippedCreator<RightClipped> rCreator;
   int numOfMismatches, editDist;
   // int n = 0;
-  
+
+  const BamTools::RefVector references = reader.GetReferenceData();
   while (reader.GetNextAlignment(al)) {
     std::vector<int> lens, cutpoints, anchors;
     if (!al.IsMapped() ||
@@ -56,21 +124,20 @@ void loadClippeds(BamTools::BamReader& reader,
     // if (al.GetTag("XM", numOfMismatches) &&
     //     al.GetTag("NM", editDist) &&
     //     numOfMismatches < editDist) continue;
-    std::stringstream ss;
-    ss << 22;
+    std::string refname = references[al.RefID].RefName;
     if (lens.size() == 2) {
       // std::cout << lens[0] << "\t" << cutpoints[0] << "\t" << anchors[0] << std::endl;
       // std::cout << lens[1] << "\t" << cutpoints[1] << "\t" << anchors[1] << std::endl;
       // std::cout << al.QueryBases << std::endl;
-      Locus anc0(ss.str(), anchors[0]);
+      Locus anc0(refname, anchors[0]);
       // std::cout << al.QueryBases.substr(0, cutpoints[1]) << std::endl;
-      lefts.push_back(lCreator.createClipped(anc0,al.QueryBases.substr(0, al.Length - lens[1]), al.MapQuality, 0, lens[0]));
-      Locus anc1(ss.str(), anchors[1]);
+      lefts.push_back(lCreator.createClipped(anc0, al.QueryBases.substr(0, al.Length - lens[1]), al.MapQuality, 0, lens[0]));
+      Locus anc1(refname, anchors[1]);
       // std::cout << std::string(lens[0], ' ') << al.QueryBases.substr(lens[0]) << std::endl;
       rights.push_back(rCreator.createClipped(anc1, al.QueryBases.substr(lens[0]), al.MapQuality, al.Length - lens[0] - lens[1], lens[1]));
       continue;
     }
-    Locus anchor(ss.str(), anchors[0]);
+    Locus anchor(refname, anchors[0]);
     if (cutpoints[0] == lens[0]) { // left clipped
       lefts.push_back(lCreator.createClipped(anchor, al.QueryBases, al.MapQuality, 0, lens[0]));
     } else { // right clipped
@@ -113,7 +180,7 @@ void loadControls(const std::string& filename,
   while (input >> chr >> start >> end >> cls >> seq) {
     if (cls != "DEL" ||
         end - start < minLen) continue;
-    controls.push_back(Region(Locus(chr, start), Locus(chr, end)));
+    controls.push_back(Region(Locus(chr, start), Locus(chr, end), 10));
   }
 }
 
@@ -134,8 +201,53 @@ bool comp(SingleClippedCluster* clu1, SingleClippedCluster* clu2) {
   return clu1->getAnchor() < clu2->getAnchor();
 }
 
+void showBreakpointNeighborhood(SingleClippedCluster* clu,
+                               std::vector<SingleClippedCluster*>& clus,
+                               int range) {
+  Locus l = clu->getAnchor();
+  std::cout << l << std::endl;
+  int cnt = 0;
+  int center = clu->getAnchor().position();
+  std::vector<SingleClippedCluster*>::iterator init, curr;
+  init = lower_bound(clus.begin(), clus.end(), clu, comp);
+  Contig c = (*init)->contig();
+  if (c.getAnchor().position() > center && !c.getProximal()) curr = init - 1;
+  else curr = init;
+  while (abs(center - (*curr)->getAnchor().position()) <= range) {
+    std::cout << cnt << ")" << std::endl;
+    std::cout << **curr << std::endl;
+    if (c.getProximal()) curr++;
+    else curr--;
+    cnt++;
+  }
+  
+  curr = init - 1;
+  Contig c2 = (*curr)->contig();
+  while (c.getProximal() &&
+         center - c2.getAnchor().position() < c2.sequence().size() - c2.getMarker()) {
+    std::cout << cnt << ")" << std::endl;
+    std::cout << **curr << std::endl;
+    cnt++;
+    curr--;
+    c2 = (*curr)->contig();
+  }
+  
+  if (c.getAnchor().position() > center) curr = init;
+  else curr = init + 1;
+  c2 = (*curr)->contig();
+  while (!c.getProximal() &&
+         c2.getAnchor().position() - l.position() < c2.getMarker()) {
+    std::cout << cnt << ")" << std::endl;
+    std::cout << **curr << std::endl;
+    cnt++;
+    curr++;
+    c2 = (*curr)->contig();
+  }
+}
+
 bool showSingleAnchorContext(SingleClippedCluster* clu,
-                             std::vector<SingleClippedCluster*>& clus) {
+                             std::vector<SingleClippedCluster*>& clus,
+                             Contig& cont) {
   Locus l = clu->getAnchor();
   std::cout << l << std::endl;
   std::vector<SingleClippedCluster*>::iterator low, up;
@@ -143,6 +255,7 @@ bool showSingleAnchorContext(SingleClippedCluster* clu,
   up = upper_bound(clus.begin(), clus.end(), clu, comp);
   if (low != up) {
     std::cout << **low << std::endl;
+    cont = (*low)->contig();
     return true;
   }
   Contig c = (*up)->contig();
@@ -154,6 +267,7 @@ bool showSingleAnchorContext(SingleClippedCluster* clu,
        l.position() > c2.getAnchor().position() &&
        l.position() - c2.getAnchor().position() < c2.sequence().size() - c2.getMarker())) {
     std::cout << **(up-1) << std::endl;
+    cont = c2;
     return true;
   }
   if ((c.getProximal() &&
@@ -163,6 +277,7 @@ bool showSingleAnchorContext(SingleClippedCluster* clu,
        c.getAnchor().position() > l.position() &&
        c.getAnchor().position() - l.position() < c.getMarker())) {
     std::cout << **up << std::endl;
+    cont = c;
     return true;
   }
   return false;
@@ -180,13 +295,36 @@ void showControlContexts(const std::vector<Region>& controls,
     std::cout << "> Control: " << i << "\tLength: " << controls[i].length() << std::endl;
     Locus start(controls[i].chrom(), controls[i].getStart());
     SingleClippedCluster* clu1 = cluCreator1.createCluster(start);
-    bool b1 = showSingleAnchorContext(clu1, clus1);
+    Contig c1;
+    bool b1 = showSingleAnchorContext(clu1, clus1, c1);
+    // showBreakpointNeighborhood(clu1, clus1, 30);
     std::cout << "---------------------------" << std::endl;
     Locus end(controls[i].chrom(), controls[i].getEnd());
     SingleClippedCluster* clu2 = cluCreator2.createCluster(end);
-    bool b2 = showSingleAnchorContext(clu2, clus2);
-    std::cout << std::endl;
+    Contig c2;
+    bool b2 = showSingleAnchorContext(clu2, clus2, c2);
+    // showBreakpointNeighborhood(clu2, clus2, 30);
+    if (b1 && b2) {
+      int marker1 = c1.getMarker() + start.position() - c1.getAnchor().position();
+      int marker2 = c2.getMarker() + end.position() - c2.getAnchor().position();
+      std::cout << "******************************" << std::endl;
+      int delta = abs(marker1-marker2);
+      if (marker1 > marker2) {
+        std::cout << std::string(marker1, ' ') << "+" << std::endl;
+        std::cout << c1.sequence() << std::endl;
+        std::cout << std::string(c1.getMarker(), ' ') << "^" << std::endl;
+        std::cout << std::string(delta, ' ') << c2.sequence() << std::endl;
+        std::cout << std::string(c2.getMarker() + delta, ' ') << "^" << std::endl;
+      } else {
+        std::cout << std::string(marker2, ' ') << "+" << std::endl;
+        std::cout << std::string(delta, ' ') << c1.sequence() << std::endl;
+        std::cout << std::string(c1.getMarker() + delta, ' ') << "^" << std::endl;
+        std::cout << c2.sequence() << std::endl;
+        std::cout << std::string(c2.getMarker(), ' ') << "^" << std::endl;
+      }
+    }
     if (!b1 || !b2) cnt++;
+    std::cout << std::endl;
   }
   std::cout << cnt << std::endl;
 }
@@ -206,9 +344,10 @@ bool findFirstRegion(std::vector<Contig>::iterator first,
                      Region& region) {
   for (std::vector<Contig>::iterator itr = first; itr != last; ++itr) {
     int offset = 0;
-    if (con.overlaps(*itr, minSupportSize, minOverlapLen, mismatchRate, offset)) {
+    int overlapLen = con.overlaps(*itr, minSupportSize, minOverlapLen, mismatchRate, offset);
+    if (overlapLen > 0) {
       Locus end = (*itr).getAnchor();
-      region = Region(con.getAnchor(), Locus(end.chrom(), end.position() + offset));
+      region = Region(con.getAnchor(), Locus(end.chrom(), end.position() + offset), overlapLen);
       return true;
     }
   }
@@ -238,14 +377,20 @@ void callDeletions(std::vector<Contig>& cons1,
 void outputCalls(std::string filename,
                  const std::vector<Region>& calls) {
   std::ofstream out(filename.c_str());
-  out << "chromosome\ttype\tstart\tend" << std::endl;
+  out << "chromosome\ttype\tstart\tend\toverlap length" << std::endl;
   for (std::vector<Region>::const_reverse_iterator ritr = calls.rbegin();
        ritr != calls.rend();
        ++ritr)
-    out << (*ritr).chrom() << "\t"
-        << "deletion" << "\t"
-        << (*ritr).getStart() << "\t"
-        << (*ritr).getEnd() << std::endl;
+    out << (*ritr).chrom()
+        << "\t"
+        << "deletion"
+        <<"\t"
+        << (*ritr).getStart()
+        << "\t"
+        << (*ritr).getEnd()
+        << "\t"
+        << (*ritr).overlapLength()
+        << std::endl;
   out.close();
 }
 

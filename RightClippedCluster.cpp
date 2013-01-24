@@ -1,5 +1,6 @@
 #include "RightClippedCluster.h"
 #include <sstream>
+#include <algorithm>
 #include <iostream>
 
 RightClippedCluster::RightClippedCluster(const Locus& anchor)
@@ -8,9 +9,9 @@ RightClippedCluster::RightClippedCluster(const Locus& anchor)
 RightClippedCluster::~RightClippedCluster() {}
 
 Contig RightClippedCluster::contig() {
-  int marker = assembleMapped().size();
-  std::string seq = assembleMapped() + assembleClipped();
-  return Contig(seq, anchor, marker, cls.size(), true);
+  SingleClipped *sc = *min_element(cls.begin(), cls.end(), SingleClippedCluster::comp2);
+  int marker = sc->mappedSeq().size();
+  return Contig(sc->sequence(), anchor, marker, cls.size(), true);
 }
 
 std::string RightClippedCluster::str() {

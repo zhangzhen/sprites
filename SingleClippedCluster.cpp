@@ -11,6 +11,10 @@ bool comp(const std::string& s1, const std::string& s2) {
   return s1.size() < s2.size();
 }
 
+bool SingleClippedCluster::comp2(SingleClipped* sc1, SingleClipped* sc2) {
+  return sc1->clippedSeq().size() < sc2->clippedSeq().size();
+}
+
 SingleClippedCluster::SingleClippedCluster(const Locus& anchor)
     : anchor(anchor) {}
 

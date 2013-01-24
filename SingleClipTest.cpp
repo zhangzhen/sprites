@@ -212,7 +212,7 @@ TEST(SingleClipTest, findFirstRegion) {
 
   Region r1;
   EXPECT_TRUE(findFirstRegion(cons.begin(), cons.end(), c1, 2, 8, 0.0, r1));
-  Region r2(a1, a2);
+  Region r2(a1, a2, 10);
   EXPECT_EQ(r2, r1);
 }
 
@@ -237,8 +237,8 @@ TEST(SingleClipTest, callDeletions) {
   std::vector<Region> calls;
   callDeletions(cons1, cons2, calls, 2, 8, 0.0);
   EXPECT_EQ(2, calls.size());
-  EXPECT_EQ(Region(fstA2, sndA2), calls[0]);
-  EXPECT_EQ(Region(fstA1, sndA1), calls[1]);
+  EXPECT_EQ(Region(fstA2, sndA2, 10), calls[0]);
+  EXPECT_EQ(Region(fstA1, sndA1, 10), calls[1]);
 }
 
 TEST(SingleClipTest, overlaps) {

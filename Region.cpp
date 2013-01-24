@@ -3,8 +3,8 @@
 
 Region::Region() {}
 
-Region::Region(const Locus& start, const Locus& end)
-    : start(start), end(end) { assert(checkRep()); }
+Region::Region(const Locus& start, const Locus& end, int overlapLen)
+    : start(start), end(end), overlapLen(overlapLen) { assert(checkRep()); }
 
 Region::~Region() {}
 
@@ -22,6 +22,10 @@ int Region::length() const {
   return end.position() - start.position();
 }
 
+int Region::overlapLength() const {
+  return overlapLen;
+}
+  
 bool Region::operator== (const Region& other) const {
   return start == other.start &&
       end == other.end;

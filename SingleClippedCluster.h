@@ -21,6 +21,7 @@ class SingleClippedCluster {
  protected:
   std::string assembleClipped();
   std::string assembleMapped();
+  static bool comp2(SingleClipped* sc1, SingleClipped* sc2);
  private:
   std::string assemble(const std::vector<std::string>& seqs);
 };

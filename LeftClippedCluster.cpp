@@ -1,4 +1,5 @@
 #include "LeftClippedCluster.h"
+#include <algorithm>
 #include <sstream>
 
 LeftClippedCluster::LeftClippedCluster(const Locus& anchor)
@@ -7,9 +8,9 @@ LeftClippedCluster::LeftClippedCluster(const Locus& anchor)
 LeftClippedCluster::~LeftClippedCluster() {}
 
 Contig LeftClippedCluster::contig() {
-  int marker = assembleClipped().size();
-  std::string seq = assembleClipped() + assembleMapped();
-  return Contig(seq, anchor, marker, cls.size(), false);
+  SingleClipped *sc = *max_element(cls.begin(), cls.end(), SingleClippedCluster::comp2);
+  int marker = sc->clippedSeq().size();
+  return Contig(sc->sequence(), anchor, marker, cls.size(), false);
 }
 
 std::string LeftClippedCluster::str() {

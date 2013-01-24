@@ -4,6 +4,7 @@
 #include "SingleClipped.h"
 #include "ClusterCreator.h"
 #include "Region.h"
+#include "Window.h"
 #include <string>
 #include <vector>
 #include <set>
@@ -79,6 +80,10 @@ bool is_sorted(ForwardIt first, ForwardIt last, Compare comp) {
   return is_sorted_until(first, last, comp) == last;
 }
 
+void loadWindowsFromBam(BamTools::BamReader& r1,
+                        BamTools::BamReader& r2,
+                        std::vector<Window>& windows,
+                        unsigned int distCutoff);
 void loadClippeds(BamTools::BamReader& reader,
                   std::vector<SingleClipped*>& lefts,
                   std::vector<SingleClipped*>& rights);
