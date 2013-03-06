@@ -10,6 +10,7 @@
 #include <set>
 #include "api/BamReader.h"
 #include "Clip.h"
+#include "IntervalCluster.h"
 
 
 class Breakpoint;
@@ -80,6 +81,14 @@ bool is_sorted(ForwardIt first, ForwardIt last, Compare comp) {
   return is_sorted_until(first, last, comp) == last;
 }
 
+void loadIntervalsFromBam(BamTools::BamReader& r1,
+                          BamTools::BamReader& r2,
+                          std::vector<Interval*>& intervals,
+                          unsigned int distCutoff);
+void removeNestingIntervals(const std::vector<Interval*>& in, std::vector<Interval*>& out);
+void clusterIntervals(const std::vector<Interval*>& in,
+                      std::vector<IntervalCluster>& clus,
+                      int sigma);
 void loadWindowsFromBam(BamTools::BamReader& r1,
                         BamTools::BamReader& r2,
                         std::vector<Window>& windows,
@@ -116,6 +125,13 @@ void callDeletions(std::vector<Contig>& cons1,
                    int minSupportSize,
                    int minOverlapLen,
                    double mismatchRate);
+void callDeletions2(const std::vector<Region2>& in,
+                    std::vector<Contig>& cons1,
+                    std::vector<Contig>& cons2,
+                    std::vector<Region>& calls,
+                    int minSupportSize,
+                    int minOverlapLen,
+                    double mismatchRate);
 void outputCalls(std::string filename,
                  const std::vector<Region>& calls);
 

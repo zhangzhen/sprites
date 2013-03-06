@@ -68,6 +68,18 @@ std::string Contig::sequence() const {
   return seq;
 }
 
+unsigned Contig::position() const {
+  return anchor.position();
+}
+
 Locus Contig::getAnchor() const {
   return anchor;
+}
+
+bool Contig::compare(const Contig& c, unsigned v) {
+  return c.position() < v;
+}
+
+bool Contig::compare2(unsigned v, const Contig& c) {
+  return v < c.position();
 }

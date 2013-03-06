@@ -4,6 +4,7 @@
 #include "RightClippedCluster.h"
 #include "LeftClippedCluster.h"
 #include <algorithm>
+#include <queue>
 #include "clip-sv.h"
 #include "error.h"
 
@@ -35,6 +36,103 @@ void countAlignments(BamTools::BamReader& reader) {
 
 bool compareClips(Clip* one, Clip* two) {
   return one->getPosition() < two->getPosition();
+}
+
+void loadIntervalsFromBam(BamTools::BamReader& r1,
+                          BamTools::BamReader& r2,
+                          std::vector<Interval*>& intervals,
+                          unsigned int distCutoff) {
+  const BamTools::RefVector references = r1.GetReferenceData();
+  BamTools::BamAlignment ba1;
+  unsigned cnt = 0;
+  while (r1.GetNextAlignment(ba1)) {
+    if (!ba1.IsPaired() ||
+        !ba1.IsMapped() ||
+        !ba1.IsMateMapped() ||
+        ba1.RefID != ba1.MateRefID ||
+        ba1.Position >= ba1.MatePosition ||
+        ba1.InsertSize <= distCutoff) continue;
+        
+    if (!ba1.IsReverseStrand() &&
+        ba1.IsMateReverseStrand() &&
+        r2.Jump(ba1.MateRefID, ba1.Position + ba1.InsertSize - 1)) {
+      bool found = false;
+      BamTools::BamAlignment ba2;
+      while (r2.GetNextAlignment(ba2)) {
+        if (ba2.Position > ba1.MatePosition) break;
+        if (ba1.Name == ba2.Name &&
+            ba1.IsFirstMate() != ba2.IsFirstMate()) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) continue;
+      uint8_t t1, t2;
+      if (!ba1.GetTag("XT", t1) || !ba2.GetTag("XT", t2)) continue;
+      if ((t1 == 'U' && t2 == 'U')) {      
+        intervals.push_back(new Interval(cnt,
+                                         references[ba1.RefID].RefName,
+                                         ba1.GetEndPosition() + 1,
+                                         ba1.MatePosition));
+        cnt++;
+      }
+    }
+  }
+}
+
+/*
+  @param in should be sorted by start position
+ */
+void removeNestingIntervals(const std::vector<Interval*>& in, std::vector<Interval*>& out) {
+  std::vector<Point> pts;
+  for (size_t i = 0; i < in.size(); i++) {
+    pts.push_back(in[i]->createStartPoint());
+    pts.push_back(in[i]->createEndPoint());
+  }
+  sort(pts.begin(), pts.end());
+  // for (size_t i = 0; i < pts.size(); i++) {
+  //   std::cout << pts[i].intervalId();
+  //   if (pts[i].isStart())
+  //     std::cout << "S";
+  //   else
+  //     std::cout << "E";
+  //   std::cout << ", ";
+  //   if ((i + 1) % 20 == 0) std::cout << std::endl;
+  // }
+  // return;
+  int prev_id = -1;
+  for (size_t i = 0; i < pts.size(); i++) {
+    int curr_id = pts[i].intervalId();
+    if (!pts[i].isStart() && prev_id < curr_id) {
+      out.push_back(pts[i].getInterval());
+      prev_id = curr_id;
+    }
+  }
+}
+
+void clusterIntervals(const std::vector<Interval*>& in,
+                      std::vector<IntervalCluster>& clus,
+                      int sigma) {
+  std::vector<Point> pts;
+  for (size_t i = 0; i < in.size(); i++) {
+    pts.push_back(in[i]->createStartPoint());
+    pts.push_back(in[i]->createEndPoint());
+  }
+  sort(pts.begin(), pts.end());
+  std::queue<Interval*> q;
+  for (size_t i = 0; i < pts.size(); i++) {
+    if (pts[i].isStart())
+      q.push(pts[i].getInterval());
+    else {
+      if (q.empty()) continue;
+      IntervalCluster clu;
+      while (!q.empty()) {
+        clu.add(q.front());
+        q.pop();
+      }
+      clus.push_back(clu);
+    }
+  }
 }
 
 void loadWindowsFromBam(BamTools::BamReader& r1,
@@ -80,9 +178,10 @@ void loadWindowsFromBam(BamTools::BamReader& r1,
       if (!found) continue;
       uint8_t t1, t2;
       if (!ba1.GetTag("XT", t1) || !ba2.GetTag("XT", t2)) continue;
-      if ((t1 == 'U' && t2 == 'U') ||
-          (t1 == 'U' && ba2.CigarData[0].Type == 'S') ||
-          (ba1.CigarData[ba2.CigarData.size() - 1].Type == 'S' && t2 == 'U')) {
+      if ((t1 == 'U' && t2 == 'U')) {      
+      // if ((t1 == 'U' && t2 == 'U') ||
+      //     (t1 == 'U' && ba2.CigarData[0].Type == 'S') ||
+      //     (ba1.CigarData[ba2.CigarData.size() - 1].Type == 'S' && t2 == 'U')) {
         windows.push_back(Window(ba1.Name,
                                  references[ba1.RefID].RefName,
                                  ba1.GetEndPosition() + 1,
@@ -90,14 +189,14 @@ void loadWindowsFromBam(BamTools::BamReader& r1,
                                  ba1.InsertSize));
         std::cout << ba1.Name << "\t"
                   // << anchors[0] << "\t"
-                  << ba1.GetEndPosition() << "\t"
+                  << ba1.GetEndPosition() + 1 << "\t"
                   // << ba1.Position << "\t"
                   << ba1.MatePosition << "\t"
                   << ba1.InsertSize << "\t";
-        if (ba1.CigarData[ba2.CigarData.size() - 1].Type == 'S' && t2 == 'U')
-          std::cout << "I\t";
-        if (t1 == 'U' && ba2.CigarData[0].Type == 'S')
-          std::cout << "III\t";
+        // if (ba1.CigarData[ba2.CigarData.size() - 1].Type == 'S' && t2 == 'U')
+        //   std::cout << "I\t";
+        // if (t1 == 'U' && ba2.CigarData[0].Type == 'S')
+        //   std::cout << "III\t";
         std::cout << std::endl;
       }
     }
@@ -371,6 +470,44 @@ void callDeletions(std::vector<Contig>& cons1,
       calls.push_back(reg);
       last = first;
     }
+  }
+}
+
+void callDeletion(std::vector<Contig>::iterator first1,
+                  std::vector<Contig>::iterator last1,
+                  std::vector<Contig>::iterator first2,
+                  std::vector<Contig>::iterator last2,
+                  std::vector<Region>& calls,
+                  int minSupportSize,
+                  int minOverlapLen,
+                  double mismatchRate) {
+  for (std::vector<Contig>::iterator it = first1; it != last1; it++) {
+    first2 = upper_bound(first2, last2, *it);
+    for (std::vector<Contig>::iterator it2 = first2; it2 != last2; it2++) {
+      int offset = 0;
+      int overlapLen = (*it).overlaps(*it2, minSupportSize, minOverlapLen, mismatchRate, offset);
+      if (overlapLen > 0) {
+        Locus end = (*it2).getAnchor();
+        calls.push_back(Region((*it).getAnchor(), Locus(end.chrom(), end.position() + offset), overlapLen));
+        return;
+      }
+    }
+  }
+}
+
+void callDeletions2(const std::vector<Region2>& in,
+                    std::vector<Contig>& cons1,
+                    std::vector<Contig>& cons2,
+                    std::vector<Region>& calls,
+                    int minSupportSize,
+                    int minOverlapLen,
+                    double mismatchRate) {
+  for (size_t i = 0; i < in.size(); i++) {
+    std::vector<Contig>::iterator first1 = lower_bound(cons1.begin(), cons1.end(), in[i].low, Contig::compare);
+    std::vector<Contig>::iterator last1 = upper_bound(cons1.begin(), cons1.end(), in[i].high, Contig::compare2);
+    std::vector<Contig>::iterator first2 = lower_bound(cons2.begin(), cons2.end(), in[i].low, Contig::compare);
+    std::vector<Contig>::iterator last2 = upper_bound(cons2.begin(), cons2.end(), in[i].high, Contig::compare2);
+    callDeletion(first1, last1, first2, last2, calls, minSupportSize, minOverlapLen, mismatchRate);
   }
 }
 

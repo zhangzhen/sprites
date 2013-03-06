@@ -11,6 +11,7 @@ const std::string ControlFilename = "../sv/chr22_report.txt";
 const int MinDelLen = 50;
 
 void callDelsFromBam(BamTools::BamReader& reader,
+                     const std::vector<Region2>& regs,
                      std::string output,
                      double mismatchRate,
                      int minSupportSize,
@@ -59,21 +60,48 @@ int main(int argc, char *argv[]) {
   BamTools::BamReader r1, r2;  
   BamTools::BamReader reader;
   std::string bamFilename(argv[optind]);
-  std::vector<Window> windows;
+  // std::vector<Window> windows;
   r1.Open(bamFilename);
   r2.Open(bamFilename);
   r1.LocateIndex();
   r2.LocateIndex();
-  loadWindowsFromBam(r1, r2, windows, 240);
-  std::cout << windows.size() << std::endl;
-  return 0;
+  std::vector<Interval*> in, out;
+  // loadWindowsFromBam(r1, r2, windows, 240);
+  // std::cout << windows.size() << std::endl;
+  loadIntervalsFromBam(r1, r2, in, 240);
+  // for (size_t i = 0; i < in.size(); i++)
+  //   std::cout << i[i]->getId() << "\t"
+  //             << in[i]->getStartPos() << "\t"
+  //             << in[i]->getEndPos() << std::endl;
+  // return 0;
+  removeNestingIntervals(in, out);
+  // for (size_t i = 0; i < out.size(); i++)
+  //   std::cout << out[i]->getStartPos() << "\t"
+  //             << out[i]->getEndPos() << "\t"
+  //             << out[i]->length() << "\t"
+  //             << std::endl;
+  std::vector<IntervalCluster> clus;
+  clusterIntervals(out, clus, 10);
+  // for (size_t i = 0; i < clus.size(); i++) {
+  //   std::cout << clus[i] << std::endl;
+  // }
+  // return 0;
   
   if (!reader.Open(bamFilename)) {
     std::cerr << "Could not open input BAM file." << std::endl;
     return 1;
   }
 
-  callDelsFromBam(reader, outFilename, mismatchRate, minSupportSize, minOverlapLen);
+  std::vector<Region2> regs;
+  for (size_t i = 0; i < clus.size(); i++) {
+    Region2 r2 = clus[i].focalRegion();
+    regs.push_back(r2);
+    // std::cout << r2.low << "\t"
+    //           << r2.high << std::endl;
+  }
+  // return 1;
+  
+  callDelsFromBam(reader, regs, outFilename, mismatchRate, minSupportSize, minOverlapLen);
   reader.Close();
   return 0;
 }
@@ -161,6 +189,7 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
 }
 
 void callDelsFromBam(BamTools::BamReader& reader,
+                     const std::vector<Region2>& regs,
                      std::string output,
                      double mismatchRate,
                      int minSupportSize,
@@ -195,13 +224,13 @@ void callDelsFromBam(BamTools::BamReader& reader,
   sort(lefts.begin(), lefts.end(), compSC);
   clusterClippeds(lefts, clus2, cluCreator2);
   std::cout << "#clusters2: " << clus2.size() << std::endl;
-  std::vector<Region> controls;
-  loadControls(ControlFilename, controls, MinDelLen);
+  // std::vector<Region> controls;
+  // loadControls(ControlFilename, controls, MinDelLen);
   // std::cout << "Minimal Distance between two adjacent variants: "
   //           << minDistance(controls)
   //           << std::endl;
-  showControlContexts(controls, clus1, clus2);
-  return;
+  // showControlContexts(controls, clus1, clus2);
+  // return;
   // Locus anc1("22", 15000726);
   // SingleClippedCluster* clu1 = cluCreator1.createCluster(anc1);
   // std::cout << **lower_bound(clus1.begin(), clus1.end(), clu1, comp) << std::endl;
@@ -231,7 +260,7 @@ void callDelsFromBam(BamTools::BamReader& reader,
   // Step 4: Calling SVs
   std::vector<Region> calls;
   startTime = time(NULL);
-  callDeletions(cons1, cons2, calls, minSupportSize, minOverlapLen, mismatchRate);
+  callDeletions2(regs, cons1, cons2, calls, minSupportSize, minOverlapLen, mismatchRate);
   std::cout << "#calls: " << calls.size() << std::endl;
   elapsedTime = difftime(time(NULL), startTime);
   std::cout << "Execution time of Step 4: "

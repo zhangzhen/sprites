@@ -24,9 +24,12 @@ class Contig
   bool operator< (const Contig& other) const;
   friend std::ostream& operator <<(std::ostream& stream, const Contig& self);
   std::string sequence() const;
+  unsigned position() const;
   Locus getAnchor() const;
   int getMarker() const { return marker; }
   bool getProximal() const { return proximal; }
+  static bool compare(const Contig& c, unsigned v);
+  static bool compare2(unsigned v, const Contig& c);
  private:
   static int overlaps2(const Contig& c1, const Contig& c2, int minSupportSize, int minOverlapLen, double mismatchRate, int& offset);
 };
