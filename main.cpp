@@ -8,7 +8,6 @@
 #include "RightClippedCluster.h"
 
 const std::string ControlFilename = "../sv/chr22_report.txt";
-const int MinDelLen = 50;
 
 void callDelsFromBam(BamTools::BamReader& reader,
                      const std::vector<Region2>& regs,
@@ -82,9 +81,9 @@ int main(int argc, char *argv[]) {
   //             << std::endl;
   std::vector<IntervalCluster> clus;
   clusterIntervals(out, clus, 10);
-  // for (size_t i = 0; i < clus.size(); i++) {
-  //   std::cout << clus[i] << std::endl;
-  // }
+  for (size_t i = 0; i < clus.size(); i++) {
+    std::cout << clus[i] << std::endl;
+  }
   // return 0;
   
   if (!reader.Open(bamFilename)) {

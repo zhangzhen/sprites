@@ -12,6 +12,8 @@
 #include "Clip.h"
 #include "IntervalCluster.h"
 
+const int MinDelLen = 50;
+
 
 class Breakpoint;
 struct StructVar {
@@ -45,41 +47,41 @@ struct StructVar {
   }
 };
 
-template<class ForwardIt>
-ForwardIt is_sorted_until(ForwardIt first, ForwardIt last) {
-  if (first != last) {
-    ForwardIt next = first;
-    while (++next != last) {
-      if (*next < *first)
-        return next;
-      first = next;
-    }
-  }
-  return last;
-}
+// template<class ForwardIt>
+// ForwardIt is_sorted_until(ForwardIt first, ForwardIt last) {
+//   if (first != last) {
+//     ForwardIt next = first;
+//     while (++next != last) {
+//       if (*next < *first)
+//         return next;
+//       first = next;
+//     }
+//   }
+//   return last;
+// }
 
-template<class ForwardIt>
-bool is_sorted(ForwardIt first, ForwardIt last) {
-  return is_sorted_until(first, last) == last;
-}
+// template<class ForwardIt>
+// bool is_sorted(ForwardIt first, ForwardIt last) {
+//   return is_sorted_until(first, last) == last;
+// }
 
-template< class ForwardIt, class Compare>
-ForwardIt is_sorted_until(ForwardIt first, ForwardIt last, Compare comp) {
-  if (first != last) {
-    ForwardIt next = first;
-    while (++next != last) {
-      if (comp(*next, *first))
-        return next;
-      first = next;
-    }
-  }
-  return last;
-}
+// template< class ForwardIt, class Compare>
+// ForwardIt is_sorted_until(ForwardIt first, ForwardIt last, Compare comp) {
+//   if (first != last) {
+//     ForwardIt next = first;
+//     while (++next != last) {
+//       if (comp(*next, *first))
+//         return next;
+//       first = next;
+//     }
+//   }
+//   return last;
+// }
 
-template<class ForwardIt, class Compare>
-bool is_sorted(ForwardIt first, ForwardIt last, Compare comp) {
-  return is_sorted_until(first, last, comp) == last;
-}
+// template<class ForwardIt, class Compare>
+// bool is_sorted(ForwardIt first, ForwardIt last, Compare comp) {
+//   return is_sorted_until(first, last, comp) == last;
+// }
 
 void loadIntervalsFromBam(BamTools::BamReader& r1,
                           BamTools::BamReader& r2,

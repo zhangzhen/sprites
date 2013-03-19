@@ -8,7 +8,7 @@ GTEST_ROOT = $(HOME)/gtest-1.6.0
 
 # Disable optimization; turn on debugging.  Feel free to change this to
 #
-CCFLAGS = -O3
+CCFLAGS = -O3 -std=c++0x
 #
 # If you want to turn on optimization once things get working.
 # CCFLAGS = -g -O0

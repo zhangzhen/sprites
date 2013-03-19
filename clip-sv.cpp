@@ -133,6 +133,9 @@ void clusterIntervals(const std::vector<Interval*>& in,
       clus.push_back(clu);
     }
   }
+
+  for (size_t i = 0; i < clus.size(); i++)
+    clus[i].removeInvalidIntervals(6 * sigma);
 }
 
 void loadWindowsFromBam(BamTools::BamReader& r1,
@@ -486,7 +489,9 @@ void callDeletion(std::vector<Contig>::iterator first1,
     for (std::vector<Contig>::iterator it2 = first2; it2 != last2; it2++) {
       int offset = 0;
       int overlapLen = (*it).overlaps(*it2, minSupportSize, minOverlapLen, mismatchRate, offset);
-      if (overlapLen > 0) {
+      unsigned s = (*it).getAnchor().position();
+      unsigned t = (*it2).getAnchor().position() + offset;
+      if (overlapLen > 0 && t - s >= MinDelLen) {
         Locus end = (*it2).getAnchor();
         calls.push_back(Region((*it).getAnchor(), Locus(end.chrom(), end.position() + offset), overlapLen));
         return;
@@ -515,18 +520,18 @@ void outputCalls(std::string filename,
                  const std::vector<Region>& calls) {
   std::ofstream out(filename.c_str());
   out << "chromosome\ttype\tstart\tend\toverlap length" << std::endl;
-  for (std::vector<Region>::const_reverse_iterator ritr = calls.rbegin();
-       ritr != calls.rend();
-       ++ritr)
-    out << (*ritr).chrom()
+  for (std::vector<Region>::const_iterator it = calls.begin();
+       it != calls.end();
+       it++)
+    out << (*it).chrom()
         << "\t"
         << "deletion"
         <<"\t"
-        << (*ritr).getStart()
+        << (*it).getStart()
         << "\t"
-        << (*ritr).getEnd()
+        << (*it).getEnd()
         << "\t"
-        << (*ritr).overlapLength()
+        << (*it).overlapLength()
         << std::endl;
   out.close();
 }

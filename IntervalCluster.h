@@ -22,6 +22,7 @@ class IntervalCluster {
   std::string toString() const;
   Region2 focalRegion() const;
   friend std::ostream& operator <<(std::ostream& os, const IntervalCluster& self);
+  void removeInvalidIntervals(unsigned threshold);
 };
 
 #endif /* _INTERVALCLUSTER_H_ */

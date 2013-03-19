@@ -34,6 +34,10 @@ Point Interval::createEndPoint() {
   return Point(this, false);
 }
 
+// bool Interval::compare(const Interval& in1, const Interval& in2) {
+//   return in1.length() < in2.length();
+// }
+
 // bool Interval::compareByStart(const Interval& i1, const Interval& i2) {
 //   return i1.start < i2.start;
 // }

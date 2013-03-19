@@ -23,6 +23,7 @@ class Interval {
   std::string toString() const;
   Point createStartPoint();
   Point createEndPoint();
+  // static bool compare(const Interval& in1, const Interval& in2);
   
   // static bool compareByStart(const Interval& i1, const Interval& i2);
   // static bool compareByEnd(const Interval& i1, const Interval& i2);
