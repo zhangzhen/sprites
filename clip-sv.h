@@ -47,54 +47,7 @@ struct StructVar {
   }
 };
 
-// template<class ForwardIt>
-// ForwardIt is_sorted_until(ForwardIt first, ForwardIt last) {
-//   if (first != last) {
-//     ForwardIt next = first;
-//     while (++next != last) {
-//       if (*next < *first)
-//         return next;
-//       first = next;
-//     }
-//   }
-//   return last;
-// }
 
-// template<class ForwardIt>
-// bool is_sorted(ForwardIt first, ForwardIt last) {
-//   return is_sorted_until(first, last) == last;
-// }
-
-// template< class ForwardIt, class Compare>
-// ForwardIt is_sorted_until(ForwardIt first, ForwardIt last, Compare comp) {
-//   if (first != last) {
-//     ForwardIt next = first;
-//     while (++next != last) {
-//       if (comp(*next, *first))
-//         return next;
-//       first = next;
-//     }
-//   }
-//   return last;
-// }
-
-// template<class ForwardIt, class Compare>
-// bool is_sorted(ForwardIt first, ForwardIt last, Compare comp) {
-//   return is_sorted_until(first, last, comp) == last;
-// }
-
-void loadIntervalsFromBam(BamTools::BamReader& r1,
-                          BamTools::BamReader& r2,
-                          std::vector<Interval*>& intervals,
-                          unsigned int distCutoff);
-void removeNestingIntervals(const std::vector<Interval*>& in, std::vector<Interval*>& out);
-void clusterIntervals(const std::vector<Interval*>& in,
-                      std::vector<IntervalCluster>& clus,
-                      int sigma);
-void loadWindowsFromBam(BamTools::BamReader& r1,
-                        BamTools::BamReader& r2,
-                        std::vector<Window>& windows,
-                        unsigned int distCutoff);
 void loadClippeds(BamTools::BamReader& reader,
                   std::vector<SingleClipped*>& lefts,
                   std::vector<SingleClipped*>& rights);

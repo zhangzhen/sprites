@@ -1,6 +1,8 @@
 #include <math.h>
 #include <ctime>
 #include <algorithm>
+#include "DiscordantPairHandler.h"
+#include "DeletionCaller.h"
 #include "clip-sv.h"
 #include "error.h"
 #include "ClusterCreator.h"
@@ -20,23 +22,22 @@ void outputClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
   char *progname;
-  int minSupportSize = 2;
   int minOverlapLen = 10;
-  double mismatchRate = 0.0;
+  int maxMismatches = 2;
   std::string outFilename;
   int c, status = 0;
 
   progname = argv[0];
   while ((c = getopt(argc, argv, "k:l:x:o:")) != -1)
     switch (c) {
-      case 'k':
+      case 'm':
         minSupportSize = atoi(optarg);
         break;
       case 'l':
         minOverlapLen = atoi(optarg);
         break;
       case 'x':
-        mismatchRate = atof(optarg);
+        maxMismatches = atoi(optarg);
         break;
       case 'o':
         outFilename = std::string(optarg);
@@ -49,58 +50,26 @@ int main(int argc, char *argv[]) {
 
   if (optind == argc || outFilename.empty()) { status = 1; }
   if (status) {
-    std::cerr << "Usage: "
-              << progname
-              << " [-k minimalSupportSize] [-l minimalOverlapLength] [-x mismatchRate] -o outputFilename bamFilename"
+    std::cerr << "Usage: " << progname << "[options...] <BAM>" << std::endl
+              << "Options: "
+              << " -o FILE\tWrite output to <file>, required"
+              << " -m NUM\tSpecify the mean of insert size, required"
+              << " -s\tStd of insert size [-l minimal length of ] [-x mismatchRate] -o outputFilename bamFilename"
               << std::endl;
     return status;
   }
 
-  BamTools::BamReader r1, r2;  
-  BamTools::BamReader reader;
-  std::string bamFilename(argv[optind]);
-  // std::vector<Window> windows;
-  r1.Open(bamFilename);
-  r2.Open(bamFilename);
-  r1.LocateIndex();
-  r2.LocateIndex();
-  std::vector<Interval*> in, out;
-  // loadWindowsFromBam(r1, r2, windows, 240);
-  // std::cout << windows.size() << std::endl;
-  loadIntervalsFromBam(r1, r2, in, 240);
-  // for (size_t i = 0; i < in.size(); i++)
-  //   std::cout << i[i]->getId() << "\t"
-  //             << in[i]->getStartPos() << "\t"
-  //             << in[i]->getEndPos() << std::endl;
-  // return 0;
-  removeNestingIntervals(in, out);
-  // for (size_t i = 0; i < out.size(); i++)
-  //   std::cout << out[i]->getStartPos() << "\t"
-  //             << out[i]->getEndPos() << "\t"
-  //             << out[i]->length() << "\t"
-  //             << std::endl;
-  std::vector<IntervalCluster> clus;
-  clusterIntervals(out, clus, 10);
-  // for (size_t i = 0; i < clus.size(); i++) {
-  //   std::cout << clus[i] << std::endl;
-  // }
-  // return 0;
+  std::string filename(argv[optind]);
+  std::vector<Region2> regions;
+  DiscordantPairHandler::identifyFocalRegions(filename, regions, 200, 10);
   
-  if (!reader.Open(bamFilename)) {
+  BamTools::BamReader reader;
+  if (!reader.Open(filename)) {
     std::cerr << "Could not open input BAM file." << std::endl;
     return 1;
   }
-
-  std::vector<Region2> regs;
-  for (size_t i = 0; i < clus.size(); i++) {
-    Region2 r2 = clus[i].focalRegion();
-    regs.push_back(r2);
-    // std::cout << r2.low << "\t"
-    //           << r2.high << std::endl;
-  }
-  // return 1;
   
-  callDelsFromBam(reader, regs, outFilename, mismatchRate, minSupportSize, minOverlapLen);
+  callDelsFromBam(reader, regions, outFilename, mismatchRate, minSupportSize, minOverlapLen);
   reader.Close();
   return 0;
 }
@@ -259,7 +228,7 @@ void callDelsFromBam(BamTools::BamReader& reader,
   // Step 4: Calling SVs
   std::vector<Region> calls;
   startTime = time(NULL);
-  callDeletions2(regs, cons1, cons2, calls, minSupportSize, minOverlapLen, mismatchRate);
+  DeletionCaller::callAll(regs, cons1, cons2, calls, minOverlapLen, maxMismatches);
   std::cout << "#calls: " << calls.size() << std::endl;
   elapsedTime = difftime(time(NULL), startTime);
   std::cout << "Execution time of Step 4: "

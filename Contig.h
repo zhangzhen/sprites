@@ -19,7 +19,7 @@ class Contig
   Contig();
   Contig(const std::string& seq, const Locus& anchor, int marker, int num, bool proximal);
   virtual ~Contig();
-  int overlaps(const Contig& other, int minSupportSize, int minOverlapLen, double mismatchRate, int& offset) const;
+  int overlaps(const Contig& other, int minOverlapLen, int maxMismatches, int& offset) const;
   bool operator== (const Contig& other) const;
   bool operator< (const Contig& other) const;
   friend std::ostream& operator <<(std::ostream& stream, const Contig& self);
@@ -31,7 +31,7 @@ class Contig
   static bool compare(const Contig& c, unsigned v);
   static bool compare2(unsigned v, const Contig& c);
  private:
-  static int overlaps2(const Contig& c1, const Contig& c2, int minSupportSize, int minOverlapLen, double mismatchRate, int& offset);
+  static int overlaps2(const Contig& c1, const Contig& c2, int minOverlapLen, int maxMismatches, int& offset);
 };
 
 #endif /* CONTIG_H */
