@@ -14,24 +14,28 @@ const std::string ControlFilename = "../sv/chr22_report.txt";
 void callDelsFromBam(BamTools::BamReader& reader,
                      const std::vector<Region2>& regs,
                      std::string output,
-                     double mismatchRate,
-                     int minSupportSize,
+                     int maxMismatches,
                      int minOverlapLen);
 void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen);
 void outputClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
   char *progname;
+  int mu = 200;
+  int sigma = 10;
   int minOverlapLen = 10;
   int maxMismatches = 2;
   std::string outFilename;
   int c, status = 0;
 
   progname = argv[0];
-  while ((c = getopt(argc, argv, "k:l:x:o:")) != -1)
+  while ((c = getopt(argc, argv, "m:s:l:x:o:")) != -1)
     switch (c) {
       case 'm':
-        minSupportSize = atoi(optarg);
+        mu = atoi(optarg);
+        break;
+      case 's':
+        sigma = atoi(optarg);
         break;
       case 'l':
         minOverlapLen = atoi(optarg);
@@ -61,7 +65,7 @@ int main(int argc, char *argv[]) {
 
   std::string filename(argv[optind]);
   std::vector<Region2> regions;
-  DiscordantPairHandler::identifyFocalRegions(filename, regions, 200, 10);
+  DiscordantPairHandler::identifyFocalRegions(filename, regions, mu, sigma);
   
   BamTools::BamReader reader;
   if (!reader.Open(filename)) {
@@ -69,7 +73,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   
-  callDelsFromBam(reader, regions, outFilename, mismatchRate, minSupportSize, minOverlapLen);
+  callDelsFromBam(reader, regions, outFilename, maxMismatches, minOverlapLen);
   reader.Close();
   return 0;
 }
@@ -159,8 +163,7 @@ void callSVs(BamTools::BamReader& reader, std::string sv_filename, int minlen) {
 void callDelsFromBam(BamTools::BamReader& reader,
                      const std::vector<Region2>& regs,
                      std::string output,
-                     double mismatchRate,
-                     int minSupportSize,
+                     int maxMismatches,
                      int minOverlapLen) {
   time_t startTime;
   double elapsedTime;

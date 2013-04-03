@@ -199,73 +199,73 @@ TEST(SingleClipTest, clusterClippeds) {
   EXPECT_EQ(2, clus2[0]->size());
 }
 
-TEST(SingleClipTest, findFirstRegion) {
-  std::vector<Contig> cons;
-  Locus a1("1", 13);
-  Contig c1("TTAGATAGTAG", a1, 7, 2, true);
-  Locus a2("1", 27);
-  Contig c2("AGATAGTAGGCA", a2, 5, 2, false);
-  cons.push_back(c2);
-  Locus a3("1", 54);
-  Contig c3("CCATAACTACGC", a3, 4, 2, false);
-  cons.push_back(c3);
+// TEST(SingleClipTest, findFirstRegion) {
+//   std::vector<Contig> cons;
+//   Locus a1("1", 13);
+//   Contig c1("TTAGATAGTAG", a1, 7, 2, true);
+//   Locus a2("1", 27);
+//   Contig c2("AGATAGTAGGCA", a2, 5, 2, false);
+//   cons.push_back(c2);
+//   Locus a3("1", 54);
+//   Contig c3("CCATAACTACGC", a3, 4, 2, false);
+//   cons.push_back(c3);
 
-  Region r1;
-  EXPECT_TRUE(findFirstRegion(cons.begin(), cons.end(), c1, 2, 8, 0.0, r1));
-  Region r2(a1, a2, 10);
-  EXPECT_EQ(r2, r1);
-}
+//   Region r1;
+//   EXPECT_TRUE(findFirstRegion(cons.begin(), cons.end(), c1, 2, 8, 0.0, r1));
+//   Region r2(a1, a2, 10);
+//   EXPECT_EQ(r2, r1);
+// }
 
-TEST(SingleClipTest, callDeletions) {
-  std::vector<Contig> cons1;
-  std::vector<Contig> cons2;
+// TEST(SingleClipTest, callDeletions) {
+//   std::vector<Contig> cons1;
+//   std::vector<Contig> cons2;
   
-  Locus fstA1("1", 13);
-  Contig fstC1("TTAGATAGTAG", fstA1, 7, 2, true);
-  cons1.push_back(fstC1);
-  Locus fstA2("1", 45);
-  Contig fstC2("CAGCGCCATAACTA", fstA2, 9, 2, true);
-  cons1.push_back(fstC2);
+//   Locus fstA1("1", 13);
+//   Contig fstC1("TTAGATAGTAG", fstA1, 7, 2, true);
+//   cons1.push_back(fstC1);
+//   Locus fstA2("1", 45);
+//   Contig fstC2("CAGCGCCATAACTA", fstA2, 9, 2, true);
+//   cons1.push_back(fstC2);
   
-  Locus sndA1("1", 27);
-  Contig sndC1("AGATAGTAGGCA", sndA1, 5, 2, false);
-  cons2.push_back(sndC1);
-  Locus sndA2("1", 54);
-  Contig sndC2("CCATAACTACGC", sndA2, 4, 2, false);
-  cons2.push_back(sndC2);
+//   Locus sndA1("1", 27);
+//   Contig sndC1("AGATAGTAGGCA", sndA1, 5, 2, false);
+//   cons2.push_back(sndC1);
+//   Locus sndA2("1", 54);
+//   Contig sndC2("CCATAACTACGC", sndA2, 4, 2, false);
+//   cons2.push_back(sndC2);
 
-  std::vector<Region> calls;
-  callDeletions(cons1, cons2, calls, 2, 8, 0.0);
-  EXPECT_EQ(2, calls.size());
-  EXPECT_EQ(Region(fstA2, sndA2, 10), calls[0]);
-  EXPECT_EQ(Region(fstA1, sndA1, 10), calls[1]);
-}
+//   std::vector<Region> calls;
+//   callDeletions(cons1, cons2, calls, 2, 8, 0.0);
+//   EXPECT_EQ(2, calls.size());
+//   EXPECT_EQ(Region(fstA2, sndA2, 10), calls[0]);
+//   EXPECT_EQ(Region(fstA1, sndA1, 10), calls[1]);
+// }
 
-TEST(SingleClipTest, overlaps) {
-  // Case 1: The proximal cutpoint is inexact, while the distal one is exact
-  Contig a1("CCGCCGCCGCGGCTTTTTGCCTGCCCCGGCTTTTTGACCCCCACCCCCAC",
-            Locus("22", 15247409), 36, 1, true);
-  Contig a2("GCCGCGGCTTTTTGCCTGTCCCGGCTTTTTGCCCCCCACCCCCGCCGCTGCGGCTTTTTACCCCCCGCG",
-            Locus("22", 15247423), 21, 2, false);
-  int offset = 0;
-  EXPECT_TRUE(a1.overlaps(a2, 2, 10, 0.05, offset));
-  EXPECT_EQ(10, offset);
-  // Case 2: The proximal cutpoint is exact, while the distal one is inexact
-  Contig b1("CCAAGCCACCCAGCCAGCAAAGCCACCCGGCCAGCCAAACCATCCAAGCC",
-            Locus("22", 15428683), 37, 1, true);
-  Contig b2("AGCCCCCCAGCCAGCATAGCCACCCGGCCAGCCAAGCCATCCAAGCCACC",
-            Locus("22", 15428676), 6, 1, false);
-  offset = 0;
-  EXPECT_TRUE(b1.overlaps(b2, 2, 10, 0.05, offset));
-  EXPECT_EQ(28, offset);
-  // EXPECT_TRUE(b2.overlaps(b1, 2, 10, 0.05));
+// TEST(SingleClipTest, overlaps) {
+//   // Case 1: The proximal cutpoint is inexact, while the distal one is exact
+//   Contig a1("CCGCCGCCGCGGCTTTTTGCCTGCCCCGGCTTTTTGACCCCCACCCCCAC",
+//             Locus("22", 15247409), 36, 1, true);
+//   Contig a2("GCCGCGGCTTTTTGCCTGTCCCGGCTTTTTGCCCCCCACCCCCGCCGCTGCGGCTTTTTACCCCCCGCG",
+//             Locus("22", 15247423), 21, 2, false);
+//   int offset = 0;
+//   EXPECT_TRUE(a1.overlaps(a2, 2, 10, 0.05, offset));
+//   EXPECT_EQ(10, offset);
+//   // Case 2: The proximal cutpoint is exact, while the distal one is inexact
+//   Contig b1("CCAAGCCACCCAGCCAGCAAAGCCACCCGGCCAGCCAAACCATCCAAGCC",
+//             Locus("22", 15428683), 37, 1, true);
+//   Contig b2("AGCCCCCCAGCCAGCATAGCCACCCGGCCAGCCAAGCCATCCAAGCCACC",
+//             Locus("22", 15428676), 6, 1, false);
+//   offset = 0;
+//   EXPECT_TRUE(b1.overlaps(b2, 2, 10, 0.05, offset));
+//   EXPECT_EQ(28, offset);
+//   // EXPECT_TRUE(b2.overlaps(b1, 2, 10, 0.05));
   
-  // Case 3: Both cutpoints are inexact
-  Contig c1("CCCGCCTCGGCTTTTTGCCAGCCACGGCTTTTTCCCCACCGCGGCTTTTT",
-            Locus("22", 15247597), 46, 1, true);
-  Contig c2("TTTTTGTAAGCCAGGGCTTTCTCCCCACCGCGGCTTTTTGTCCCCCGCCA",
-            Locus("22", 15247599), 14, 1, false);
-  offset = 0;
-  EXPECT_TRUE(c1.overlaps(c2, 2, 10, 0.08, offset));
-  EXPECT_EQ(21, offset);
-}
+//   // Case 3: Both cutpoints are inexact
+//   Contig c1("CCCGCCTCGGCTTTTTGCCAGCCACGGCTTTTTCCCCACCGCGGCTTTTT",
+//             Locus("22", 15247597), 46, 1, true);
+//   Contig c2("TTTTTGTAAGCCAGGGCTTTCTCCCCACCGCGGCTTTTTGTCCCCCGCCA",
+//             Locus("22", 15247599), 14, 1, false);
+//   offset = 0;
+//   EXPECT_TRUE(c1.overlaps(c2, 2, 10, 0.08, offset));
+//   EXPECT_EQ(21, offset);
+// }

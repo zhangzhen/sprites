@@ -1,4 +1,7 @@
 #include "DeletionCaller.h"
+#include <algorithm>
+
+const int MinDelLen = 50;
 
 void DeletionCaller::callAll(const std::vector<Region2>& in,
                              std::vector<Contig>& cons1,

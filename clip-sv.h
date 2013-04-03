@@ -12,8 +12,6 @@
 #include "Clip.h"
 #include "IntervalCluster.h"
 
-const int MinDelLen = 50;
-
 
 class Breakpoint;
 struct StructVar {
@@ -67,26 +65,26 @@ void showControlContexts(const std::vector<Region>& controls,
                          std::vector<SingleClippedCluster*>& clus2);
 void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
                    std::vector<Contig>& contigs);
-bool findFirstRegion(std::vector<Contig>::iterator first,
-                     std::vector<Contig>::iterator last,
-                     const Contig& con,
-                     int minSupportSize,
-                     int minOverlapLen,
-                     double mismatchRate,
-                     Region& region);
-void callDeletions(std::vector<Contig>& cons1,
-                   std::vector<Contig>& cons2,
-                   std::vector<Region>& calls,
-                   int minSupportSize,
-                   int minOverlapLen,
-                   double mismatchRate);
-void callDeletions2(const std::vector<Region2>& in,
-                    std::vector<Contig>& cons1,
-                    std::vector<Contig>& cons2,
-                    std::vector<Region>& calls,
-                    int minSupportSize,
-                    int minOverlapLen,
-                    double mismatchRate);
+// bool findFirstRegion(std::vector<Contig>::iterator first,
+//                      std::vector<Contig>::iterator last,
+//                      const Contig& con,
+//                      int minSupportSize,
+//                      int minOverlapLen,
+//                      double mismatchRate,
+//                      Region& region);
+// void callDeletions(std::vector<Contig>& cons1,
+//                    std::vector<Contig>& cons2,
+//                    std::vector<Region>& calls,
+//                    int minSupportSize,
+//                    int minOverlapLen,
+//                    double mismatchRate);
+// void callDeletions2(const std::vector<Region2>& in,
+//                     std::vector<Contig>& cons1,
+//                     std::vector<Contig>& cons2,
+//                     std::vector<Region>& calls,
+//                     int minSupportSize,
+//                     int minOverlapLen,
+//                     double mismatchRate);
 void outputCalls(std::string filename,
                  const std::vector<Region>& calls);
 

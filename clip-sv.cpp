@@ -269,84 +269,84 @@ void obtainContigs(const std::vector<SingleClippedCluster*>& clus,
     contigs.push_back(clus[i]->contig());
 }
 
-bool findFirstRegion(std::vector<Contig>::iterator first,
-                     std::vector<Contig>::iterator last,
-                     const Contig& con,
-                     int minSupportSize,
-                     int minOverlapLen,
-                     double mismatchRate,
-                     Region& region) {
-  for (std::vector<Contig>::iterator itr = first; itr != last; ++itr) {
-    int offset = 0;
-    int overlapLen = con.overlaps(*itr, minSupportSize, minOverlapLen, mismatchRate, offset);
-    if (overlapLen > 0) {
-      Locus end = (*itr).getAnchor();
-      region = Region(con.getAnchor(), Locus(end.chrom(), end.position() + offset), overlapLen);
-      return true;
-    }
-  }
-  return false;
-}
+// bool findFirstRegion(std::vector<Contig>::iterator first,
+//                      std::vector<Contig>::iterator last,
+//                      const Contig& con,
+//                      int minSupportSize,
+//                      int minOverlapLen,
+//                      double mismatchRate,
+//                      Region& region) {
+//   for (std::vector<Contig>::iterator itr = first; itr != last; ++itr) {
+//     int offset = 0;
+//     int overlapLen = con.overlaps(*itr, minSupportSize, minOverlapLen, mismatchRate, offset);
+//     if (overlapLen > 0) {
+//       Locus end = (*itr).getAnchor();
+//       region = Region(con.getAnchor(), Locus(end.chrom(), end.position() + offset), overlapLen);
+//       return true;
+//     }
+//   }
+//   return false;
+// }
 
-void callDeletions(std::vector<Contig>& cons1,
-                   std::vector<Contig>& cons2,
-                   std::vector<Region>& calls,
-                   int minSupportSize,
-                   int minOverlapLen,
-                   double mismatchRate) {
-  std::vector<Contig>::iterator last = cons2.end();
-  for (std::vector<Contig>::reverse_iterator ritr = cons1.rbegin();
-       ritr != cons1.rend();
-       ++ritr) {
-    std::vector<Contig>::iterator first = upper_bound(cons2.begin(), last, *ritr);
-    if (first == cons2.end()) continue;
-    Region reg;
-    if (findFirstRegion(first, last, *ritr, minSupportSize, minOverlapLen, mismatchRate, reg)) {
-      calls.push_back(reg);
-      last = first;
-    }
-  }
-}
+// void callDeletions(std::vector<Contig>& cons1,
+//                    std::vector<Contig>& cons2,
+//                    std::vector<Region>& calls,
+//                    int minSupportSize,
+//                    int minOverlapLen,
+//                    double mismatchRate) {
+//   std::vector<Contig>::iterator last = cons2.end();
+//   for (std::vector<Contig>::reverse_iterator ritr = cons1.rbegin();
+//        ritr != cons1.rend();
+//        ++ritr) {
+//     std::vector<Contig>::iterator first = upper_bound(cons2.begin(), last, *ritr);
+//     if (first == cons2.end()) continue;
+//     Region reg;
+//     if (findFirstRegion(first, last, *ritr, minSupportSize, minOverlapLen, mismatchRate, reg)) {
+//       calls.push_back(reg);
+//       last = first;
+//     }
+//   }
+// }
 
-void callDeletion(std::vector<Contig>::iterator first1,
-                  std::vector<Contig>::iterator last1,
-                  std::vector<Contig>::iterator first2,
-                  std::vector<Contig>::iterator last2,
-                  std::vector<Region>& calls,
-                  int minSupportSize,
-                  int minOverlapLen,
-                  double mismatchRate) {
-  for (std::vector<Contig>::iterator it = first1; it != last1; it++) {
-    first2 = upper_bound(first2, last2, *it);
-    for (std::vector<Contig>::iterator it2 = first2; it2 != last2; it2++) {
-      int offset = 0;
-      int overlapLen = (*it).overlaps(*it2, minSupportSize, minOverlapLen, mismatchRate, offset);
-      unsigned s = (*it).getAnchor().position();
-      unsigned t = (*it2).getAnchor().position() + offset;
-      if (overlapLen > 0 && t - s >= MinDelLen) {
-        Locus end = (*it2).getAnchor();
-        calls.push_back(Region((*it).getAnchor(), Locus(end.chrom(), end.position() + offset), overlapLen));
-        return;
-      }
-    }
-  }
-}
+// void callDeletion(std::vector<Contig>::iterator first1,
+//                   std::vector<Contig>::iterator last1,
+//                   std::vector<Contig>::iterator first2,
+//                   std::vector<Contig>::iterator last2,
+//                   std::vector<Region>& calls,
+//                   int minSupportSize,
+//                   int minOverlapLen,
+//                   double mismatchRate) {
+//   for (std::vector<Contig>::iterator it = first1; it != last1; it++) {
+//     first2 = upper_bound(first2, last2, *it);
+//     for (std::vector<Contig>::iterator it2 = first2; it2 != last2; it2++) {
+//       int offset = 0;
+//       int overlapLen = (*it).overlaps(*it2, minSupportSize, minOverlapLen, mismatchRate, offset);
+//       unsigned s = (*it).getAnchor().position();
+//       unsigned t = (*it2).getAnchor().position() + offset;
+//       if (overlapLen > 0 && t - s >= MinDelLen) {
+//         Locus end = (*it2).getAnchor();
+//         calls.push_back(Region((*it).getAnchor(), Locus(end.chrom(), end.position() + offset), overlapLen));
+//         return;
+//       }
+//     }
+//   }
+// }
 
-void callDeletions2(const std::vector<Region2>& in,
-                    std::vector<Contig>& cons1,
-                    std::vector<Contig>& cons2,
-                    std::vector<Region>& calls,
-                    int minSupportSize,
-                    int minOverlapLen,
-                    double mismatchRate) {
-  for (size_t i = 0; i < in.size(); i++) {
-    std::vector<Contig>::iterator first1 = lower_bound(cons1.begin(), cons1.end(), in[i].low, Contig::compare);
-    std::vector<Contig>::iterator last1 = upper_bound(cons1.begin(), cons1.end(), in[i].high, Contig::compare2);
-    std::vector<Contig>::iterator first2 = lower_bound(cons2.begin(), cons2.end(), in[i].low, Contig::compare);
-    std::vector<Contig>::iterator last2 = upper_bound(cons2.begin(), cons2.end(), in[i].high, Contig::compare2);
-    callDeletion(first1, last1, first2, last2, calls, minSupportSize, minOverlapLen, mismatchRate);
-  }
-}
+// void callDeletions2(const std::vector<Region2>& in,
+//                     std::vector<Contig>& cons1,
+//                     std::vector<Contig>& cons2,
+//                     std::vector<Region>& calls,
+//                     int minSupportSize,
+//                     int minOverlapLen,
+//                     double mismatchRate) {
+//   for (size_t i = 0; i < in.size(); i++) {
+//     std::vector<Contig>::iterator first1 = lower_bound(cons1.begin(), cons1.end(), in[i].low, Contig::compare);
+//     std::vector<Contig>::iterator last1 = upper_bound(cons1.begin(), cons1.end(), in[i].high, Contig::compare2);
+//     std::vector<Contig>::iterator first2 = lower_bound(cons2.begin(), cons2.end(), in[i].low, Contig::compare);
+//     std::vector<Contig>::iterator last2 = upper_bound(cons2.begin(), cons2.end(), in[i].high, Contig::compare2);
+//     callDeletion(first1, last1, first2, last2, calls, minSupportSize, minOverlapLen, mismatchRate);
+//   }
+// }
 
 void outputCalls(std::string filename,
                  const std::vector<Region>& calls) {
