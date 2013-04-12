@@ -2,10 +2,10 @@
 #include <assert.h>
 #include <iostream>
 
-SingleClipped::SingleClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen)
+SingleClipped::SingleClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen)
     : loc(loc),
       seq(seq),
-      qual(qual),
+      quals(quals),
       start(start),
       clippedLen(clippedLen) {
   assert(checkRep());
@@ -14,6 +14,16 @@ SingleClipped::SingleClipped(const Locus& loc, const std::string& seq, int qual,
 SingleClipped::~SingleClipped() {}
 
 Locus SingleClipped::anchor() const { return loc; }
+
+int SingleClipped::length() const { seq.length(); }
+
+int SingleClipped::lengthOfLeftPart() const { return start; }
+
+int SingleClipped::lengthOfRightPart() const { return length() - start; }
+
+char SingleClipped::at(int i) const { return seq[i]; }
+
+char SingleClipped::qual(int i) const { return quals[i]; }
 
 std::string SingleClipped::sequence() const { return seq; }
 

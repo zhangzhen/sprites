@@ -87,29 +87,29 @@ TEST_F(CallDelsTest, extractClipsForDels) {
 //   EXPECT_TRUE(c2.overlaps(c1, 2, 8, 0.0, offset));
 // }
 
-TEST_F(CallDelsTest, assembleContigs) {
-  Locus a1("1", 27);
-  LeftClippedCluster lcc(a1);
-  SingleClippedCluster& cls1 = lcc;
-  SingleClipped *p1 = new LeftClipped(a1, "ATAGTAGGCA", 20, 0, 3);
-  SingleClipped *p2 = new LeftClipped(a1, "AGATAGTAGG", 20, 0, 5);
-  cls1.add(p1);
-  cls1.add(p2);
-  Contig c1("AGATAGTAGGCA", a1, 5, 2, false);
-  EXPECT_EQ(c1, cls1.contig());
-  delete p1;
-  delete p2;
+// TEST_F(CallDelsTest, assembleContigs) {
+//   Locus a1("1", 27);
+//   LeftClippedCluster lcc(a1);
+//   SingleClippedCluster& cls1 = lcc;
+//   SingleClipped *p1 = new LeftClipped(a1, "ATAGTAGGCA", 20, 0, 3);
+//   SingleClipped *p2 = new LeftClipped(a1, "AGATAGTAGG", 20, 0, 5);
+//   cls1.add(p1);
+//   cls1.add(p2);
+//   Contig c1("AGATAGTAGGCA", a1, 5, 2, false);
+//   EXPECT_EQ(c1, cls1.contig());
+//   delete p1;
+//   delete p2;
 
-  Locus a2("1", 13);
-  RightClippedCluster rcc(a2);
-  SingleClippedCluster& cls2 = rcc;
-  SingleClipped *p3 = new RightClipped(a2, "TAGATAGTAG", 13, 6, 4);
-  SingleClipped *p4 = new RightClipped(a2, "TTAGATAGTA", 13, 7, 3);
-  cls2.add(p3);
-  cls2.add(p4);
-  Contig c2("TTAGATAGTAG", a2, 7, 2, true);
-  EXPECT_EQ("TTAGATAGTAG", c2.sequence());
-  EXPECT_EQ(c2, cls2.contig());
-  delete p3;
-  delete p4;
-}
+//   Locus a2("1", 13);
+//   RightClippedCluster rcc(a2);
+//   SingleClippedCluster& cls2 = rcc;
+//   SingleClipped *p3 = new RightClipped(a2, "TAGATAGTAG", 13, 6, 4);
+//   SingleClipped *p4 = new RightClipped(a2, "TTAGATAGTA", 13, 7, 3);
+//   cls2.add(p3);
+//   cls2.add(p4);
+//   Contig c2("TTAGATAGTAG", a2, 7, 2, true);
+//   EXPECT_EQ("TTAGATAGTAG", c2.sequence());
+//   EXPECT_EQ(c2, cls2.contig());
+//   delete p3;
+//   delete p4;
+// }

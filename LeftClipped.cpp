@@ -1,8 +1,8 @@
 #include "LeftClipped.h"
 #include <assert.h>
 
-LeftClipped::LeftClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen)
-    : SingleClipped(loc, seq, qual, start, clippedLen) {
+LeftClipped::LeftClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen)
+    : SingleClipped(loc, seq, quals, start, clippedLen) {
   assert(checkRep());
 }
 

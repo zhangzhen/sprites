@@ -18,8 +18,8 @@ TESTLIBS = -L$(GTEST_ROOT)/lib -lgtest -lpthread $(LIBS)
 
 INCLUDE = -I$(BAMTOOLS_ROOT)/include -I$(GTEST_ROOT)/include
 
-OBJS = clip-sv.o DeletionCaller.o DiscordantPairHandler.o Clip.o error.o Contig.o Locus.o Region.o SingleClipped.o LeftClipped.o RightClipped.o SingleClippedCluster.o LeftClippedCluster.o RightClippedCluster.o Window.o Interval.o Point.o IntervalCluster.o $(BAMTOOLS_ROOT)/lib/libbamtools.a
-TESTOBJS = SingleClipTest.o CallDelsTest.o $(OBJS)
+OBJS = clip-sv.o DeletionCaller.o DiscordantPairHandler.o Clip.o error.o Contig.o Locus.o Region.o SingleClipped.o LeftClipped.o RightClipped.o SingleClippedCluster.o LeftClippedCluster.o RightClippedCluster.o Window.o Interval.o Point.o IntervalCluster.o SingleClipped2.o SingleClippedCluster2.o  $(BAMTOOLS_ROOT)/lib/libbamtools.a
+TESTOBJS = SingleClipTest.o CallDelsTest.o SingleClippedClusterTest.o $(OBJS)
 
 # Builds the main program with the necessary libraries.
 all: clip-sv AllTests

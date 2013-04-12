@@ -65,17 +65,17 @@ void loadClippeds(BamTools::BamReader& reader,
       // std::cout << al.QueryBases << std::endl;
       Locus anc0(refname, anchors[0]);
       // std::cout << al.QueryBases.substr(0, cutpoints[1]) << std::endl;
-      lefts.push_back(lCreator.createClipped(anc0, al.QueryBases.substr(0, al.Length - lens[1]), al.MapQuality, 0, lens[0]));
+      lefts.push_back(lCreator.createClipped(anc0, al.QueryBases.substr(0, al.Length - lens[1]), al.Qualities, 0, lens[0]));
       Locus anc1(refname, anchors[1]);
       // std::cout << std::string(lens[0], ' ') << al.QueryBases.substr(lens[0]) << std::endl;
-      rights.push_back(rCreator.createClipped(anc1, al.QueryBases.substr(lens[0]), al.MapQuality, al.Length - lens[0] - lens[1], lens[1]));
+      rights.push_back(rCreator.createClipped(anc1, al.QueryBases.substr(lens[0]), al.Qualities, al.Length - lens[0] - lens[1], lens[1]));
       continue;
     }
     Locus anchor(refname, anchors[0]);
     if (cutpoints[0] == lens[0]) { // left clipped
-      lefts.push_back(lCreator.createClipped(anchor, al.QueryBases, al.MapQuality, 0, lens[0]));
+      lefts.push_back(lCreator.createClipped(anchor, al.QueryBases, al.Qualities, 0, lens[0]));
     } else { // right clipped
-      rights.push_back(rCreator.createClipped(anchor, al.QueryBases, al.MapQuality, al.Length - lens[0], lens[0]));
+      rights.push_back(rCreator.createClipped(anchor, al.QueryBases, al.Qualities, al.Length - lens[0], lens[0]));
     }
   }
 

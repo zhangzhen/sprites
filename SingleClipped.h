@@ -7,16 +7,21 @@ class SingleClipped {
  protected:
   Locus loc;
   std::string seq;
-  int qual;
+  std::string quals;
   int start;
   int clippedLen;
   
  public:
-  SingleClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen);
+  SingleClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen);
   virtual ~SingleClipped();
   Locus anchor() const;
   // std::string chr() const;
   // int position() const;
+  int length() const;
+  int lengthOfLeftPart() const;
+  int lengthOfRightPart() const;
+  char at(int i) const;
+  char qual(int i) const;
   std::string sequence() const;
   std::string clippedSeq() const;
   int getClippedLen() const;

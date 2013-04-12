@@ -6,17 +6,17 @@
 class ClippedCreator
 {
  public:
-  virtual SingleClipped* createClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen) = 0;
+  virtual SingleClipped* createClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen) = 0;
 };
 
 template <class TheClipped>
 class StandardClippedCreator : public ClippedCreator {
  public:
-  virtual SingleClipped* createClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen);
+  virtual SingleClipped* createClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen);
 };
 
 template <class TheClipped>
-SingleClipped* StandardClippedCreator<TheClipped>::createClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen) {
-  return new TheClipped(loc, seq, qual, start, clippedLen);
+SingleClipped* StandardClippedCreator<TheClipped>::createClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen) {
+  return new TheClipped(loc, seq, quals, start, clippedLen);
 }
 #endif /* CLIPPED_CREATOR_H */

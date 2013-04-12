@@ -5,7 +5,7 @@
 
 class LeftClipped : public SingleClipped {
  public:
-  LeftClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen);
+  LeftClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen);
   virtual ~LeftClipped();
   std::string mappedSeq() const;
   std::string type() const;

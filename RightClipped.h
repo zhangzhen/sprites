@@ -5,7 +5,7 @@
 
 class RightClipped : public SingleClipped {
  public:
-  RightClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen);
+  RightClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen);
   virtual ~RightClipped();
   std::string mappedSeq() const;
   std::string type() const;

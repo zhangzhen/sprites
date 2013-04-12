@@ -2,8 +2,8 @@
 #include <assert.h>
 #include <iostream>
 
-RightClipped::RightClipped(const Locus& loc, const std::string& seq, int qual, int start, int clippedLen)
-    : SingleClipped(loc, seq, qual, start, clippedLen) {
+RightClipped::RightClipped(const Locus& loc, const std::string& seq, const std::string& quals, int start, int clippedLen)
+    : SingleClipped(loc, seq, quals, start, clippedLen) {
   assert(checkRep());
 }
 
