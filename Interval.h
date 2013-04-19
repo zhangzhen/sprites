@@ -7,19 +7,21 @@
 
 class Interval {
  private:
-  unsigned id;
+  int id;
   std::string chrom;
-  unsigned startPos;
-  unsigned endPos;
+  int startPos;
+  int endPos;
+  int insertSize;
  public:
-  Interval(unsigned id, std::string chrom, unsigned startPos, unsigned endPos);
+  Interval(int id, std::string chrom, int startPos, int endPos, int insertSize);
   virtual ~Interval();
-  unsigned getId() const;
+  int getId() const;
   std::string getChrom() const;
-  unsigned getStartPos() const;
-  unsigned getEndPos() const;
+  int getStartPos() const;
+  int getEndPos() const;
+  int getInsertSize() const;
   size_t length() const;
-  bool overlapsWith(const Interval& other) const;
+  // bool overlapsWith(const Interval& other) const;
   std::string toString() const;
   Point createStartPoint();
   Point createEndPoint();

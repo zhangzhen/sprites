@@ -7,22 +7,27 @@
 
 
 struct Region2 {
-  unsigned low;
-  unsigned high;
+  int low;
+  int high;
+  int minDeltaLength;
+  int maxDeltaLength;
 };
 
 class IntervalCluster {
  private:
   std::vector<Interval*> elts;
+  bool valid;
  public:
   IntervalCluster();
   virtual ~IntervalCluster();
   void add(Interval *in);
   bool empty() const;
   std::string toString() const;
-  Region2 focalRegion() const;
+  Region2 focalRegion(int mean, int std);
   friend std::ostream& operator <<(std::ostream& os, const IntervalCluster& self);
-  void removeInvalidIntervals(unsigned threshold);
+ private:
+  void removeInvalidIntervals(int threshold);
+  int avgInsertSize() const;
 };
 
 #endif /* _INTERVALCLUSTER_H_ */

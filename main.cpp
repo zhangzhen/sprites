@@ -21,8 +21,8 @@ void outputClips(BamTools::BamReader& reader);
 
 int main(int argc, char *argv[]) {
   char *progname;
-  int mu = 200;
-  int sigma = 10;
+  int mean = 200;
+  int std = 10;
   int minOverlapLen = 10;
   int maxMismatches = 2;
   std::string outFilename;
@@ -32,10 +32,10 @@ int main(int argc, char *argv[]) {
   while ((c = getopt(argc, argv, "m:s:l:x:o:")) != -1)
     switch (c) {
       case 'm':
-        mu = atoi(optarg);
+        mean = atoi(optarg);
         break;
       case 's':
-        sigma = atoi(optarg);
+        std = atoi(optarg);
         break;
       case 'l':
         minOverlapLen = atoi(optarg);
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 
   std::string filename(argv[optind]);
   std::vector<Region2> regions;
-  DiscordantPairHandler::identifyFocalRegions(filename, regions, mu, sigma);
+  DiscordantPairHandler::identifyFocalRegions(filename, regions, mean, std);
   
   BamTools::BamReader reader;
   if (!reader.Open(filename)) {

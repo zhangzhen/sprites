@@ -1,24 +1,26 @@
 #include "Interval.h"
 #include <sstream>
 
-Interval::Interval(unsigned id, std::string chrom, unsigned startPos, unsigned endPos) :
-    id(id), chrom(chrom), startPos(startPos), endPos(endPos) {}
+Interval::Interval(int id, std::string chrom, int startPos, int endPos, int insertSize) :
+    id(id), chrom(chrom), startPos(startPos), endPos(endPos), insertSize(insertSize) {}
 
 Interval::~Interval() {}
 
-unsigned Interval::getId() const { return id; }
+int Interval::getId() const { return id; }
 
 std::string Interval::getChrom() const { return chrom; }
 
-unsigned Interval::getStartPos() const { return startPos; }
+int Interval::getStartPos() const { return startPos; }
 
-unsigned Interval::getEndPos() const { return endPos; }
+int Interval::getEndPos() const { return endPos; }
+
+int Interval::getInsertSize() const { return insertSize; }
 
 size_t Interval::length() const { return endPos - startPos; }
 
-bool Interval::overlapsWith(const Interval& other) const {
-  return false;
-}
+// bool Interval::overlapsWith(const Interval& other) const {
+//   return false;
+// }
 
 std::string Interval::toString() const {
   std::stringstream ss;

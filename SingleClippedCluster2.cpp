@@ -22,7 +22,7 @@ size_t SingleClippedCluster2::size() const { return clips.size(); }
 
 int SingleClippedCluster2::referenceId() const { return clips[0]->referenceId(); }
 
-int SingleClippedCluster2::position() const { return clips[0]->position(); }
+int SingleClippedCluster2::clipPosition() const { return clips[0]->position(); }
 
 // std::string SingleClippedCluster::str() {
 //   std::stringstream sstream;
@@ -35,10 +35,7 @@ std::string SingleClippedCluster2::consensus() const {
   assert(size() > 0);
   if (size() == 1) return clips[0]->sequence();
   
-  std::vector<int> lens1(size());
-  for (int i = 0; i < lens1.size(); i++) lens1[i] = clips[i]->lengthOfLeftPart();
-  int N1 = secondLargest(lens1);
-
+  int  N1 = localClipPosition();
   std::vector<int> diffs(size());
   for (int i = 0; i < diffs.size(); i++) {
     diffs[i] = clips[i]->lengthOfLeftPart() - N1;
@@ -63,6 +60,16 @@ std::string SingleClippedCluster2::consensus() const {
     seq += correctBase(bases, quals);
   }
   return seq;
+}
+
+int SingleClippedCluster2::localClipPosition() const {
+  std::vector<int> lens1(size());
+  for (int i = 0; i < lens1.size(); i++) lens1[i] = clips[i]->lengthOfLeftPart();
+  return secondLargest(lens1);  
+}
+
+Contig2* SingleClippedCluster2::contig() const {
+  return new Contig2(referenceId(), clipPosition(), localClipPosition(), consensus(), size());
 }
 
 char SingleClippedCluster2::correctBase(const std::map<char, int>& bases, const std::map<char, int>& quals) {

@@ -1,19 +1,29 @@
-#ifndef OVERLAP_INCLUDED
-#define OVERLAP_INCLUDED
+#ifndef _OVERLAP_H_
+#define _OVERLAP_H_
 
-#include "Clip.h"
+#include "RegionX.h"
 
 class Overlap
 {
  public:
-  Overlap(Clip* left, Clip* right);
+  Overlap(int referenceId, int clipPosition1, int clipPosition2, int numClips1, int numClips2, int length, int numMismatches, int offset);
   virtual ~Overlap();
+  // int getLength() const;
+  // int getNumMismatches() const;
+  int regionLength() const;
+  double score() const;
+  const RegionX* primaryRegion() const;
+  const RegionX* secondaryRegion() const;
   
  private:
-  Clip* left;
-  Clip* right;
-  int len;
-  int mismatches;
+  int referenceId;
+  int clipPosition1;
+  int clipPosition2;
+  int numClips1;
+  int numClips2;
+  int length;
+  int numMismatches;
+  int offset;
 };
 
-#endif // OVERLAP_INCLUDED
+#endif /* _OVERLAP_H_ */

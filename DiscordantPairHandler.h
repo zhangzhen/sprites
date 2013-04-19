@@ -6,19 +6,19 @@ class DiscordantPairHandler {
  public:
   static void identifyFocalRegions(const std::string& filename,
                                    std::vector<Region2>& regions,
-                                   int mu,
-                                   int sigma);
+                                   int mean,
+                                   int std);
 
  private:
   static void loadIntervalsFromBam(BamTools::BamReader& r1,
                                    BamTools::BamReader& r2,
                                    std::vector<Interval*>& intervals,
-                                   int threshold);
+                                   int mean,
+                                   int std);
   static void removeNestingIntervals(const std::vector<Interval*>& in,
                                      std::vector<Interval*>& out);
   static void clusterIntervals(const std::vector<Interval*>& in,
-                               std::vector<IntervalCluster>& clus,
-                               int threshold);
+                               std::vector<IntervalCluster>& clus);
 
 };
 

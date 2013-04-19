@@ -4,8 +4,8 @@
 
 void DiscordantPairHandler::identifyFocalRegions(const std::string& filename,
                                                  std::vector<Region2>& regions,
-                                                 int mu,
-                                                 int sigma) {
+                                                 int mean,
+                                                 int std) {
   BamTools::BamReader r1, r2;
   r1.Open(filename);
   r2.Open(filename);
@@ -13,8 +13,7 @@ void DiscordantPairHandler::identifyFocalRegions(const std::string& filename,
   r2.LocateIndex();
 
   std::vector<Interval*> in;
-  int th1 = mu + 4 * sigma;
-  loadIntervalsFromBam(r1, r2, in, th1);
+  loadIntervalsFromBam(r1, r2, in, mean, std);
   // for (size_t i = 0; i < in.size(); i++)
   //   std::cout << i[i]->getId() << "\t"
   //             << in[i]->getStartPos() << "\t"
@@ -28,15 +27,14 @@ void DiscordantPairHandler::identifyFocalRegions(const std::string& filename,
   //             << out[i]->length() << "\t"
   //             << std::endl;
   std::vector<IntervalCluster> clus;
-  int th2 = 6 * sigma;
-  clusterIntervals(out, clus, th2);
+  clusterIntervals(out, clus);
   // for (size_t i = 0; i < clus.size(); i++) {
   //   std::cout << clus[i] << std::endl;
   // }
   // return 0;
 
   for (size_t i = 0; i < clus.size(); i++) {
-    Region2 r2 = clus[i].focalRegion();
+    Region2 r2 = clus[i].focalRegion(mean, std);
     regions.push_back(r2);
     // std::cout << r2.low << "\t"
     //           << r2.high << std::endl;
@@ -48,10 +46,12 @@ void DiscordantPairHandler::identifyFocalRegions(const std::string& filename,
 void DiscordantPairHandler::loadIntervalsFromBam(BamTools::BamReader& r1,
                                                  BamTools::BamReader& r2,
                                                  std::vector<Interval*>& intervals,
-                                                 int threshold) {
+                                                 int mean,
+                                                 int std) {
   const BamTools::RefVector references = r1.GetReferenceData();
+  int threshold = mean + 4 * std;
   BamTools::BamAlignment ba1;
-  unsigned cnt = 0;
+  int cnt = 0;
   while (r1.GetNextAlignment(ba1)) {
     if (!ba1.IsPaired() ||
         !ba1.IsMapped() ||
@@ -76,11 +76,12 @@ void DiscordantPairHandler::loadIntervalsFromBam(BamTools::BamReader& r1,
       if (!found) continue;
       uint8_t t1, t2;
       if (!ba1.GetTag("XT", t1) || !ba2.GetTag("XT", t2)) continue;
-      if ((t1 == 'U' && t2 == 'U')) {      
+      if ((t1 == 'U' && t2 == 'U')) {
         intervals.push_back(new Interval(cnt,
                                          references[ba1.RefID].RefName,
                                          ba1.GetEndPosition() + 1,
-                                         ba1.MatePosition));
+                                         ba1.MatePosition,
+                                         ba1.InsertSize));
         cnt++;
       }
     }
@@ -119,8 +120,7 @@ void DiscordantPairHandler::removeNestingIntervals(const std::vector<Interval*>&
 }
 
 void DiscordantPairHandler::clusterIntervals(const std::vector<Interval*>& in,
-                                             std::vector<IntervalCluster>& clus,
-                                             int threshold) {
+                                             std::vector<IntervalCluster>& clus) {
   std::vector<Point> pts;
   for (size_t i = 0; i < in.size(); i++) {
     pts.push_back(in[i]->createStartPoint());
@@ -142,6 +142,6 @@ void DiscordantPairHandler::clusterIntervals(const std::vector<Interval*>& in,
     }
   }
 
-  for (size_t i = 0; i < clus.size(); i++)
-    clus[i].removeInvalidIntervals(threshold);
+  // for (size_t i = 0; i < clus.size(); i++)
+  //   clus[i].removeInvalidIntervals(threshold);
 }

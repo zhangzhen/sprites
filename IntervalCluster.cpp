@@ -2,7 +2,7 @@
 #include <sstream>
 #include <algorithm>
 
-IntervalCluster::IntervalCluster() {}
+IntervalCluster::IntervalCluster() : valid(false) {}
 
 IntervalCluster::~IntervalCluster() {}
 
@@ -23,23 +23,26 @@ std::string IntervalCluster::toString() const {
   return ss.str();
 }
 
-Region2 IntervalCluster::focalRegion() const {
-  Region2 r = { elts.back()->getStartPos(), elts.front()->getEndPos() };
+Region2 IntervalCluster::focalRegion(int mean, int std) {
+  if (!valid) {
+    removeInvalidIntervals(mean + 4*std);
+    valid = true;
+  }
+  int avgDeltaLength = avgInsertSize() - mean;
+  Region2 r = { elts.back()->getStartPos(), elts.front()->getEndPos(), avgDeltaLength - 3*std, avgDeltaLength + 3*std };
   return r;
 }
 
-void IntervalCluster::removeInvalidIntervals(unsigned threshold) {
+void IntervalCluster::removeInvalidIntervals(int threshold) {
   if (elts.size() <= 1) return;
-  std::vector<size_t> idx(elts.size());
-  for (size_t i = 0; i < idx.size(); ++i) idx[i] = i;
-  sort(idx.begin(), idx.end(),
-       [&elts](size_t i1, size_t i2) {return elts[i1]->length() > elts[i2]->length(); });
-  size_t i = 0;
-  while (elts[idx[i]]->length() - elts[idx[idx.size() - 1]]->length() > threshold
-         && i < idx.size()) {
-    elts.erase(elts.begin() + i);
-    i++;
-  }
+
+  sort(elts.begin(), elts.end(), [](const Interval *in1, const Interval *in2) { return in1->length() > in2->length(); });
+  int minLen = elts.back()->length();
+  elts.erase(remove_if(elts.begin(), elts.end(), [minLen, threshold](Interval* in) { return in->length() - minLen > threshold; }), elts.end());
+}
+
+int IntervalCluster::avgInsertSize() const {
+  return accumulate(elts.begin(), elts.end(), 0, [](int s, Interval* in) { return s + in->getInsertSize(); }) / elts.size();
 }
 
 std::ostream& operator <<(std::ostream& os, const IntervalCluster& self) {

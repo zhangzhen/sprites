@@ -17,6 +17,7 @@ class DeletionCaller {
                       std::vector<Contig>::iterator first2,
                       std::vector<Contig>::iterator last2,
                       std::vector<Region>& calls,
+                      const Region2& region,
                       int minOverlapLen,
                       int maxMismatches);
 };
