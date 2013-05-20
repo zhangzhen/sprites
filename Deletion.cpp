@@ -1,21 +1,21 @@
-#ifndef _DELETION_H_
-#define _DELETION_H_
-
 #include "Deletion.h"
+#include <cassert>
 
-Deletion::Deletion(const Region* region1, const Region* region2, double score) :
-    region1(region1), region2(region2), score(score) {}
+Deletion::Deletion(int referenceId, int start2, int end1, int offset) :
+    referenceId(referenceId), start2(start2), end1(end1), offset(offset) {
+  assert(start2 > 0 && length() > 0);
+}
 
-Deletion::~Deletion() {}
+int Deletion::getStart1() const { return start2 - offset; }
 
-int Deletion::startPosition1() const { return region1->getStartPosition(); }
+int Deletion::getEnd1() const { return end1; }
 
-int Deletion::endPosition1() const { return region1->getEndPosition(); }
+int Deletion::getStart2() const { return start2; }
 
-int Deletion::startPosition2() const { return region2->getStartPosition(); }
+int Deletion::getEnd2() const { return end1 + offset; }
 
-int Deletion::endPosition2() const { return region2->getEndPosition(); }
+int Deletion::length() const {
+  return end1 + offset - start2;
+}
 
-double Deletion::score() const { return score; }
-
-#endif /* _DELETION_H_ */
+// double Deletion::score() const { return score; }

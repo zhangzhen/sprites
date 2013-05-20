@@ -1,4 +1,4 @@
-#include "SingleClippedCluster2.h"
+#include "SoftClipCluster.h"
 #include <algorithm>
 #include <sstream>
 #include <cassert>
@@ -8,21 +8,19 @@
 //   return stream;
 // }
 
-SingleClippedCluster2::SingleClippedCluster2(const SingleClipped2* clip) {
+SoftClipCluster::SoftClipCluster(const SoftClip* clip) {
   clips.push_back(clip);
 }
 
-SingleClippedCluster2::~SingleClippedCluster2() {}
-
-void SingleClippedCluster2::add(const SingleClipped2* clip) {
+void SoftClipCluster::add(const SoftClip* clip) {
   clips.push_back(clip);
 }
 
-size_t SingleClippedCluster2::size() const { return clips.size(); }
+size_t SoftClipCluster::size() const { return clips.size(); }
 
-int SingleClippedCluster2::referenceId() const { return clips[0]->referenceId(); }
+int SoftClipCluster::referenceId() const { return clips[0]->referenceId(); }
 
-int SingleClippedCluster2::clipPosition() const { return clips[0]->position(); }
+int SoftClipCluster::clipPosition() const { return clips[0]->position(); }
 
 // std::string SingleClippedCluster::str() {
 //   std::stringstream sstream;
@@ -31,7 +29,7 @@ int SingleClippedCluster2::clipPosition() const { return clips[0]->position(); }
 //   return sstream.str();
 // }
 
-std::string SingleClippedCluster2::consensus() const {
+std::string SoftClipCluster::consensusSequence() const {
   assert(size() > 0);
   if (size() == 1) return clips[0]->sequence();
   
@@ -62,17 +60,17 @@ std::string SingleClippedCluster2::consensus() const {
   return seq;
 }
 
-int SingleClippedCluster2::localClipPosition() const {
+int SoftClipCluster::localClipPosition() const {
   std::vector<int> lens1(size());
   for (int i = 0; i < lens1.size(); i++) lens1[i] = clips[i]->lengthOfLeftPart();
   return secondLargest(lens1);  
 }
 
-Contig2* SingleClippedCluster2::contig() const {
-  return new Contig2(referenceId(), clipPosition(), localClipPosition(), consensus(), size());
+Consensus SoftClipCluster::getConsensus() const {
+  return Consensus(referenceId(), clipPosition(), localClipPosition(), consensusSequence(), size());
 }
 
-char SingleClippedCluster2::correctBase(const std::map<char, int>& bases, const std::map<char, int>& quals) {
+char SoftClipCluster::correctBase(const std::map<char, int>& bases, const std::map<char, int>& quals) {
   int maxnum = 0;
   for (std::map<char, int>::const_iterator it = bases.begin(); it != bases.end(); ++it)
     if (maxnum < it->second) maxnum = it->second;
@@ -87,7 +85,7 @@ char SingleClippedCluster2::correctBase(const std::map<char, int>& bases, const 
   return ch;
 }
 
-int SingleClippedCluster2::secondLargest(const std::vector<int>& lens) {
+int SoftClipCluster::secondLargest(const std::vector<int>& lens) {
   assert(lens.size() > 1);
   int max = lens[0];
   int secondMax = lens[1];

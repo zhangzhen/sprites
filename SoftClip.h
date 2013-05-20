@@ -1,9 +1,9 @@
-#ifndef _SINGLECLIPPED2_H_
-#define _SINGLECLIPPED2_H_
+#ifndef _SOFTCLIP_H_
+#define _SOFTCLIP_H_
 
-#include "Locus.h"
+#include <string>
 
-class SingleClipped2 {
+class SoftClip {
  private:
   int refId;
   int pos;
@@ -12,8 +12,7 @@ class SingleClipped2 {
   std::string quals;
   
  public:
-  SingleClipped2(int refId, int pos, int clipPos, const std::string& seq, const std::string& quals);
-  virtual ~SingleClipped2();
+  SoftClip(int refId, int pos, int clipPos, const std::string& seq, const std::string& quals);
   int referenceId() const;
   int position() const;
   const std::string& sequence() const;
@@ -25,4 +24,4 @@ class SingleClipped2 {
 
 };
 
-#endif /* _SINGLECLIPPED2_H_ */
+#endif /* _SOFTCLIP_H_ */

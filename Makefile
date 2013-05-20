@@ -18,23 +18,23 @@ TESTLIBS = -L$(GTEST_ROOT)/lib -lgtest -lpthread $(LIBS)
 
 INCLUDE = -I$(BAMTOOLS_ROOT)/include -I$(GTEST_ROOT)/include
 
-OBJS = clip-sv.o DeletionCaller.o DiscordantPairHandler.o Clip.o error.o Contig.o Locus.o Region.o SingleClipped.o LeftClipped.o RightClipped.o SingleClippedCluster.o LeftClippedCluster.o RightClippedCluster.o Window.o Interval.o Point.o IntervalCluster.o SingleClipped2.o SingleClippedCluster2.o Contig2.o Overlap.o RegionX.o $(BAMTOOLS_ROOT)/lib/libbamtools.a
-TESTOBJS = SingleClipTest.o CallDelsTest.o SingleClippedClusterTest.o $(OBJS)
+OBJS = DFinder.o SoftClip.o SoftClipCluster.o error.o Consensus.o Interval.o IntervalCluster.o Overlap.o Deletion.o $(BAMTOOLS_ROOT)/lib/libbamtools.a
+# TESTOBJS = SingleClipTest.o CallDelsTest.o SingleClippedClusterTest.o $(OBJS)
 
 # Builds the main program with the necessary libraries.
-all: clip-sv AllTests
+all: dfinder #AllTests
 
-clip-sv: main.o $(OBJS)
-	g++ main.o $(OBJS) -o clip-sv $(CCFLAGS) $(LIBS)
+dfinder: main.o $(OBJS)
+	g++ main.o $(OBJS) -o dfinder $(CCFLAGS) $(LIBS)
 
 # Build object files from sources.
 %.o: %.cpp
 	g++ $^ -c -o $@ $(CCFLAGS) $(INCLUDE)
 
-AllTests: AllTests.o $(TESTOBJS)
-	g++ AllTests.o $(TESTOBJS) -o AllTests $(TESTLIBS)
+# AllTests: AllTests.o $(TESTOBJS)
+# 	g++ AllTests.o $(TESTOBJS) -o AllTests $(TESTLIBS)
 
 # Cleans the project by nuking emacs temporary files (*~), object files (*.o),
 # and the resulting executable.
 clean:
-	rm -rf *~ *.o clip-sv AllTests
+	rm -rf *~ *.o dfinder #AllTests

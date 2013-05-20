@@ -1,14 +1,13 @@
 #include "Interval.h"
 #include <sstream>
+#include <cassert>
 
-Interval::Interval(int id, std::string chrom, int startPos, int endPos, int insertSize) :
-    id(id), chrom(chrom), startPos(startPos), endPos(endPos), insertSize(insertSize) {}
-
-Interval::~Interval() {}
+Interval::Interval(int id, int referenceId, int startPos, int endPos, int insertSize) :
+    id(id), referenceId(referenceId), startPos(startPos), endPos(endPos), insertSize(insertSize) {}
 
 int Interval::getId() const { return id; }
 
-std::string Interval::getChrom() const { return chrom; }
+int Interval::getReferenceId() const { return referenceId; }
 
 int Interval::getStartPos() const { return startPos; }
 
@@ -22,18 +21,18 @@ size_t Interval::length() const { return endPos - startPos; }
 //   return false;
 // }
 
-std::string Interval::toString() const {
-  std::stringstream ss;
-  ss << chrom << ":" << startPos << "-" << endPos;
-  return ss.str();
+// std::string Interval::toString() const {
+//   std::stringstream ss;
+//   ss << chrom << ":" << startPos << "-" << endPos;
+//   return ss.str();
+// }
+
+const EndPoint Interval::getStart() const {
+  return EndPoint(this, true);
 }
 
-Point Interval::createStartPoint() {
-  return Point(this, true);
-}
-
-Point Interval::createEndPoint() {
-  return Point(this, false);
+const EndPoint Interval::getEnd() const {
+  return EndPoint(this, false);
 }
 
 // bool Interval::compare(const Interval& in1, const Interval& in2) {
@@ -48,6 +47,34 @@ Point Interval::createEndPoint() {
 //   return i1.end < i2.end;
 // }
 
-std::ostream& operator <<(std::ostream& os, const Interval& self) {
-  return os << self.toString();
+// std::ostream& operator <<(std::ostream& os, const Interval& self) {
+//   return os << self.toString();
+// }
+
+EndPoint::EndPoint(const Interval* owner, bool start) :
+    owner(owner), start(start) {
+}
+
+int EndPoint::ownerId() const {
+  return owner->getId();
+}
+
+int EndPoint::position() const {
+  if (start)
+    return owner->getStartPos();
+  return owner->getEndPos();
+}
+
+bool EndPoint::isStart() const {
+  return start;
+}
+
+bool EndPoint::operator< (const EndPoint& other) const {
+  assert(owner->getReferenceId() == other.owner->getReferenceId());
+  if ((position() == other.position()) && (!start && other.start)) return true;
+  return position() < other.position();
+}
+
+const Interval* EndPoint::getOwner() const {
+  return owner;
 }
