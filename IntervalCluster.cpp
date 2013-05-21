@@ -1,5 +1,5 @@
 #include "IntervalCluster.h"
-#include <iostream>
+// #include <iostream>
 #include <algorithm>
 
 IntervalCluster::IntervalCluster() : dirty(true) {}
@@ -29,7 +29,7 @@ TargetRegion IntervalCluster::getTargetRegion(int mean, int std) {
   }
   int avgDeltaLength = avgInsertSize() - mean;
   TargetRegion r = { elts.back()->getStartPos(), elts.front()->getEndPos(), avgDeltaLength - 3*std, avgDeltaLength + 3*std };
-  std::cout << r.start << "\t" << r.end << "\t" << r.minDeletionLength << "\t" << r.maxDeletionLength << std::endl;
+  // std::cout << r.start << "\t" << r.end << "\t" << r.minDeletionLength << "\t" << r.maxDeletionLength << std::endl;
   return r;
 }
 

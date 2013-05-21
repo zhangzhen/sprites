@@ -32,7 +32,7 @@ void DFinder::loadFrom(const std::string& filename) {
   rightClips.resize(size);
   intervals.resize(size);
   
-  int threshold = meanInsertSize + 4 * stdInsertSize;
+  // int threshold = meanInsertSize + 4 * stdInsertSize;
   BamTools::BamAlignment ba1;
   int cnt = 0;
   while (r1.GetNextAlignment(ba1)) {
@@ -68,11 +68,11 @@ void DFinder::loadFrom(const std::string& filename) {
     }
     // load an interval of paired-ends
     if (!ba1.IsPaired() ||
+        ba1.IsProperPair() ||
         !ba1.IsMapped() ||
         !ba1.IsMateMapped() ||
         ba1.RefID != ba1.MateRefID ||
-        ba1.Position >= ba1.MatePosition ||
-        ba1.InsertSize < threshold) continue;
+        ba1.Position >= ba1.MatePosition) continue;
         
     if (!ba1.IsReverseStrand() &&
         ba1.IsMateReverseStrand() &&
