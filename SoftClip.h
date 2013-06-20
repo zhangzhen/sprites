@@ -2,6 +2,7 @@
 #define _SOFTCLIP_H_
 
 #include <string>
+#include "Overlap.h"
 
 class SoftClip {
  private:
@@ -21,7 +22,13 @@ class SoftClip {
   int lengthOfRightPart() const;
   char at(int i) const;
   char qual(int i) const;
-
+  int minDeletionLength(const SoftClip& other) const;
+  int maxDeletionLength(const SoftClip& other) const;
+  bool overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
+  
+  static bool compare(SoftClip* s1, SoftClip* s2);
+  static bool compare1(SoftClip* o, const int pos);
+  static bool compare2(const int pos, SoftClip* o);
 };
 
 #endif /* _SOFTCLIP_H_ */

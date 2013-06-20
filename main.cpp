@@ -4,13 +4,13 @@
 #include "error.h"
 #include "DFinder.h"
 
-const std::string ControlFilename = "../sv/chr22_report.txt";
+// const std::string ControlFilename = "../sv/chr22_report.txt";
 
 int main(int argc, char *argv[]) {
   char *progname;
   int mean = 200;
   int std = 10;
-  int minOverlapLen = 10;
+  int minOverlapLen = 5;
   double maxMismatchRate = 0.1;
   std::string outFilename;
   int c, status = 0;
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
   std::string filename(argv[optind]);
   DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate);
-  dfinder.callTo(outFilename);
+  dfinder.callToFile(outFilename);
   return 0;
 }
 

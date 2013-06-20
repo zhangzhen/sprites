@@ -34,7 +34,7 @@ class Consensus
   static bool compare(const Consensus& cons, const int pos);
   static bool compare2(const int pos, const Consensus& cons);
  private:
-  static bool equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches);
+  // static bool equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches);
 };
 
 #endif /* _CONSENSUS_H_ */

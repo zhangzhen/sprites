@@ -6,6 +6,8 @@ Deletion::Deletion(int referenceId, int start2, int end1, int offset) :
   assert(start2 > 0 && length() > 0);
 }
 
+int Deletion::getReferenceId() const { return referenceId; }
+
 int Deletion::getStart1() const { return start2 - offset; }
 
 int Deletion::getEnd1() const { return end1; }

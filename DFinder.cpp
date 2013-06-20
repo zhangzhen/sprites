@@ -9,6 +9,12 @@ const int MinDeleltionLength = 50;
 DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate) :
     meanInsertSize(meanInsertSize), stdInsertSize(stdInsertSize), minOverlapLength(minOverlapLength), maxMismatchRate(maxMismatchRate) {
   loadFrom(filename);
+  // assert(leftClips[19].size() > 0);
+  // assert(rightClips[19].size() > 0);
+  for (int i = 0; i < size; ++i) {
+    sort(leftClips[i].begin(), leftClips[i].end(), SoftClip::compare);
+    sort(rightClips[i].begin(), rightClips[i].end(), SoftClip::compare);
+  }
 }
 
 DFinder::~DFinder() {
@@ -27,19 +33,26 @@ void DFinder::loadFrom(const std::string& filename) {
   r2.LocateIndex();
 
   references = r1.GetReferenceData();
-  size = references.size();
+  size = r1.GetReferenceCount();
+  // for (auto itr = references.begin(); itr != references.end(); ++itr)
+  //   std::cout << (*itr).RefName << "\t" << (*itr).RefLength << std::endl;
   leftClips.resize(size);
   rightClips.resize(size);
   intervals.resize(size);
-  
-  // int threshold = meanInsertSize + 4 * stdInsertSize;
+  lRegions.resize(size);
+
+  int threshold = meanInsertSize + 4 * stdInsertSize;
   BamTools::BamAlignment ba1;
   int cnt = 0;
   while (r1.GetNextAlignment(ba1)) {
     // load a soft-clip
     std::vector<int> clipSizes, readPositions, genomePositions;
+    if (ba1.IsDuplicate()) continue;
     if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions) &&
         clipSizes.size() < 3) {
+      // std::cout << clipSizes[0] << "\t" << readPositions[0] << "\t" << genomePositions[0] << std::endl;
+      // std::cout << ba1.RefID << std::endl;
+      // return;
       if (clipSizes.size() == 2) {
         leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
@@ -58,6 +71,17 @@ void DFinder::loadFrom(const std::string& filename) {
                                                     ba1.QueryBases,
                                                     ba1.Qualities));
       } else {
+        if (ba1.IsPaired() &&
+            !ba1.IsProperPair() &&
+            !ba1.IsDuplicate() &&
+            ba1.RefID == ba1.MateRefID &&
+            !ba1.IsReverseStrand() &&
+            ba1.IsMateReverseStrand() &&
+            genomePositions[0] < ba1.MatePosition &&
+            ba1.InsertSize > meanInsertSize) {
+          // std::cout << ba1.Position << "-" << ba1.MatePosition << std::endl;
+          lRegions[ba1.RefID].push_back({genomePositions[0], ba1.MatePosition, ba1.InsertSize - meanInsertSize - 3 * stdInsertSize, ba1.InsertSize - meanInsertSize + 3 * stdInsertSize});
+        }
         rightClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
                                                     readPositions[0],
@@ -72,7 +96,9 @@ void DFinder::loadFrom(const std::string& filename) {
         !ba1.IsMapped() ||
         !ba1.IsMateMapped() ||
         ba1.RefID != ba1.MateRefID ||
-        ba1.Position >= ba1.MatePosition) continue;
+        ba1.Position >= ba1.MatePosition ||
+        // ba1.InsertSize < threshold ||
+        ba1.InsertSize < meanInsertSize) continue;
         
     if (!ba1.IsReverseStrand() &&
         ba1.IsMateReverseStrand() &&
@@ -103,24 +129,77 @@ void DFinder::loadFrom(const std::string& filename) {
 
 }
 
-void DFinder::callTo(const std::string& filename) {
+void DFinder::callToFile(const std::string& filename) {
+  std::vector<Deletion> calls;
+  call(filename, calls);
+
   std::ofstream out(filename.c_str());
-  out << "chromosome\ttype\tstart1\tstart2\tend1\tend2" << std::endl;
+  out << "Chromosome\tType\tStart\tEnd\tLength" << std::endl;
+  for(auto itr = calls.begin(); itr != calls.end(); ++itr) {
+    out << references[(*itr).getReferenceId()].RefName << "\tDEL\t" << (*itr).getStart2() << "\t" << (*itr).getEnd2() << "\t" << (*itr).length()
+        << std::endl;
+  }
+}
+
+void DFinder::callToVcf(const std::string& filename) {
+  std::vector<Deletion> calls;
+  call(filename, calls);
+  
+  std::ofstream out(filename.c_str());
+  out << "##fileformat=VCFv4.1" << std::endl;
+  out << "##reference=human_g1k_v37" << std::endl;
+  out << "##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description=\"Imprecise structural variation\">" << std::endl;
+  out << "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant described in this record\">" << std::endl;
+  out << "##INFO=<ID=CIPOS,Number=2,Type=Integer,Description=\"Confidence interval around POS for imprecise variants\">" << std::endl;
+  out << "##INFO=<ID=CIEND,Number=2,Type=Integer,Description=\"Confidence interval around END for imprecise variants\">" << std::endl;
+  out << "##INFO=<ID=SVLEN,Number=.,Type=Integer,Description=\"Difference in length between REF and ALT alleles\">" << std::endl;
+  out << "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << std::endl;
+  out << "##INFO=<ID=SAMPLES,Number=.,Type=String,Description=\"List of samples\">" << std::endl;
+  out << "##ALT=<ID=DEL,Description=\"Deletion\">" << std::endl;
+  out << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO" << std::endl;
+
+  for(auto itr = calls.begin(); itr != calls.end(); ++itr) {
+    out << references[(*itr).getReferenceId()].RefName << "\t" << (*itr).getStart2() << "\t.\tN\t<DEL>\t.\tPASS\t"
+        << "IMPRECISE;SVTYPE=DEL;END=" << (*itr).getEnd2() << ";SVLEN=-" << (*itr).length()
+        << std::endl;
+  }
+}
+
+void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
   for (int i = 0; i < size; i++) {
     std::vector<TargetRegion> regions;
     identifyTargetRegions(i, regions);
+    // for (auto itr = regions.begin(); itr != regions.end(); ++itr)
+    //   std::cout << references[i].RefName << "\t"
+    //             << (*itr).start << "\t"
+    //             << (*itr).end << "\t"
+    //             << (*itr).minDeletionLength << "\t"
+    //             << (*itr).maxDeletionLength << "\t"
+    //             << std::endl;
     
-    std::vector<Consensus> consensuses1;
-    std::vector<Consensus> consensuses2;
-    computeConsensuses(i, consensuses1, consensuses2);
-    std::vector<Deletion> calls;
-    callAllDeletions(regions, consensuses1, consensuses2, calls);
-
-    for(auto itr = calls.begin(); itr != calls.end(); ++itr) {
-      out << references[i].RefName << "\tdeletion\t"
-          << (*itr).getStart1() << "\t" << (*itr).getStart2() << "\t"
-          << (*itr).getEnd1() << "\t" << (*itr).getEnd2() << std::endl;
+    // std::vector<Consensus> consensuses1;
+    // std::vector<Consensus> consensuses2;
+    // computeConsensuses(i, consensuses1, consensuses2);
+    for (auto itr1 = lRegions[i].begin(); itr1 != lRegions[i].end(); ++itr1) {
+      std::cout << references[i].RefName << "\t"
+                << (*itr1).start << "\t"
+                << (*itr1).end << "\t"
+                << (*itr1).minDeletionLength << "\t"
+                << (*itr1).maxDeletionLength << "\t"
+                << std::endl;
+      auto first = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).start, SoftClip::compare1);
+      auto last = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).end, SoftClip::compare1);
+      for (auto itr2 = last; itr2 != first; --itr2) {
+        if ((*first)->minDeletionLength(**itr2) < (*itr1).minDeletionLength) break;
+        if ((*first)->maxDeletionLength(**itr2) > (*itr1).maxDeletionLength) continue;
+        Overlap overlap;
+        if((*first)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
+          calls.push_back(overlap.getDeletion());
+          break;
+        }
+      }
     }
+    callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare, SoftClip::compare1, SoftClip::compare2, calls);
   }
 }
 
@@ -175,7 +254,10 @@ void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& 
   for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
     regions.push_back((*itr).getTargetRegion(meanInsertSize, stdInsertSize));
   }
-  
+
+  // for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
+  //   std::cout << (*itr).start << "\t" << (*itr).end << "\t" << (*itr).minDeletionLength << "\t" << (*itr).maxDeletionLength << std::endl;
+  // }
 }
 
 void clusterSoftClips(const std::vector<SoftClip*>& clips,
@@ -200,42 +282,12 @@ void acquireConsensuses(const std::vector<SoftClip*>& clips,
   for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
     consensuses.push_back((*itr).getConsensus());
   }
+  assert(is_sorted(consensuses.begin(), consensuses.end()));
 }
 
 void DFinder::computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2) {
-  acquireConsensuses(leftClips[referenceId], consensuses1);
-  acquireConsensuses(rightClips[referenceId], consensuses2);
-}
-
-void DFinder::callAllDeletions(const std::vector<TargetRegion>& regions,
-                               const std::vector<Consensus>& consensuses1,
-                               const std::vector<Consensus>& consensuses2,
-                               std::vector<Deletion>& calls) {
-  for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
-    auto first1 = lower_bound(consensuses1.begin(), consensuses1.end(), (*itr).start, Consensus::compare);
-    auto last1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).end, Consensus::compare2);
-    auto first2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, Consensus::compare);
-    auto last2 = upper_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, Consensus::compare2);
-    callOneDeletion(first1, last1, first2, last2, *itr, calls);
-  }
-}
-
-void DFinder::callOneDeletion(std::vector<Consensus>::const_iterator first1,
-                              std::vector<Consensus>::const_iterator last1,
-                              std::vector<Consensus>::const_iterator first2,
-                              std::vector<Consensus>::const_iterator last2,
-                              const TargetRegion& region,
-                              std::vector<Deletion>& calls) {
-  for (auto itr1 = first2; itr1 != last2; itr1++) {
-    first1 = upper_bound(first1, last1, *itr1);
-    for (auto itr2 = first1; itr2 != last1; itr2++) {
-      if ((*itr1).minDeletionLength(*itr2) < region.minDeletionLength) continue;
-      if ((*itr1).maxDeletionLength(*itr2) > region.maxDeletionLength) break;
-      Overlap overlap;
-      if((*itr1).overlaps(*itr2, minOverlapLength, maxMismatchRate, overlap)) {
-        calls.push_back(overlap.getDeletion());
-        return;
-      }
-    }
-  }
+  if (leftClips[referenceId].size() > 0)
+    acquireConsensuses(leftClips[referenceId], consensuses1);
+  if (rightClips[referenceId].size() > 0)
+    acquireConsensuses(rightClips[referenceId], consensuses2);
 }

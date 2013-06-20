@@ -4,17 +4,17 @@
 #include <iostream>
 #include <algorithm>
 
-bool Consensus::equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches) {
-  int cnt = 0;
-  if (s1.size() != s2.size()) return false;
-  // assert(s1.size() == s2.size());
-  for (size_t i = 0; i < s1.size(); ++i) {
-    if (s1[i] != s2[i]) ++cnt;
-    if (cnt > maxMismatches) return false;
-  }
-  numMismatches = cnt;
-  return true;
-}
+// bool Consensus::equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches) {
+//   int cnt = 0;
+//   if (s1.size() != s2.size()) return false;
+//   // assert(s1.size() == s2.size());
+//   for (size_t i = 0; i < s1.size(); ++i) {
+//     if (s1[i] != s2[i]) ++cnt;
+//     if (cnt > maxMismatches) return false;
+//   }
+//   numMismatches = cnt;
+//   return true;
+// }
 
 // std::ostream& operator <<(std::ostream& stream, const Contig& self) {
 //   stream << self.anchor;
@@ -50,7 +50,7 @@ bool Consensus::overlaps(const Consensus& other, int minOverlapLength, double ma
     const std::string& suffix = sequence.substr(l1 - i);
     const std::string& prefix = other.sequence.substr(0, i);
     int numMismatches;
-    if (equals(suffix, prefix, maxMismatches, numMismatches)) {
+    if (Overlap::equals(suffix, prefix, maxMismatches, numMismatches)) {
       overlap = Overlap(referenceId, clipPosition, other.clipPosition, numClips, other.numClips, i, numMismatches, i - initClippedLength);
       return true;
     }

@@ -31,3 +31,15 @@ Deletion Overlap::getDeletion() const {
   // return Deletion(referenceId, clipPosition1, clipPosition2 + offset, clipPosition1-offset, clipPosition2);
   return Deletion(referenceId, clipPosition1, clipPosition2, offset);
 }
+
+bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches) {
+  int cnt = 0;
+  if (s1.size() != s2.size()) return false;
+  // assert(s1.size() == s2.size());
+  for (size_t i = 0; i < s1.size(); ++i) {
+    if (s1[i] != s2[i]) ++cnt;
+    if (cnt > maxMismatches) return false;
+  }
+  numMismatches = cnt;
+  return true;
+}
