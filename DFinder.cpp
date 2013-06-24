@@ -181,12 +181,12 @@ void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
     // std::vector<Consensus> consensuses2;
     // computeConsensuses(i, consensuses1, consensuses2);
     for (auto itr1 = lRegions[i].begin(); itr1 != lRegions[i].end(); ++itr1) {
-      std::cout << references[i].RefName << "\t"
-                << (*itr1).start << "\t"
-                << (*itr1).end << "\t"
-                << (*itr1).minDeletionLength << "\t"
-                << (*itr1).maxDeletionLength << "\t"
-                << std::endl;
+      // std::cout << references[i].RefName << "\t"
+      //           << (*itr1).start << "\t"
+      //           << (*itr1).end << "\t"
+      //           << (*itr1).minDeletionLength << "\t"
+      //           << (*itr1).maxDeletionLength << "\t"
+      //           << std::endl;
       auto first = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).start, SoftClip::compare1);
       auto last = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).end, SoftClip::compare1);
       for (auto itr2 = last; itr2 != first; --itr2) {
@@ -260,34 +260,34 @@ void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& 
   // }
 }
 
-void clusterSoftClips(const std::vector<SoftClip*>& clips,
-                     std::vector<SoftClipCluster>& clusters) {
-  assert(clips.size() > 0);
-  SoftClipCluster clu(clips[0]);
-  for (int i = 0; i < clips.size() - 1; ++i) {
-    clu.add(clips[i]);
-    if (clu.clipPosition() < clips[i + 1]->position()) {
-      clusters.push_back(clu);
-      clu = SoftClipCluster(clips[i + 1]);
-    }
-  }
-  clu.add(clips.back());
-  clusters.push_back(clu);
-}
+// void clusterSoftClips(const std::vector<SoftClip*>& clips,
+//                      std::vector<SoftClipCluster>& clusters) {
+//   assert(clips.size() > 0);
+//   SoftClipCluster clu(clips[0]);
+//   for (int i = 0; i < clips.size() - 1; ++i) {
+//     clu.add(clips[i]);
+//     if (clu.clipPosition() < clips[i + 1]->position()) {
+//       clusters.push_back(clu);
+//       clu = SoftClipCluster(clips[i + 1]);
+//     }
+//   }
+//   clu.add(clips.back());
+//   clusters.push_back(clu);
+// }
 
-void acquireConsensuses(const std::vector<SoftClip*>& clips,
-                        std::vector<Consensus>& consensuses) {
-  std::vector<SoftClipCluster> clusters;
-  clusterSoftClips(clips, clusters);
-  for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
-    consensuses.push_back((*itr).getConsensus());
-  }
-  assert(is_sorted(consensuses.begin(), consensuses.end()));
-}
+// void acquireConsensuses(const std::vector<SoftClip*>& clips,
+//                         std::vector<Consensus>& consensuses) {
+//   std::vector<SoftClipCluster> clusters;
+//   clusterSoftClips(clips, clusters);
+//   for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
+//     consensuses.push_back((*itr).getConsensus());
+//   }
+//   assert(is_sorted(consensuses.begin(), consensuses.end()));
+// }
 
-void DFinder::computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2) {
-  if (leftClips[referenceId].size() > 0)
-    acquireConsensuses(leftClips[referenceId], consensuses1);
-  if (rightClips[referenceId].size() > 0)
-    acquireConsensuses(rightClips[referenceId], consensuses2);
-}
+// void DFinder::computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2) {
+//   if (leftClips[referenceId].size() > 0)
+//     acquireConsensuses(leftClips[referenceId], consensuses1);
+//   if (rightClips[referenceId].size() > 0)
+//     acquireConsensuses(rightClips[referenceId], consensuses2);
+// }

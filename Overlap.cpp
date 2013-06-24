@@ -1,17 +1,19 @@
 // #include <iostream>
+#include <iomanip>
+#include <cassert>
 #include "Overlap.h"
+#include "SoftClip.h"
 
-Overlap::Overlap() {}
+Overlap::Overlap() {
+}
 
-Overlap::Overlap(int referenceId, int clipPosition1, int clipPosition2, int numClips1, int numClips2, int length, int numMismatches, int offset) :
-    referenceId(referenceId),
-    clipPosition1(clipPosition1),
-    clipPosition2(clipPosition2),
-    numClips1(numClips1),
-    numClips2(numClips2),
+Overlap::Overlap(const SoftClip *first, const SoftClip *second, int length, int numMismatches, int offset) :
+    first(first),
+    second(second),
     length(length),
     numMismatches(numMismatches),
     offset(offset) {
+  assert(first != NULL && second != NULL && first->referenceId() == second->referenceId());
   // std::cout << offset << std::endl;
 }
 
@@ -20,7 +22,7 @@ Overlap::Overlap(int referenceId, int clipPosition1, int clipPosition2, int numC
 // int Overlap::getNumMismatches() const { return numMismatches; }
 
 int Overlap::deletionLength() const {
-  return clipPosition2 + offset - clipPosition1;
+  return second->position() + offset - first->position();
 }
 
 double Overlap::score() const {
@@ -29,7 +31,7 @@ double Overlap::score() const {
 
 Deletion Overlap::getDeletion() const {
   // return Deletion(referenceId, clipPosition1, clipPosition2 + offset, clipPosition1-offset, clipPosition2);
-  return Deletion(referenceId, clipPosition1, clipPosition2, offset);
+  return Deletion(first->referenceId(), first->position(), second->position(), offset);
 }
 
 bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches) {
@@ -42,4 +44,19 @@ bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismat
   }
   numMismatches = cnt;
   return true;
+}
+
+std::ostream& operator <<(std::ostream& stream, const Overlap& o) {
+  if (o.first->lengthOfLeftPart() >= o.second->lengthOfLeftPart()) {
+    stream << std::string(o.first->lengthOfLeftPart(), ' ') << '+' << std::endl;
+    stream << o.first->sequence() << std::endl;
+    stream << std::string(o.first->lengthOfLeftPart() - o.second->lengthOfLeftPart() - o.offset, ' ') << o.second->sequence() << std::endl;
+    stream << std::string(o.first->lengthOfLeftPart() - o.offset, ' ') << '^' << std::endl;
+  } else {
+    stream << std::string(o.second->lengthOfLeftPart() + o.offset, ' ') << '+' << std::endl;
+    stream << std::string(o.second->lengthOfLeftPart() - o.first->lengthOfLeftPart() + o.offset, ' ') << o.first->sequence() << std::endl;
+    stream << o.second->sequence() << std::endl;
+    stream << std::string(o.second->lengthOfLeftPart(), ' ') << '^' << std::endl;
+  }
+  return stream;
 }

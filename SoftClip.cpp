@@ -45,20 +45,36 @@ bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxM
   assert(refId == other.refId);
   int l1 = length();
   int l2 = other.length();
-  int initClippedLength = l1 - clipPos + other.clipPos;
-  int start = std::max(minOverlapLength, initClippedLength);
-  int end = std::min(l1, l2);
 
-  for (int i = start; i <= end; i++) {
-    int maxMismatches = ceil(i * maxMismatchRate);
-    const std::string& suffix = seq.substr(l1 - i);
-    const std::string& prefix = other.seq.substr(0, i);
-    int numMismatches;
-    if (Overlap::equals(suffix, prefix, maxMismatches, numMismatches)) {
-      overlap = Overlap(refId, pos, other.pos, 1, 1, i, numMismatches, i - initClippedLength);
-      return true;
+  if (lengthOfLeftPart() >= other.lengthOfLeftPart()) {
+    int initClippedLength = lengthOfRightPart() + other.lengthOfLeftPart();
+    int start = std::max(minOverlapLength, initClippedLength);
+    int end = std::min(l1, l2);
+    for (int i = start; i <= end; i++) {
+      int maxMismatches = ceil(i * maxMismatchRate);
+      const std::string& suffix = seq.substr(l1 - i);
+      const std::string& prefix = other.seq.substr(0, i);
+      int numMismatches;
+      if (Overlap::equals(suffix, prefix, maxMismatches, numMismatches)) {
+        overlap = Overlap(this, &other, i, numMismatches, i - initClippedLength);
+        return true;
+      }
+    }
+  } else {
+    int start = lengthOfLeftPart() + other.lengthOfRightPart();
+    int end = std::max(minOverlapLength,std::max(lengthOfLeftPart(), other.lengthOfRightPart()));
+    for (int i = start; i >= end; i--) {
+      int maxMismatches = ceil(i * maxMismatchRate);
+      const std::string& prefix = seq.substr(0, i);
+      const std::string& suffix = other.seq.substr(l2 - i);
+      int numMismatches;
+      if (Overlap::equals(suffix, prefix, maxMismatches, numMismatches)) {
+        overlap = Overlap(this, &other, i, numMismatches, start - i);
+        return true;
+      }
     }
   }
+  
   return false;
 }
 

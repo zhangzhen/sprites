@@ -31,7 +31,7 @@ class DFinder
   
   void identifyTargetRegions(int referenceId, std::vector<TargetRegion>& regions);
 
-  void computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2);
+  // void computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2);
 
   template <typename T, typename Compare, typename Compare1, typename Compare2>
   void callAllDeletions(const std::vector<TargetRegion>& regions,
@@ -98,6 +98,7 @@ void DFinder::callOneDeletion(ForwardIterator first1,
       Overlap overlap;
       if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
         calls.push_back(overlap.getDeletion());
+        std::cout << overlap << std::endl;
         return;
       }
     }
