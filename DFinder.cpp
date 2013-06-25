@@ -47,9 +47,13 @@ void DFinder::loadFrom(const std::string& filename) {
   while (r1.GetNextAlignment(ba1)) {
     // load a soft-clip
     std::vector<int> clipSizes, readPositions, genomePositions;
+    int xt;
+    if (!ba1.GetTag("XT", xt)) xt = 'U';
+    
     if (ba1.IsDuplicate()) continue;
     if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions) &&
-        clipSizes.size() < 3) {
+        clipSizes.size() < 3 &&
+        (xt == 'M' || xt =='U')) {
       // std::cout << clipSizes[0] << "\t" << readPositions[0] << "\t" << genomePositions[0] << std::endl;
       // std::cout << ba1.RefID << std::endl;
       // return;
@@ -180,25 +184,25 @@ void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
     // std::vector<Consensus> consensuses1;
     // std::vector<Consensus> consensuses2;
     // computeConsensuses(i, consensuses1, consensuses2);
-    for (auto itr1 = lRegions[i].begin(); itr1 != lRegions[i].end(); ++itr1) {
-      // std::cout << references[i].RefName << "\t"
-      //           << (*itr1).start << "\t"
-      //           << (*itr1).end << "\t"
-      //           << (*itr1).minDeletionLength << "\t"
-      //           << (*itr1).maxDeletionLength << "\t"
-      //           << std::endl;
-      auto first = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).start, SoftClip::compare1);
-      auto last = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).end, SoftClip::compare1);
-      for (auto itr2 = last; itr2 != first; --itr2) {
-        if ((*first)->minDeletionLength(**itr2) < (*itr1).minDeletionLength) break;
-        if ((*first)->maxDeletionLength(**itr2) > (*itr1).maxDeletionLength) continue;
-        Overlap overlap;
-        if((*first)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
-          calls.push_back(overlap.getDeletion());
-          break;
-        }
-      }
-    }
+    // for (auto itr1 = lRegions[i].begin(); itr1 != lRegions[i].end(); ++itr1) {
+    //   // std::cout << references[i].RefName << "\t"
+    //   //           << (*itr1).start << "\t"
+    //   //           << (*itr1).end << "\t"
+    //   //           << (*itr1).minDeletionLength << "\t"
+    //   //           << (*itr1).maxDeletionLength << "\t"
+    //   //           << std::endl;
+    //   auto first = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).start, SoftClip::compare1);
+    //   auto last = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).end, SoftClip::compare1);
+    //   for (auto itr2 = last; itr2 != first; --itr2) {
+    //     if ((*first)->minDeletionLength(**itr2) < (*itr1).minDeletionLength) break;
+    //     if ((*first)->maxDeletionLength(**itr2) > (*itr1).maxDeletionLength) continue;
+    //     Overlap overlap;
+    //     if((*first)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
+    //       calls.push_back(overlap.getDeletion());
+    //       break;
+    //     }
+    //   }
+    // }
     callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare, SoftClip::compare1, SoftClip::compare2, calls);
   }
 }

@@ -77,7 +77,7 @@ void DFinder::callAllDeletions(const std::vector<TargetRegion>& regions,
     auto last1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).end, comp2);
     auto first2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, comp1);
     auto last2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, comp1);
-    // if ((*itr).start == 33115780) {
+    // if ((*itr).start == 5942980) {
     //   for (auto itr2 = first1; itr2 != last1 + 1; ++itr2)
     //     std::cout << **itr2 << std::endl;
     //   std::cout << "2222222222222" << std::endl;
@@ -99,11 +99,10 @@ void DFinder::callOneDeletion(ForwardIterator first1,
                               std::vector<Deletion>& calls) {
   for (auto itr1 = first2; itr1 != last2; ++itr1) {
     for (auto itr2 = last1; itr2 != first1 - 1; --itr2) {
-      // if (region.start == 33115780) {
+      // if (region.start == 5942980) {
       //   std::cout << (*itr1)->position() << '-' << (*itr2)->position() << std::endl;
       //   std::cout << ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) << '\t' << ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) << std::endl;
       // }
-      // std::cout << (*itr1).getClipPosition() << "\t" << (*itr2).getClipPosition() << std::endl;
       if ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) break;
       if ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) continue;
       Overlap overlap;
