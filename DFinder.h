@@ -73,19 +73,19 @@ void DFinder::callAllDeletions(const std::vector<TargetRegion>& regions,
                                Compare2 comp2,
                                std::vector<Deletion>& calls) {
   for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
-    auto first1 = lower_bound(consensuses1.begin(), consensuses1.end(), (*itr).start, comp1);
+    auto first1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).start, comp2);
     auto last1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).end, comp2);
-    auto first2 = upper_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, comp2);
+    auto first2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, comp1);
     auto last2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, comp1);
-    // if ((*itr).start == 2802991 && (*itr).end == 2806403) {
+    // if ((*itr).start == 33115780) {
     //   for (auto itr2 = first1; itr2 != last1 + 1; ++itr2)
     //     std::cout << **itr2 << std::endl;
     //   std::cout << "2222222222222" << std::endl;
-    //   for (auto itr2 = first2; itr2 != last2; ++itr2) {
+    //   for (auto itr2 = first2 - 1; itr2 != last2; ++itr2) {
     //     std::cout << **itr2 << std::endl;
     //   }
     // }
-    callOneDeletion(first1, last1 + 1, first2, last2, comp, *itr, calls);
+    callOneDeletion(first1, last1 + 1, first2 - 1, last2, comp, *itr, calls);
   }
 }
 
@@ -98,11 +98,14 @@ void DFinder::callOneDeletion(ForwardIterator first1,
                               const TargetRegion& region,
                               std::vector<Deletion>& calls) {
   for (auto itr1 = first2; itr1 != last2; ++itr1) {
-    first1 = upper_bound(first1, last1, *itr1, comp);
-    for (auto itr2 = first1; itr2 != last1; ++itr2) {
+    for (auto itr2 = last1; itr2 != first1 - 1; --itr2) {
+      // if (region.start == 33115780) {
+      //   std::cout << (*itr1)->position() << '-' << (*itr2)->position() << std::endl;
+      //   std::cout << ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) << '\t' << ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) << std::endl;
+      // }
       // std::cout << (*itr1).getClipPosition() << "\t" << (*itr2).getClipPosition() << std::endl;
-      if ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) continue;
-      if ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) break;
+      if ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) break;
+      if ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) continue;
       Overlap overlap;
       if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
         calls.push_back(overlap.getDeletion());
@@ -110,7 +113,6 @@ void DFinder::callOneDeletion(ForwardIterator first1,
         return;
       }
     }
-    break;
   }
 }
 
