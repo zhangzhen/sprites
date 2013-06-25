@@ -75,9 +75,17 @@ void DFinder::callAllDeletions(const std::vector<TargetRegion>& regions,
   for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
     auto first1 = lower_bound(consensuses1.begin(), consensuses1.end(), (*itr).start, comp1);
     auto last1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).end, comp2);
-    auto first2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, comp1);
-    auto last2 = upper_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, comp2);
-    callOneDeletion(first1, last1, first2, last2, comp, *itr, calls);
+    auto first2 = upper_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, comp2);
+    auto last2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, comp1);
+    // if ((*itr).start == 2802991 && (*itr).end == 2806403) {
+    //   for (auto itr2 = first1; itr2 != last1 + 1; ++itr2)
+    //     std::cout << **itr2 << std::endl;
+    //   std::cout << "2222222222222" << std::endl;
+    //   for (auto itr2 = first2; itr2 != last2; ++itr2) {
+    //     std::cout << **itr2 << std::endl;
+    //   }
+    // }
+    callOneDeletion(first1, last1 + 1, first2, last2, comp, *itr, calls);
   }
 }
 
@@ -98,7 +106,7 @@ void DFinder::callOneDeletion(ForwardIterator first1,
       Overlap overlap;
       if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
         calls.push_back(overlap.getDeletion());
-        std::cout << overlap << std::endl;
+        // std::cout << overlap << std::endl;
         return;
       }
     }

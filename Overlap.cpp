@@ -47,7 +47,7 @@ bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismat
 }
 
 std::ostream& operator <<(std::ostream& stream, const Overlap& o) {
-  if (o.first->lengthOfLeftPart() >= o.second->lengthOfLeftPart()) {
+  if (o.first->lengthOfLeftPart() >= o.second->lengthOfLeftPart() + o.offset) {
     stream << std::string(o.first->lengthOfLeftPart(), ' ') << '+' << std::endl;
     stream << o.first->sequence() << std::endl;
     stream << std::string(o.first->lengthOfLeftPart() - o.second->lengthOfLeftPart() - o.offset, ' ') << o.second->sequence() << std::endl;

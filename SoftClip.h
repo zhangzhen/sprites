@@ -29,6 +29,8 @@ class SoftClip {
   static bool compare(SoftClip* s1, SoftClip* s2);
   static bool compare1(SoftClip* o, const int pos);
   static bool compare2(const int pos, SoftClip* o);
+
+  friend std::ostream& operator <<(std::ostream& stream, const SoftClip& o);
 };
 
 #endif /* _SOFTCLIP_H_ */
