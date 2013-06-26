@@ -85,10 +85,10 @@ bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxM
       int maxMismatches = ceil(i * maxMismatchRate);
       const std::string& prefix = seq.substr(0, i);
       const std::string& suffix = other.seq.substr(l2 - i);
-      if (pos == 33115831) {
-        std::cout << prefix << std::endl;
-        std::cout << suffix << std::endl;
-      }
+      // if (pos == 33115831) {
+      //   std::cout << prefix << std::endl;
+      //   std::cout << suffix << std::endl;
+      // }
       int numMismatches;
       if (Overlap::equals(suffix, prefix, maxMismatches, numMismatches)) {
         overlap = Overlap(this, &other, i, numMismatches, start - i);

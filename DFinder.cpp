@@ -75,17 +75,15 @@ void DFinder::loadFrom(const std::string& filename) {
                                                     ba1.QueryBases,
                                                     ba1.Qualities));
       } else {
-        if (ba1.IsPaired() &&
-            !ba1.IsProperPair() &&
-            !ba1.IsDuplicate() &&
-            ba1.RefID == ba1.MateRefID &&
-            !ba1.IsReverseStrand() &&
-            ba1.IsMateReverseStrand() &&
-            genomePositions[0] < ba1.MatePosition &&
-            ba1.InsertSize > meanInsertSize) {
-          // std::cout << ba1.Position << "-" << ba1.MatePosition << std::endl;
-          lRegions[ba1.RefID].push_back({genomePositions[0], ba1.MatePosition, ba1.InsertSize - meanInsertSize - 3 * stdInsertSize, ba1.InsertSize - meanInsertSize + 3 * stdInsertSize});
-        }
+        // if (ba1.IsPaired() &&
+        //     !ba1.IsProperPair() &&
+        //     ba1.RefID == ba1.MateRefID &&
+        //     !ba1.IsReverseStrand() &&
+        //     ba1.IsMateReverseStrand() &&
+        //     genomePositions[0] < ba1.MatePosition &&
+        //     ba1.InsertSize > meanInsertSize) {
+        //   lRegions[ba1.RefID].push_back({genomePositions[0], ba1.MatePosition, ba1.InsertSize - meanInsertSize - 3 * stdInsertSize, ba1.InsertSize - meanInsertSize + 3 * stdInsertSize});
+        // }
         rightClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
                                                     readPositions[0],
@@ -118,12 +116,12 @@ void DFinder::loadFrom(const std::string& filename) {
         }
       }
       if (!found) continue;
-      uint8_t t1, t2;
-      if (!ba1.GetTag("XT", t1) || !ba2.GetTag("XT", t2)) continue;
-      if ((t1 == 'U' && t2 == 'U')) {
+      int xt2;
+      if (!ba2.GetTag("XT", xt2)) xt2 = 'U';
+      if ((xt == 'U' && xt2 == 'U')) {
         intervals[ba1.RefID].push_back(new Interval(cnt,
                                          ba1.RefID,
-                                         ba1.GetEndPosition() + 1,
+                                         ba1.GetEndPosition(),
                                          ba1.MatePosition,
                                          ba1.InsertSize));
         cnt++;
@@ -179,6 +177,14 @@ void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
     //             << (*itr).end << "\t"
     //             << (*itr).minDeletionLength << "\t"
     //             << (*itr).maxDeletionLength << "\t"
+    //             << std::endl;
+
+    // for (auto itr1 = lRegions[i].begin(); itr1 != lRegions[i].end(); ++itr1)
+    //   std::cout << references[i].RefName << "\t"
+    //             << (*itr1).start << "\t"
+    //             << (*itr1).end << "\t"
+    //             << (*itr1).minDeletionLength << "\t"
+    //             << (*itr1).maxDeletionLength << "\t"
     //             << std::endl;
     
     // std::vector<Consensus> consensuses1;
