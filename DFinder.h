@@ -103,10 +103,12 @@ void DFinder::callOneDeletion(ForwardIterator first1,
       //   std::cout << (*itr1)->position() << '-' << (*itr2)->position() << std::endl;
       //   std::cout << ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) << '\t' << ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) << std::endl;
       // }
-      if ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) break;
-      if ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) continue;
+      if ((*itr1)->position() >= (*itr2)->position() || (*itr1)->maxDeletionLength(**itr2) < region.minDeletionLength) break;
+      if ((*itr1)->minDeletionLength(**itr2) > region.maxDeletionLength) continue;
       Overlap overlap;
-      if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
+      if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap) &&
+         overlap.deletionLength() >= region.minDeletionLength &&
+         overlap.deletionLength() <= region.maxDeletionLength) {
         calls.push_back(overlap.getDeletion());
         // std::cout << overlap << std::endl;
         return;

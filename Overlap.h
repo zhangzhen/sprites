@@ -19,9 +19,10 @@ class Overlap
   static bool equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches);
 
   friend std::ostream& operator <<(std::ostream& stream, const Overlap& o);
+
+  int deletionLength() const;
   
  private:
-  int deletionLength() const;
 
   const SoftClip *first;
   const SoftClip *second;

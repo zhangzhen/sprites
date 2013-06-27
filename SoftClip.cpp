@@ -32,13 +32,13 @@ bool SoftClip::compare(SoftClip* s1, SoftClip* s2) {
 }
 
 int SoftClip::minDeletionLength(const SoftClip& other) const {
-  // assert(pos <= other.pos);
+  assert(pos < other.pos);
   return other.pos - pos;
 }
 
 int SoftClip::maxDeletionLength(const SoftClip& other) const {
   assert(pos < other.pos);
-  return other.pos + std::min(length(), other.length()) - clipPos - other.clipPos - pos;
+  return other.pos - pos + std::min(lengthOfLeftPart(), other.lengthOfRightPart());
 }
 
 bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const {
