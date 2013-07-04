@@ -2,7 +2,6 @@
 #include <queue>
 #include "DFinder.h"
 #include "IntervalCluster.h"
-#include "SoftClipCluster.h"
 
 const int MinDeleltionLength = 50;
 

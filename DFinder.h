@@ -4,7 +4,6 @@
 #include "SoftClip.h"
 #include "Interval.h"
 #include "TargetRegion.h"
-#include "Consensus.h"
 #include "api/BamReader.h"
 
 
