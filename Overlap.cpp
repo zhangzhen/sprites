@@ -25,8 +25,8 @@ int Overlap::deletionLength() const {
   return second->position() + offset - first->position();
 }
 
-double Overlap::score() const {
-  return 0;
+double Overlap::mismatchRate() const {
+  return numMismatches / float(length);
 }
 
 Deletion Overlap::getDeletion() const {
@@ -46,7 +46,30 @@ bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismat
   return true;
 }
 
+bool Overlap::getBestOverlap(std::vector<Overlap> overlaps, Overlap& ov) {
+  auto first = overlaps.begin();
+  auto last = overlaps.end();
+  if (first == last) return false;
+  auto next = first;
+  int max = 0;
+  while (++next != last) {
+    if (max < (*first).deletionLength()) max = (*first).deletionLength();
+    if ((*next).first->position() > (*first).first->position()) break;
+  }
+
+  for (auto itr = first; itr != last; ++itr) {
+    if (max == (*itr).deletionLength()) {
+      ov = *itr;
+      return true;
+    }
+  }
+  return false;
+}
+
 std::ostream& operator <<(std::ostream& stream, const Overlap& o) {
+  stream << "[CALL] " << o.first->referenceId() << ":" << o.first->position()
+         << "-" << o.second->position() << "\t" << o.deletionLength() << "\t"
+         << o.mismatchRate() << std::endl;
   if (o.first->lengthOfLeftPart() >= o.second->lengthOfLeftPart() + o.offset) {
     stream << std::string(o.first->lengthOfLeftPart(), ' ') << '+' << std::endl;
     stream << o.first->sequence() << std::endl;

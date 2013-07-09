@@ -3,16 +3,14 @@
 #include "DFinder.h"
 #include "IntervalCluster.h"
 
-const int MinDeleltionLength = 50;
-
 DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate) :
     meanInsertSize(meanInsertSize), stdInsertSize(stdInsertSize), minOverlapLength(minOverlapLength), maxMismatchRate(maxMismatchRate) {
   loadFrom(filename);
   // assert(leftClips[19].size() > 0);
   // assert(rightClips[19].size() > 0);
   for (int i = 0; i < size; ++i) {
-    sort(leftClips[i].begin(), leftClips[i].end(), SoftClip::compare);
-    sort(rightClips[i].begin(), rightClips[i].end(), SoftClip::compare);
+    sort(leftClips[i].begin(), leftClips[i].end(), SoftClip::compareL);
+    sort(rightClips[i].begin(), rightClips[i].end(), SoftClip::compareR);
   }
 }
 
@@ -38,7 +36,6 @@ void DFinder::loadFrom(const std::string& filename) {
   leftClips.resize(size);
   rightClips.resize(size);
   intervals.resize(size);
-  lRegions.resize(size);
 
   int threshold = meanInsertSize + 4 * stdInsertSize;
   BamTools::BamAlignment ba1;
@@ -51,55 +48,38 @@ void DFinder::loadFrom(const std::string& filename) {
     
     if (ba1.IsDuplicate()) continue;
     if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions) &&
-        clipSizes.size() < 3 &&
+        clipSizes.size() == 1 &&
         (xt == 'M' || xt =='U')) {
-      // std::cout << clipSizes[0] << "\t" << readPositions[0] << "\t" << genomePositions[0] << std::endl;
-      // std::cout << ba1.RefID << std::endl;
-      // return;
-      if (clipSizes.size() == 2) {
-        leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
-                                                    genomePositions[0],
-                                                    readPositions[0],
-                                                    ba1.QueryBases.substr(0, ba1.Length - clipSizes[1]),
-                                                    ba1.Qualities.substr(0, ba1.Length - clipSizes[1])));
-        rightClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
-                                                     genomePositions[1],
-                                                     readPositions[1] - readPositions[0],
-                                                     ba1.QueryBases.substr(clipSizes[0]),
-                                                     ba1.Qualities.substr(clipSizes[0])));
-      } else if (readPositions[0] == clipSizes[0]) { // left clip
+      // if (ba1.Position == 15395140) {
+      //   std::cout << ba1.QueryBases << std::endl;
+      //   std::cout << ba1.AlignedBases << std::endl;
+      //   std::cout << clipSizes[0] << "\t" << readPositions[0] << "\t"
+      //             << genomePositions[0] << "\t" << ba1.GetEndPosition() << std::endl;
+      // }
+      if (readPositions[0] == clipSizes[0]) { // left clip
         leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
                                                     readPositions[0],
                                                     ba1.QueryBases,
                                                     ba1.Qualities));
       } else {
-        // if (ba1.IsPaired() &&
-        //     !ba1.IsProperPair() &&
-        //     ba1.RefID == ba1.MateRefID &&
-        //     !ba1.IsReverseStrand() &&
-        //     ba1.IsMateReverseStrand() &&
-        //     genomePositions[0] < ba1.MatePosition &&
-        //     ba1.InsertSize > meanInsertSize) {
-        //   lRegions[ba1.RefID].push_back({genomePositions[0], ba1.MatePosition, ba1.InsertSize - meanInsertSize - 3 * stdInsertSize, ba1.InsertSize - meanInsertSize + 3 * stdInsertSize});
-        // }
         rightClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
-                                                    readPositions[0],
+                                                    ba1.Length - clipSizes[0],
                                                     ba1.QueryBases,
                                                     ba1.Qualities));
       }
-      continue;
+      // continue;
     }
     // load an interval of paired-ends
     if (!ba1.IsPaired() ||
-        ba1.IsProperPair() ||
+        // ba1.IsProperPair() ||
         !ba1.IsMapped() ||
         !ba1.IsMateMapped() ||
         ba1.RefID != ba1.MateRefID ||
-        ba1.Position >= ba1.MatePosition ||
-        // ba1.InsertSize < threshold ||
-        ba1.InsertSize < meanInsertSize) continue;
+        // ba1.InsertSize < meanInsertSize ||
+        ba1.InsertSize < threshold ||
+        ba1.Position >= ba1.MatePosition) continue;
         
     if (!ba1.IsReverseStrand() &&
         ba1.IsMateReverseStrand() &&
@@ -117,7 +97,8 @@ void DFinder::loadFrom(const std::string& filename) {
       if (!found) continue;
       int xt2;
       if (!ba2.GetTag("XT", xt2)) xt2 = 'U';
-      if ((xt == 'U' && xt2 == 'U')) {
+      if ((xt == 'U' || xt == 'M') &&
+          (xt2 == 'U' || xt2 == 'M')) {
         intervals[ba1.RefID].push_back(new Interval(cnt,
                                          ba1.RefID,
                                          ba1.GetEndPosition(),
@@ -186,29 +167,7 @@ void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
     //             << (*itr1).maxDeletionLength << "\t"
     //             << std::endl;
     
-    // std::vector<Consensus> consensuses1;
-    // std::vector<Consensus> consensuses2;
-    // computeConsensuses(i, consensuses1, consensuses2);
-    // for (auto itr1 = lRegions[i].begin(); itr1 != lRegions[i].end(); ++itr1) {
-    //   // std::cout << references[i].RefName << "\t"
-    //   //           << (*itr1).start << "\t"
-    //   //           << (*itr1).end << "\t"
-    //   //           << (*itr1).minDeletionLength << "\t"
-    //   //           << (*itr1).maxDeletionLength << "\t"
-    //   //           << std::endl;
-    //   auto first = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).start, SoftClip::compare1);
-    //   auto last = lower_bound(leftClips[i].begin(), leftClips[i].end(), (*itr1).end, SoftClip::compare1);
-    //   for (auto itr2 = last; itr2 != first; --itr2) {
-    //     if ((*first)->minDeletionLength(**itr2) < (*itr1).minDeletionLength) break;
-    //     if ((*first)->maxDeletionLength(**itr2) > (*itr1).maxDeletionLength) continue;
-    //     Overlap overlap;
-    //     if((*first)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap)) {
-    //       calls.push_back(overlap.getDeletion());
-    //       break;
-    //     }
-    //   }
-    // }
-    callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare, SoftClip::compare1, SoftClip::compare2, calls);
+    callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare1, SoftClip::compare2, calls);
   }
 }
 
@@ -257,11 +216,13 @@ void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& 
   std::vector<const Interval*> remainder;
   removeSuperIntervals(intervals[referenceId], remainder);
   // clusters pairwise overlapping intervals 
-  std::vector<IntervalCluster> clusters;
-  clusterIntervals(remainder, clusters);
+  // std::vector<IntervalCluster> clusters;
+  // clusterIntervals(remainder, clusters);
 
-  for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
-    regions.push_back((*itr).getTargetRegion(meanInsertSize, stdInsertSize));
+  for (auto itr = remainder.begin(); itr != remainder.end(); ++itr) {
+    regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
+            (*itr)->minDeletionLength(meanInsertSize, stdInsertSize),
+            (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)});
   }
 
   // for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
@@ -269,34 +230,40 @@ void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& 
   // }
 }
 
-// void clusterSoftClips(const std::vector<SoftClip*>& clips,
-//                      std::vector<SoftClipCluster>& clusters) {
-//   assert(clips.size() > 0);
-//   SoftClipCluster clu(clips[0]);
-//   for (int i = 0; i < clips.size() - 1; ++i) {
-//     clu.add(clips[i]);
-//     if (clu.clipPosition() < clips[i + 1]->position()) {
-//       clusters.push_back(clu);
-//       clu = SoftClipCluster(clips[i + 1]);
-//     }
-//   }
-//   clu.add(clips.back());
-//   clusters.push_back(clu);
-// }
+void DFinder::printOverlaps(const std::string& filename, int readlength) {
+  std::ifstream in(filename.c_str());
+  
+  int start, end, length;
+  std::string refname;
+  int cnt = 0, matched = 0;
 
-// void acquireConsensuses(const std::vector<SoftClip*>& clips,
-//                         std::vector<Consensus>& consensuses) {
-//   std::vector<SoftClipCluster> clusters;
-//   clusterSoftClips(clips, clusters);
-//   for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
-//     consensuses.push_back((*itr).getConsensus());
-//   }
-//   assert(is_sorted(consensuses.begin(), consensuses.end()));
-// }
+  while(in >> refname >> start >> end >> length) {
+  
+    bool found = false;
+    int id;
+    for (int i = 0; i < size; ++i) {
+      if (references[i].RefName == refname) {
+        id = i;
+        found = true;
+        break;
+      }
+    }
 
-// void DFinder::computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2) {
-//   if (leftClips[referenceId].size() > 0)
-//     acquireConsensuses(leftClips[referenceId], consensuses1);
-//   if (rightClips[referenceId].size() > 0)
-//     acquireConsensuses(rightClips[referenceId], consensuses2);
-// }
+    std::cout << "#######################################" << std::endl;
+    std::cout << refname << ":" << start << "-" << end << "\t" << length << std::endl;
+    cnt++;
+
+    if (!found) continue;
+    auto first1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end - readlength, SoftClip::compare2);
+    auto last1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end, SoftClip::compare2);
+    auto first2 = lower_bound(rightClips[id].begin(), rightClips[id].end(), start, SoftClip::compare1);
+    auto last2 =  lower_bound(rightClips[id].begin(), rightClips[id].end(), start + readlength, SoftClip::compare1);
+    Overlap overlap;
+    if (overlaps(first1, last1, first2, last2, std::max(0, length - 3 * stdInsertSize), length + 3 * stdInsertSize, overlap)) {
+      std::cout << overlap << std::endl;
+      matched++;
+    }
+  }
+  std::cout << "#Matched: " << matched << std::endl;
+  std::cout << "Matching rate: " << float(matched) / cnt << std::endl;
+}

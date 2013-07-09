@@ -20,6 +20,8 @@ class Interval {
   int getEndPos() const;
   int getInsertSize() const;
   size_t length() const;
+  int minDeletionLength(int mean, int std) const;
+  int maxDeletionLength(int mean, int std) const;
   // bool overlapsWith(const Interval& other) const;
   // std::string toString() const;
 

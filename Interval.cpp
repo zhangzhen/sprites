@@ -17,6 +17,16 @@ int Interval::getInsertSize() const { return insertSize; }
 
 size_t Interval::length() const { return endPos - startPos; }
 
+int Interval::minDeletionLength(int mean, int std) const {
+  assert(insertSize > mean);
+  return std::max(insertSize - mean - 3 * std, 0);
+}
+
+int Interval::maxDeletionLength(int mean, int std) const {
+  assert(insertSize > mean);
+  return insertSize - mean + 3 * std;
+}
+
 // bool Interval::overlapsWith(const Interval& other) const {
 //   return false;
 // }

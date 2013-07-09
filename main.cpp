@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
   char *progname;
   int mean = 200;
   int std = 10;
-  int minOverlapLen = 5;
+  int minOverlapLen = 15;
   double maxMismatchRate = 0.1;
   std::string outFilename;
   int c, status = 0;
@@ -53,5 +53,6 @@ int main(int argc, char *argv[]) {
   std::string filename(argv[optind]);
   DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate);
   dfinder.callToFile(outFilename);
+  // dfinder.printOverlaps("../gold-standard-svs/venter-chr22-known-dels.txt", 75);
   return 0;
 }

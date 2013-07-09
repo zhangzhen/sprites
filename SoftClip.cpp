@@ -27,17 +27,23 @@ char SoftClip::at(int i) const { return seq[i]; }
 
 char SoftClip::qual(int i) const { return quals[i]; }
 
-bool SoftClip::compare(SoftClip* s1, SoftClip* s2) {
-  return s1->pos < s2->pos;
+bool SoftClip::compareL(SoftClip* s1, SoftClip* s2) {
+  if (s1->pos != s2->pos)
+    return s1->pos < s2->pos;
+  return s1->lengthOfLeftPart() < s2->lengthOfLeftPart();
+}
+
+bool SoftClip::compareR(SoftClip* s1, SoftClip* s2) {
+  if (s1->pos != s2->pos)
+    return s1->pos < s2->pos;
+  return s1->lengthOfRightPart() > s2->lengthOfRightPart();
 }
 
 int SoftClip::minDeletionLength(const SoftClip& other) const {
-  assert(pos < other.pos);
   return other.pos - pos;
 }
 
 int SoftClip::maxDeletionLength(const SoftClip& other) const {
-  assert(pos < other.pos);
   return other.pos - pos + std::min(lengthOfLeftPart(), other.lengthOfRightPart());
 }
 
@@ -64,11 +70,10 @@ bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxM
     // }
     // if (pos == 33115831) std::cout << "2222222222222222222" << std::endl;
 
-    for (int i = 0; i < std::min(lengthOfLeftPart(), other.lengthOfRightPart()); ++i) {
+    for (int i = std::max(0, minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart()); i < std::min(lengthOfLeftPart(), other.lengthOfRightPart()); ++i) {
       int n1 = std::min(lengthOfLeftPart(), other.lengthOfLeftPart() + i);
       int n2 = std::min(lengthOfRightPart(), other.lengthOfRightPart() - i);
       int n = n1 + n2;
-      if (n < minOverlapLength) break;
       int st1 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? lengthOfLeftPart() - other.lengthOfLeftPart() - i : 0;
       int st2 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? 0 : other.lengthOfLeftPart() + i - lengthOfLeftPart();
       int maxMismatches = ceil(n * maxMismatchRate);
