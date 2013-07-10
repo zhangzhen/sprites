@@ -48,7 +48,7 @@ void DFinder::loadFrom(const std::string& filename) {
     
     if (ba1.IsDuplicate()) continue;
     if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions) &&
-        clipSizes.size() == 1 &&
+        clipSizes.size() <= 2 &&
         (xt == 'M' || xt =='U')) {
       // if (ba1.Position == 15395140) {
       //   std::cout << ba1.QueryBases << std::endl;
@@ -56,7 +56,18 @@ void DFinder::loadFrom(const std::string& filename) {
       //   std::cout << clipSizes[0] << "\t" << readPositions[0] << "\t"
       //             << genomePositions[0] << "\t" << ba1.GetEndPosition() << std::endl;
       // }
-      if (readPositions[0] == clipSizes[0]) { // left clip
+      if (clipSizes.size() == 2) {
+        leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
+                                                    genomePositions[0],
+                                                    readPositions[0],
+                                                    ba1.QueryBases.substr(0, ba1.Length - clipSizes[1]),
+                                                    ba1.Qualities.substr(0, ba1.Length - clipSizes[1])));
+        rightClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
+                                                     genomePositions[1],
+                                                     ba1.Length - clipSizes[0] - clipSizes[1],
+                                                     ba1.QueryBases.substr(clipSizes[0]),
+                                                     ba1.Qualities.substr(clipSizes[0])));      
+      } else if (readPositions[0] == clipSizes[0]) { // left clip
         leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
                                                     readPositions[0],
@@ -73,17 +84,17 @@ void DFinder::loadFrom(const std::string& filename) {
     }
     // load an interval of paired-ends
     if (!ba1.IsPaired() ||
-        // ba1.IsProperPair() ||
+        ba1.IsProperPair() ||
         !ba1.IsMapped() ||
         !ba1.IsMateMapped() ||
         ba1.RefID != ba1.MateRefID ||
-        // ba1.InsertSize < meanInsertSize ||
-        ba1.InsertSize < threshold ||
+        ba1.InsertSize < meanInsertSize ||
+        // ba1.InsertSize < threshold ||
         ba1.Position >= ba1.MatePosition) continue;
         
     if (!ba1.IsReverseStrand() &&
         ba1.IsMateReverseStrand() &&
-        r2.Jump(ba1.MateRefID, ba1.Position + ba1.InsertSize - 1)) {
+        r2.Jump(ba1.RefID, ba1.MatePosition)) {
       bool found = false;
       BamTools::BamAlignment ba2;
       while (r2.GetNextAlignment(ba2)) {
@@ -150,7 +161,12 @@ void DFinder::callToVcf(const std::string& filename) {
 void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
   for (int i = 0; i < size; i++) {
     std::vector<TargetRegion> regions;
-    identifyTargetRegions(i, regions);
+    for (auto itr = intervals[i].begin(); itr != intervals[i].end(); ++itr) {
+      regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
+              (*itr)->minDeletionLength(meanInsertSize, stdInsertSize),
+              (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)});
+    }
+    // identifyTargetRegions(i, regions);
     // for (auto itr = regions.begin(); itr != regions.end(); ++itr)
     //   std::cout << references[i].RefName << "\t"
     //             << (*itr).start << "\t"
@@ -254,8 +270,8 @@ void DFinder::printOverlaps(const std::string& filename, int readlength) {
     cnt++;
 
     if (!found) continue;
-    auto first1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end - readlength, SoftClip::compare2);
-    auto last1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end, SoftClip::compare2);
+    auto first1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end - readlength, SoftClip::compare2) - 1;
+    auto last1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end, SoftClip::compare2) - 1;
     auto first2 = lower_bound(rightClips[id].begin(), rightClips[id].end(), start, SoftClip::compare1);
     auto last2 =  lower_bound(rightClips[id].begin(), rightClips[id].end(), start + readlength, SoftClip::compare1);
     Overlap overlap;

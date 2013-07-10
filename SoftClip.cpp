@@ -49,6 +49,8 @@ int SoftClip::maxDeletionLength(const SoftClip& other) const {
 
 bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const {
   assert(refId == other.refId);
+  if (maxDeletionLength(other) < 0) return false;
+  
   int l1 = length();
   int l2 = other.length();
 

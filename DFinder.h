@@ -107,11 +107,11 @@ void DFinder::callOneDeletion(ForwardIterator first1,
       //   std::cout << (*itr1)->position() << '-' << (*itr2)->position() << std::endl;
       //   std::cout << ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) << '\t' << ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) << std::endl;
       // }
-      if ((*itr1)->maxDeletionLength(**itr2) < region.minDeletionLength) return;
+      if ((*itr1)->maxDeletionLength(**itr2) < region.minDeletionLength) break;
       if ((*itr1)->minDeletionLength(**itr2) > region.maxDeletionLength) continue;
       Overlap overlap;
       if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap) &&
-         overlap.deletionLength() >= std::max(50, region.minDeletionLength) &&
+         overlap.deletionLength() >= region.minDeletionLength &&
          overlap.deletionLength() <= region.maxDeletionLength) {
         calls.push_back(overlap.getDeletion());
         std::cout << overlap << std::endl;
@@ -130,7 +130,7 @@ bool DFinder::overlaps(ForwardIterator first1,
                        int maxDeletionLength,
                        Overlap& overlap) {
   // bool found = false;
-  std::vector<Overlap> ovs;
+  // std::vector<Overlap> ovs;
   for (auto itr1 = first2; itr1 != last2; ++itr1) {
     for (auto itr2 = last1; itr2 != first1 - 1; --itr2) {
       // if ((*itr1)->maxDeletionLength(**itr2) < minDeletionLength) {
@@ -142,15 +142,16 @@ bool DFinder::overlaps(ForwardIterator first1,
       if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, ov) &&
          ov.deletionLength() >= minDeletionLength &&
          ov.deletionLength() <= maxDeletionLength) {
-        // std::cout << ov << std::endl;
-        ovs.push_back(ov);
+        overlap = ov;
+        return true;
+        // ovs.push_back(ov);
         // found = true;
-        break;
+        // break;
       }
     }
   }
-  return Overlap::getBestOverlap(ovs, overlap);
-  // return false;
+  // return Overlap::getBestOverlap(ovs, overlap);
+  return false;
 }
 
 

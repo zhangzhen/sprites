@@ -46,14 +46,15 @@ bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismat
   return true;
 }
 
+// bug to fix in getBestOverlap
 bool Overlap::getBestOverlap(std::vector<Overlap> overlaps, Overlap& ov) {
   auto first = overlaps.begin();
   auto last = overlaps.end();
   if (first == last) return false;
   auto next = first;
-  int max = 0;
+  int max = (*first).deletionLength();
   while (++next != last) {
-    if (max < (*first).deletionLength()) max = (*first).deletionLength();
+    if (max < (*next).deletionLength()) max = (*next).deletionLength();
     if ((*next).first->position() > (*first).first->position()) break;
   }
 
