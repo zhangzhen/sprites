@@ -12,11 +12,12 @@ int main(int argc, char *argv[]) {
   int std = 10;
   int minOverlapLen = 15;
   double maxMismatchRate = 0.1;
+  double discordant = 5.0;
   std::string outFilename;
   int c, status = 0;
 
   progname = argv[0];
-  while ((c = getopt(argc, argv, "m:s:l:x:o:")) != -1)
+  while ((c = getopt(argc, argv, "m:s:l:x:d:o:")) != -1)
     switch (c) {
       case 'm':
         mean = atoi(optarg);
@@ -29,6 +30,9 @@ int main(int argc, char *argv[]) {
         break;
       case 'x':
         maxMismatchRate = atof(optarg);
+        break;
+      case 'd':
+        discordant = atof(optarg);
         break;
       case 'o':
         outFilename = std::string(optarg);
@@ -51,7 +55,7 @@ int main(int argc, char *argv[]) {
   }
 
   std::string filename(argv[optind]);
-  DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate);
+  DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate, discordant);
   dfinder.callToFile(outFilename);
   // dfinder.printOverlaps("../gold-standard-svs/venter-chr22-known-dels.txt", 75);
   return 0;

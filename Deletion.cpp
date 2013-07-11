@@ -20,4 +20,15 @@ int Deletion::length() const {
   return end1 + offset - start2;
 }
 
+bool Deletion::overlaps(const Deletion& other) const {
+  return referenceId == other.referenceId &&
+      (getStart2() >= other.getStart2() && getStart2() < other.getEnd2() ||
+       other.getStart2() >= getStart2() && other.getStart2() < getEnd2());
+}
+
+bool Deletion::operator <(const Deletion& other) const {
+  if (referenceId != other.referenceId)
+    return referenceId < other.referenceId;
+  return getStart2() < other.getStart2();
+}
 // double Deletion::score() const { return score; }

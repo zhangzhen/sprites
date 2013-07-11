@@ -56,7 +56,7 @@ bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxM
 
   // if (pos == 33115831) std::cout << lengthOfLeftPart() << '\t' << other.lengthOfLeftPart() << std::endl;
   
-  if (lengthOfLeftPart() >= other.lengthOfLeftPart()) {
+  // if (lengthOfLeftPart() >= other.lengthOfLeftPart()) {
     // int initClippedLength = lengthOfRightPart() + other.lengthOfLeftPart();
     // int start = std::max(minOverlapLength, initClippedLength);
     // int end = std::min(l1, l2);
@@ -72,37 +72,37 @@ bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxM
     // }
     // if (pos == 33115831) std::cout << "2222222222222222222" << std::endl;
 
-    for (int i = std::max(0, minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart()); i < std::min(lengthOfLeftPart(), other.lengthOfRightPart()); ++i) {
-      int n1 = std::min(lengthOfLeftPart(), other.lengthOfLeftPart() + i);
-      int n2 = std::min(lengthOfRightPart(), other.lengthOfRightPart() - i);
-      int n = n1 + n2;
-      int st1 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? lengthOfLeftPart() - other.lengthOfLeftPart() - i : 0;
-      int st2 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? 0 : other.lengthOfLeftPart() + i - lengthOfLeftPart();
-      int maxMismatches = ceil(n * maxMismatchRate);
-      int numMismatches;
-      if (Overlap::equals(seq.substr(st1, n), other.seq.substr(st2, n), maxMismatches, numMismatches)) {
-        overlap = Overlap(this, &other, n, numMismatches, i);
-        return true;
-      }
-    }
-  } else {
-    int start = lengthOfLeftPart() + other.lengthOfRightPart();
-    int end = std::max(minOverlapLength,std::max(lengthOfLeftPart(), other.lengthOfRightPart()));
-    for (int i = start; i >= end; i--) {
-      int maxMismatches = ceil(i * maxMismatchRate);
-      const std::string& prefix = seq.substr(0, i);
-      const std::string& suffix = other.seq.substr(l2 - i);
-      // if (pos == 33115831) {
-      //   std::cout << prefix << std::endl;
-      //   std::cout << suffix << std::endl;
-      // }
-      int numMismatches;
-      if (Overlap::equals(suffix, prefix, maxMismatches, numMismatches)) {
-        overlap = Overlap(this, &other, i, numMismatches, start - i);
-        return true;
-      }
+  for (int i = std::max(0, minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart()); i < std::min(lengthOfLeftPart(), other.lengthOfRightPart()); ++i) {
+    int n1 = std::min(lengthOfLeftPart(), other.lengthOfLeftPart() + i);
+    int n2 = std::min(lengthOfRightPart(), other.lengthOfRightPart() - i);
+    int n = n1 + n2;
+    int st1 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? lengthOfLeftPart() - other.lengthOfLeftPart() - i : 0;
+    int st2 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? 0 : other.lengthOfLeftPart() + i - lengthOfLeftPart();
+    int maxMismatches = ceil(n * maxMismatchRate);
+    int numMismatches;
+    if (Overlap::equals(seq.substr(st1, n), other.seq.substr(st2, n), maxMismatches, numMismatches)) {
+      overlap = Overlap(this, &other, n, numMismatches, i);
+      return true;
     }
   }
+  // } else {
+  //   int start = lengthOfLeftPart() + other.lengthOfRightPart();
+  //   int end = std::max(minOverlapLength,std::max(lengthOfLeftPart(), other.lengthOfRightPart()));
+  //   for (int i = start; i >= end; i--) {
+  //     int maxMismatches = ceil(i * maxMismatchRate);
+  //     const std::string& prefix = seq.substr(0, i);
+  //     const std::string& suffix = other.seq.substr(l2 - i);
+  //     // if (pos == 33115831) {
+  //     //   std::cout << prefix << std::endl;
+  //     //   std::cout << suffix << std::endl;
+  //     // }
+  //     int numMismatches;
+  //     if (Overlap::equals(suffix, prefix, maxMismatches, numMismatches)) {
+  //       overlap = Overlap(this, &other, i, numMismatches, start - i);
+  //       return true;
+  //     }
+  //   }
+  // }
   
   return false;
 }

@@ -19,12 +19,14 @@ size_t Interval::length() const { return endPos - startPos; }
 
 int Interval::minDeletionLength(int mean, int std) const {
   assert(insertSize > mean);
-  return std::max(insertSize - mean - 3 * std, 0);
+  int delta = insertSize - mean;
+  return delta < 150 ? std::max(delta - std, 0) : std::max(delta - 3 * std, 0);
 }
 
 int Interval::maxDeletionLength(int mean, int std) const {
   assert(insertSize > mean);
-  return insertSize - mean + 3 * std;
+  int delta = insertSize - mean;
+  return delta < 150 ? delta + std : delta + 3 * std;
 }
 
 // bool Interval::overlapsWith(const Interval& other) const {

@@ -18,7 +18,7 @@ class DeletePtr {
 class DFinder
 {
  public:
-  DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate);
+  DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, double discordant);
   ~DFinder();
   void callToFile(const std::string& filename);
   void callToVcf(const std::string& filename);
@@ -30,6 +30,8 @@ class DFinder
   void loadFrom(const std::string& filename);
   
   void identifyTargetRegions(int referenceId, std::vector<TargetRegion>& regions);
+
+  static void mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out);
 
   // void computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2);
 
@@ -62,6 +64,7 @@ class DFinder
   int stdInsertSize;
   int minOverlapLength;
   double maxMismatchRate;
+  double discordant;
   BamTools::RefVector references;
   int size;
   
@@ -101,24 +104,9 @@ void DFinder::callOneDeletion(ForwardIterator first1,
                               ForwardIterator last2,
                               const TargetRegion& region,
                               std::vector<Deletion>& calls) {
-  for (auto itr1 = first2; itr1 != last2; ++itr1) {
-    for (auto itr2 = last1; itr2 != first1 - 1; --itr2) {
-      // if (region.start == 5942980) {
-      //   std::cout << (*itr1)->position() << '-' << (*itr2)->position() << std::endl;
-      //   std::cout << ((*itr1)->minDeletionLength(**itr2) < region.minDeletionLength) << '\t' << ((*itr1)->maxDeletionLength(**itr2) > region.maxDeletionLength) << std::endl;
-      // }
-      if ((*itr1)->maxDeletionLength(**itr2) < region.minDeletionLength) break;
-      if ((*itr1)->minDeletionLength(**itr2) > region.maxDeletionLength) continue;
-      Overlap overlap;
-      if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, overlap) &&
-         overlap.deletionLength() >= region.minDeletionLength &&
-         overlap.deletionLength() <= region.maxDeletionLength) {
-        calls.push_back(overlap.getDeletion());
-        std::cout << overlap << std::endl;
-        return;
-      }
-    }
-  }
+  Overlap ov;
+  if (overlaps(first1, last1, first2, last2, region.minDeletionLength, region.maxDeletionLength, ov) && ov.score() < maxMismatchRate)
+    calls.push_back(ov.getDeletion());
 }
 
 template <typename ForwardIterator>
@@ -129,29 +117,20 @@ bool DFinder::overlaps(ForwardIterator first1,
                        int minDeletionLength,
                        int maxDeletionLength,
                        Overlap& overlap) {
-  // bool found = false;
-  // std::vector<Overlap> ovs;
+  std::vector<Overlap> ovs;
   for (auto itr1 = first2; itr1 != last2; ++itr1) {
     for (auto itr2 = last1; itr2 != first1 - 1; --itr2) {
-      // if ((*itr1)->maxDeletionLength(**itr2) < minDeletionLength) {
-      //   if (found) return Overlap::getBestOverlap(ovs, overlap);
-      //   return false;
-      // }
-      // if ((*itr1)->minDeletionLength(**itr2) > maxDeletionLength) continue;
+      if ((*itr1)->maxDeletionLength(**itr2) < minDeletionLength) break;
+      if ((*itr1)->minDeletionLength(**itr2) > maxDeletionLength) continue;
       Overlap ov;
       if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, ov) &&
          ov.deletionLength() >= minDeletionLength &&
          ov.deletionLength() <= maxDeletionLength) {
-        overlap = ov;
-        return true;
-        // ovs.push_back(ov);
-        // found = true;
-        // break;
+        ovs.push_back(ov);
       }
     }
   }
-  // return Overlap::getBestOverlap(ovs, overlap);
-  return false;
+  return Overlap::getHighScoreOverlap(ovs, overlap);
 }
 
 

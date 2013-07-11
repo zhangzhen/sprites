@@ -3,8 +3,8 @@
 #include "DFinder.h"
 #include "IntervalCluster.h"
 
-DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate) :
-    meanInsertSize(meanInsertSize), stdInsertSize(stdInsertSize), minOverlapLength(minOverlapLength), maxMismatchRate(maxMismatchRate) {
+DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, double discordant) :
+    meanInsertSize(meanInsertSize), stdInsertSize(stdInsertSize), minOverlapLength(minOverlapLength), maxMismatchRate(maxMismatchRate), discordant(discordant) {
   loadFrom(filename);
   // assert(leftClips[19].size() > 0);
   // assert(rightClips[19].size() > 0);
@@ -37,19 +37,20 @@ void DFinder::loadFrom(const std::string& filename) {
   rightClips.resize(size);
   intervals.resize(size);
 
-  int threshold = meanInsertSize + 4 * stdInsertSize;
+  int threshold = meanInsertSize + round(discordant * stdInsertSize);
   BamTools::BamAlignment ba1;
   int cnt = 0;
+  int n_pairs = 0, found_pairs = 0;
   while (r1.GetNextAlignment(ba1)) {
     // load a soft-clip
     std::vector<int> clipSizes, readPositions, genomePositions;
-    int xt;
-    if (!ba1.GetTag("XT", xt)) xt = 'U';
+    // int xt;
+    // if (!ba1.GetTag("XT", xt)) xt = 'U';
     
     if (ba1.IsDuplicate()) continue;
     if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions) &&
-        clipSizes.size() <= 2 &&
-        (xt == 'M' || xt =='U')) {
+        // (xt == 'M' || xt =='U') &&
+        clipSizes.size() <= 2) {
       // if (ba1.Position == 15395140) {
       //   std::cout << ba1.QueryBases << std::endl;
       //   std::cout << ba1.AlignedBases << std::endl;
@@ -84,42 +85,44 @@ void DFinder::loadFrom(const std::string& filename) {
     }
     // load an interval of paired-ends
     if (!ba1.IsPaired() ||
-        ba1.IsProperPair() ||
+        // ba1.IsProperPair() ||
         !ba1.IsMapped() ||
         !ba1.IsMateMapped() ||
         ba1.RefID != ba1.MateRefID ||
-        ba1.InsertSize < meanInsertSize ||
-        // ba1.InsertSize < threshold ||
+        // ba1.InsertSize < meanInsertSize ||
+        ba1.InsertSize < threshold ||
         ba1.Position >= ba1.MatePosition) continue;
         
     if (!ba1.IsReverseStrand() &&
-        ba1.IsMateReverseStrand() &&
-        r2.Jump(ba1.RefID, ba1.MatePosition)) {
-      bool found = false;
-      BamTools::BamAlignment ba2;
-      while (r2.GetNextAlignment(ba2)) {
-        if (ba2.Position > ba1.MatePosition) break;
-        if (ba1.Name == ba2.Name &&
-            ba1.IsFirstMate() != ba2.IsFirstMate()) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) continue;
-      int xt2;
-      if (!ba2.GetTag("XT", xt2)) xt2 = 'U';
-      if ((xt == 'U' || xt == 'M') &&
-          (xt2 == 'U' || xt2 == 'M')) {
-        intervals[ba1.RefID].push_back(new Interval(cnt,
-                                         ba1.RefID,
-                                         ba1.GetEndPosition(),
-                                         ba1.MatePosition,
-                                         ba1.InsertSize));
-        cnt++;
-      }
+        // r2.Jump(ba1.RefID, ba1.MatePosition) &&
+        ba1.IsMateReverseStrand()) {
+      // bool found = false;
+      // BamTools::BamAlignment ba2;
+      // n_pairs++;
+      // while (r2.GetNextAlignment(ba2)) {
+      //   if (ba2.Position > ba1.MatePosition) break;
+      //   if (ba1.Name == ba2.Name &&
+      //       ba1.IsFirstMate() != ba2.IsFirstMate()) {
+      //     found = true;
+      //     break;
+      //   }
+      // }
+      // if (!found) continue;
+      // found_pairs++;
+      // int xt2;
+      // if (!ba2.GetTag("XT", xt2)) xt2 = 'U';
+      // if ((xt == 'U' || xt == 'M') &&
+      //     (xt2 == 'U' || xt2 == 'M')) {
+      intervals[ba1.RefID].push_back(new Interval(cnt,
+                                                  ba1.RefID,
+                                                  ba1.GetEndPosition(),
+                                                  ba1.MatePosition,
+                                                  ba1.InsertSize));
+      cnt++;
+      // }
     }
   }
-
+  // std::cout << n_pairs << "\t" << found_pairs << std::endl;
 }
 
 void DFinder::callToFile(const std::string& filename) {
@@ -159,14 +162,15 @@ void DFinder::callToVcf(const std::string& filename) {
 }
 
 void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
+  std::vector<Deletion> res;
   for (int i = 0; i < size; i++) {
     std::vector<TargetRegion> regions;
-    for (auto itr = intervals[i].begin(); itr != intervals[i].end(); ++itr) {
-      regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
-              (*itr)->minDeletionLength(meanInsertSize, stdInsertSize),
-              (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)});
-    }
-    // identifyTargetRegions(i, regions);
+    // for (auto itr = intervals[i].begin(); itr != intervals[i].end(); ++itr) {
+    //   regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
+    //           (*itr)->minDeletionLength(meanInsertSize, stdInsertSize),
+    //           (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)});
+    // }
+    identifyTargetRegions(i, regions);
     // for (auto itr = regions.begin(); itr != regions.end(); ++itr)
     //   std::cout << references[i].RefName << "\t"
     //             << (*itr).start << "\t"
@@ -183,8 +187,28 @@ void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
     //             << (*itr1).maxDeletionLength << "\t"
     //             << std::endl;
     
-    callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare1, SoftClip::compare2, calls);
+    callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare1, SoftClip::compare2, res);
   }
+  mergeCalls(res, calls);
+}
+
+void DFinder::mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out) {
+  auto first = in.begin();
+  auto last = in.end();
+  sort(first, last);
+  if (first == last) return;
+  auto next = first;
+  Deletion d = *first;
+  while (++next != last) {
+    if ((*first).overlaps(*next)) {
+      if (d.length() < (*next).length()) d = *next;
+    } else {
+      out.push_back(d);
+      d = *next;
+    }
+    ++first;
+  }
+  out.push_back(d);
 }
 
 void removeSuperIntervals(const std::vector<Interval*>& input, std::vector<const Interval*>& remainder) {
@@ -275,7 +299,7 @@ void DFinder::printOverlaps(const std::string& filename, int readlength) {
     auto first2 = lower_bound(rightClips[id].begin(), rightClips[id].end(), start, SoftClip::compare1);
     auto last2 =  lower_bound(rightClips[id].begin(), rightClips[id].end(), start + readlength, SoftClip::compare1);
     Overlap overlap;
-    if (overlaps(first1, last1, first2, last2, std::max(0, length - 3 * stdInsertSize), length + 3 * stdInsertSize, overlap)) {
+    if (overlaps(first1, last1, first2, last2, (length < 150) ? std::max(0, length - stdInsertSize) : std::max(0, length - 3 * stdInsertSize), (length < 150) ? length + stdInsertSize : length + 3 * stdInsertSize, overlap)) {
       std::cout << overlap << std::endl;
       matched++;
     }
