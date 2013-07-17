@@ -67,6 +67,7 @@ class DFinder
   double discordant;
   BamTools::RefVector references;
   int size;
+  static const int lengthThreshold = 50;
   
   std::vector<std::vector<SoftClip*> > leftClips;
   std::vector<std::vector<SoftClip*> > rightClips;
@@ -124,7 +125,7 @@ bool DFinder::overlaps(ForwardIterator first1,
       if ((*itr1)->minDeletionLength(**itr2) > maxDeletionLength) continue;
       Overlap ov;
       if((*itr1)->overlaps(**itr2, minOverlapLength, maxMismatchRate, ov) &&
-         ov.deletionLength() >= minDeletionLength &&
+         ov.deletionLength() >= std::max(lengthThreshold, minDeletionLength) &&
          ov.deletionLength() <= maxDeletionLength) {
         ovs.push_back(ov);
       }
