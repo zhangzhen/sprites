@@ -40,7 +40,7 @@ bool SoftClip::compareR(SoftClip* s1, SoftClip* s2) {
 }
 
 int SoftClip::minDeletionLength(const SoftClip& other) const {
-  return other.pos - pos;
+  return std::max(other.pos - pos, 0);
 }
 
 int SoftClip::maxDeletionLength(const SoftClip& other) const {

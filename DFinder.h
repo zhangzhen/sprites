@@ -84,17 +84,18 @@ void DFinder::callAllDeletions(const std::vector<TargetRegion>& regions,
   for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
     auto first1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).start, comp2);
     auto last1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).end, comp2);
+    if (last1 == consensuses1.end()) continue;
     auto first2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, comp1);
+    if (first2 == consensuses2.end()) continue;
     auto last2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, comp1);
     // if ((*itr).start == 5942980) {
     //   for (auto itr2 = first1; itr2 != last1 + 1; ++itr2)
     //     std::cout << **itr2 << std::endl;
-    //   std::cout << "2222222222222" << std::endl;
     //   for (auto itr2 = first2 - 1; itr2 != last2; ++itr2) {
     //     std::cout << **itr2 << std::endl;
     //   }
     // }
-    callOneDeletion(first1, last1 + 1, first2 - 1, last2, *itr, calls);
+    callOneDeletion(first1, last1, first2, last2, *itr, calls);
   }
 }
 

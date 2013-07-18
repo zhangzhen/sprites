@@ -186,7 +186,7 @@ void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
     //             << (*itr1).minDeletionLength << "\t"
     //             << (*itr1).maxDeletionLength << "\t"
     //             << std::endl;
-    
+
     callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare1, SoftClip::compare2, res);
   }
   mergeCalls(res, calls);
