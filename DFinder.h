@@ -2,7 +2,7 @@
 #define _DFINDER_H_
 
 #include "SoftClip.h"
-#include "Interval.h"
+#include "ChrRegion.h"
 #include "TargetRegion.h"
 #include "api/BamReader.h"
 
@@ -23,12 +23,13 @@ class DFinder
   void callToFile(const std::string& filename);
   void callToVcf(const std::string& filename);
   void printOverlaps(const std::string& filename, int readlength);
-  
- private: 
+  void checkAgainstGoldStandard(const std::string& filename);
+
+ private:
   void call(const std::string& filename, std::vector<Deletion>& calls);
-  
+
   void loadFrom(const std::string& filename);
-  
+
   void identifyTargetRegions(int referenceId, std::vector<TargetRegion>& regions);
 
   static void mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out);
@@ -59,7 +60,9 @@ class DFinder
                 int minDeletionLength,
                 int maxDeletionLength,
                 Overlap& overlap);
-  
+
+  bool findReferenceId(const std::string& name, int& id);
+
   int meanInsertSize;
   int stdInsertSize;
   int minOverlapLength;
@@ -68,10 +71,20 @@ class DFinder
   BamTools::RefVector references;
   int size;
   static const int lengthThreshold = 50;
-  
+
   std::vector<std::vector<SoftClip*> > leftClips;
   std::vector<std::vector<SoftClip*> > rightClips;
-  std::vector<std::vector<Interval*> > intervals;
+  std::vector<std::vector<ChrRegion*> > intervals;
+
+  struct MyInterval {
+    std::string refname;
+    int start;
+    int end;
+    int length;
+  };
+
+  bool loadMyIntervals(const std::string& filename, std::vector<MyInterval>& out);
+  bool checkMyInterval(const MyInterval& myInterval, int refId, const std::vector<const ChrRegion*>& regions);
 };
 
 template <typename T, typename Compare1, typename Compare2>

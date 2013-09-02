@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <queue>
 #include "DFinder.h"
-#include "IntervalCluster.h"
+#include "ChrRegionCluster.h"
 
 DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, double discordant) :
     meanInsertSize(meanInsertSize), stdInsertSize(stdInsertSize), minOverlapLength(minOverlapLength), maxMismatchRate(maxMismatchRate), discordant(discordant) {
@@ -18,7 +18,7 @@ DFinder::~DFinder() {
   for (int i = 0; i < size; ++i) {
     for_each(leftClips[i].begin(), leftClips[i].end(), DeletePtr<SoftClip>());
     for_each(rightClips[i].begin(), rightClips[i].end(), DeletePtr<SoftClip>());
-    for_each(intervals[i].begin(), intervals[i].end(), DeletePtr<Interval>());
+    for_each(intervals[i].begin(), intervals[i].end(), DeletePtr<ChrRegion>());
   }
 }
 
@@ -46,7 +46,7 @@ void DFinder::loadFrom(const std::string& filename) {
     std::vector<int> clipSizes, readPositions, genomePositions;
     // int xt;
     // if (!ba1.GetTag("XT", xt)) xt = 'U';
-    
+
     if (ba1.IsDuplicate()) continue;
     if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions) &&
         // (xt == 'M' || xt =='U') &&
@@ -67,7 +67,7 @@ void DFinder::loadFrom(const std::string& filename) {
                                                      genomePositions[1],
                                                      ba1.Length - clipSizes[0] - clipSizes[1],
                                                      ba1.QueryBases.substr(clipSizes[0]),
-                                                     ba1.Qualities.substr(clipSizes[0])));      
+                                                     ba1.Qualities.substr(clipSizes[0])));
       } else if (readPositions[0] == clipSizes[0]) { // left clip
         leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
@@ -92,7 +92,7 @@ void DFinder::loadFrom(const std::string& filename) {
         // ba1.InsertSize < meanInsertSize ||
         ba1.InsertSize < threshold ||
         ba1.Position >= ba1.MatePosition) continue;
-        
+
     if (!ba1.IsReverseStrand() &&
         // r2.Jump(ba1.RefID, ba1.MatePosition) &&
         ba1.IsMateReverseStrand()) {
@@ -113,7 +113,7 @@ void DFinder::loadFrom(const std::string& filename) {
       // if (!ba2.GetTag("XT", xt2)) xt2 = 'U';
       // if ((xt == 'U' || xt == 'M') &&
       //     (xt2 == 'U' || xt2 == 'M')) {
-      intervals[ba1.RefID].push_back(new Interval(cnt,
+      intervals[ba1.RefID].push_back(new ChrRegion(cnt,
                                                   ba1.RefID,
                                                   ba1.GetEndPosition(),
                                                   ba1.MatePosition,
@@ -140,7 +140,7 @@ void DFinder::callToFile(const std::string& filename) {
 void DFinder::callToVcf(const std::string& filename) {
   std::vector<Deletion> calls;
   call(filename, calls);
-  
+
   std::ofstream out(filename.c_str());
   out << "##fileformat=VCFv4.1" << std::endl;
   out << "##reference=human_g1k_v37" << std::endl;
@@ -211,7 +211,7 @@ void DFinder::mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out) 
   out.push_back(d);
 }
 
-void removeSuperIntervals(const std::vector<Interval*>& input, std::vector<const Interval*>& remainder) {
+void removeSuperChrRegions(const std::vector<ChrRegion*>& input, std::vector<const ChrRegion*>& remainder) {
   std::vector<EndPoint> endpoints;
   for (auto itr = input.begin(); itr != input.end(); ++itr) {
     endpoints.push_back((*itr)->getStart());
@@ -228,20 +228,20 @@ void removeSuperIntervals(const std::vector<Interval*>& input, std::vector<const
   }
 }
 
-void clusterIntervals(const std::vector<const Interval*>& remainder, std::vector<IntervalCluster>& clusters) {
+void clusterChrRegions(const std::vector<const ChrRegion*>& remainder, std::vector<ChrRegionCluster>& clusters) {
   std::vector<EndPoint> endpoints;
   for (auto itr = remainder.begin(); itr != remainder.end(); ++itr) {
     endpoints.push_back((*itr)->getStart());
     endpoints.push_back((*itr)->getEnd());
   }
   sort(endpoints.begin(), endpoints.end());
-  std::queue<const Interval*> q;
+  std::queue<const ChrRegion*> q;
   for (auto itr = endpoints.begin(); itr != endpoints.end(); ++itr) {
     if ((*itr).isStart())
       q.push((*itr).getOwner());
     else {
       if (q.empty()) continue;
-      IntervalCluster clu;
+      ChrRegionCluster clu;
       while (!q.empty()) {
         clu.add(q.front());
         q.pop();
@@ -253,11 +253,11 @@ void clusterIntervals(const std::vector<const Interval*>& remainder, std::vector
 
 void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& regions) {
   // gets rid of intervals that contain sub-intervals
-  std::vector<const Interval*> remainder;
-  removeSuperIntervals(intervals[referenceId], remainder);
-  // clusters pairwise overlapping intervals 
-  // std::vector<IntervalCluster> clusters;
-  // clusterIntervals(remainder, clusters);
+  std::vector<const ChrRegion*> remainder;
+  removeSuperChrRegions(intervals[referenceId], remainder);
+  // clusters pairwise overlapping intervals
+  // std::vector<ChrRegionCluster> clusters;
+  // clusterChrRegions(remainder, clusters);
 
   for (auto itr = remainder.begin(); itr != remainder.end(); ++itr) {
     regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
@@ -270,40 +270,85 @@ void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& 
   // }
 }
 
+bool DFinder::findReferenceId(const std::string& name, int& id) {
+  for (int i = 0; i < size; ++i) {
+    if (references[i].RefName == name) {
+      id = i;
+      return true;
+    }
+  }
+  return false;
+}
+
 void DFinder::printOverlaps(const std::string& filename, int readlength) {
-  std::ifstream in(filename.c_str());
-  
-  int start, end, length;
-  std::string refname;
+  std::vector<MyInterval> myIntervals;
+  loadMyIntervals(filename, myIntervals);
   int cnt = 0, matched = 0;
 
-  while(in >> refname >> start >> end >> length) {
-  
-    bool found = false;
-    int id;
-    for (int i = 0; i < size; ++i) {
-      if (references[i].RefName == refname) {
-        id = i;
-        found = true;
-        break;
-      }
-    }
+  for (auto itr = myIntervals.begin(); itr != myIntervals.end(); ++itr) {
 
     std::cout << "#######################################" << std::endl;
-    std::cout << refname << ":" << start << "-" << end << "\t" << length << std::endl;
+    std::cout << (*itr).refname << ":" << (*itr).start << "-" << (*itr).end << "\t" << (*itr).length << std::endl;
     cnt++;
 
-    if (!found) continue;
-    auto first1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end - readlength, SoftClip::compare2) - 1;
-    auto last1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), end, SoftClip::compare2) - 1;
-    auto first2 = lower_bound(rightClips[id].begin(), rightClips[id].end(), start, SoftClip::compare1);
-    auto last2 =  lower_bound(rightClips[id].begin(), rightClips[id].end(), start + readlength, SoftClip::compare1);
+    int id;
+    if (!findReferenceId((*itr).refname, id)) continue;
+    auto first1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), (*itr).end - readlength, SoftClip::compare2) - 1;
+    auto last1 = upper_bound(leftClips[id].begin(), leftClips[id].end(), (*itr).end, SoftClip::compare2) - 1;
+    auto first2 = lower_bound(rightClips[id].begin(), rightClips[id].end(), (*itr).start, SoftClip::compare1);
+    auto last2 =  lower_bound(rightClips[id].begin(), rightClips[id].end(), (*itr).start + readlength, SoftClip::compare1);
     Overlap overlap;
-    if (overlaps(first1, last1, first2, last2, (length < 150) ? std::max(0, length - stdInsertSize) : std::max(0, length - 3 * stdInsertSize), (length < 150) ? length + stdInsertSize : length + 3 * stdInsertSize, overlap)) {
+    if (overlaps(first1, last1, first2, last2, ((*itr).length < 150) ? std::max(0, (*itr).length - stdInsertSize) : std::max(0, (*itr).length - 3 * stdInsertSize), ((*itr).length < 150) ? (*itr).length + stdInsertSize : (*itr).length + 3 * stdInsertSize, overlap)) {
       std::cout << overlap << std::endl;
       matched++;
     }
   }
   std::cout << "#Matched: " << matched << std::endl;
   std::cout << "Matching rate: " << float(matched) / cnt << std::endl;
+}
+
+void DFinder::checkAgainstGoldStandard(const std::string& filename) {
+  std::vector<MyInterval> myIntervals;
+  loadMyIntervals(filename, myIntervals);
+  std::map<int, std::vector<const ChrRegion*> > map;
+  int cnt = 0;
+
+  for (auto itr = myIntervals.begin(); itr != myIntervals.end(); ++itr) {
+    int refid;
+    if (!findReferenceId((*itr).refname, refid)) continue;
+    std::vector<const ChrRegion*> regs;
+    if (!map.count(refid)) {
+      removeSuperChrRegions(intervals[refid], regs);
+      map[refid] = regs;
+    }
+    if (checkMyInterval(*itr, refid, map[refid])) cnt++;
+  }
+  std::cout << std::endl << ">>>>>>>>>>>>>>>>>>>" << std::endl;
+  std::cout << "Matched: " << myIntervals.size() - cnt << "\t"
+	    << "Missed: " << cnt << std::endl;
+}
+
+bool DFinder::loadMyIntervals(const std::string& filename, std::vector<MyInterval>& out) {
+  std::ifstream in(filename.c_str());
+
+  int start, end, length;
+  std::string refname;
+
+  while(in >> refname >> start >> end >> length) {
+    out.push_back({refname, start, end, length});
+  }
+  return true;
+}
+
+bool DFinder::checkMyInterval(const MyInterval& myInterval, int refId, const std::vector<const ChrRegion*>& regions) {
+  bool res = false;
+  std::cout << std::endl;
+  std::cout << myInterval.refname << ":" << myInterval.start << "-" << myInterval.end << "\t" << myInterval.length << std::endl;
+  for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
+    if ((*itr)->getStartPos() <= myInterval.start && (*itr)->getEndPos() >= myInterval.end) {
+      std::cout << **itr << std::endl;
+      res = true;
+    }
+  }
+  return res;
 }
