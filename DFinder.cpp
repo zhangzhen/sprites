@@ -324,8 +324,8 @@ void DFinder::checkAgainstGoldStandard(const std::string& filename) {
     if (checkMyInterval(*itr, refid, map[refid])) cnt++;
   }
   std::cout << std::endl << ">>>>>>>>>>>>>>>>>>>" << std::endl;
-  std::cout << "Matched: " << myIntervals.size() - cnt << "\t"
-	    << "Missed: " << cnt << std::endl;
+  std::cout << "Matched: " << cnt << "\t"
+	    << "Missed: " << myIntervals.size() - cnt << std::endl;
 }
 
 bool DFinder::loadMyIntervals(const std::string& filename, std::vector<MyInterval>& out) {
@@ -345,7 +345,8 @@ bool DFinder::checkMyInterval(const MyInterval& myInterval, int refId, const std
   std::cout << std::endl;
   std::cout << myInterval.refname << ":" << myInterval.start << "-" << myInterval.end << "\t" << myInterval.length << std::endl;
   for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
-    if ((*itr)->getStartPos() <= myInterval.start && (*itr)->getEndPos() >= myInterval.end) {
+      if (((*itr)->getStartPos() >= myInterval.start && (*itr)->getStartPos() < myInterval.end) ||
+	  (myInterval.start >= (*itr)->getStartPos() && myInterval.start < (*itr)->getEndPos())) {
       std::cout << **itr << std::endl;
       res = true;
     }
