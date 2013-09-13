@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <queue>
+#include <iterator>
 #include "DFinder.h"
 #include "ChrRegionCluster.h"
 
@@ -51,12 +52,12 @@ void DFinder::loadFrom(const std::string& filename) {
     if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions) &&
         // (xt == 'M' || xt =='U') &&
         clipSizes.size() <= 2) {
-      // if (ba1.Position == 15395140) {
-      //   std::cout << ba1.QueryBases << std::endl;
-      //   std::cout << ba1.AlignedBases << std::endl;
-      //   std::cout << clipSizes[0] << "\t" << readPositions[0] << "\t"
-      //             << genomePositions[0] << "\t" << ba1.GetEndPosition() << std::endl;
-      // }
+      if (ba1.Position == 15395140) {
+        std::cout << ba1.QueryBases << std::endl;
+        std::cout << ba1.AlignedBases << std::endl;
+        std::cout << clipSizes[0] << "\t" << readPositions[0] << "\t"
+                  << genomePositions[0] << "\t" << ba1.GetEndPosition() << std::endl;
+      }
       if (clipSizes.size() == 2) {
         leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
                                                     genomePositions[0],
@@ -164,32 +165,21 @@ void DFinder::callToVcf(const std::string& filename) {
 void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
   std::vector<Deletion> res;
   for (int i = 0; i < size; i++) {
+
     std::vector<TargetRegion> regions;
-    // for (auto itr = intervals[i].begin(); itr != intervals[i].end(); ++itr) {
-    //   regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
-    //           (*itr)->minDeletionLength(meanInsertSize, stdInsertSize),
-    //           (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)});
-    // }
     identifyTargetRegions(i, regions);
     // for (auto itr = regions.begin(); itr != regions.end(); ++itr)
     //   std::cout << references[i].RefName << "\t"
     //             << (*itr).start << "\t"
     //             << (*itr).end << "\t"
-    //             << (*itr).minDeletionLength << "\t"
-    //             << (*itr).maxDeletionLength << "\t"
-    //             << std::endl;
+    // 		<< (*itr).end - (*itr).start << "\t"
+                // << (*itr).minDeletionLength << "\t"
+                // << (*itr).maxDeletionLength << "\t"
+                // << std::endl;
 
-    // for (auto itr1 = lRegions[i].begin(); itr1 != lRegions[i].end(); ++itr1)
-    //   std::cout << references[i].RefName << "\t"
-    //             << (*itr1).start << "\t"
-    //             << (*itr1).end << "\t"
-    //             << (*itr1).minDeletionLength << "\t"
-    //             << (*itr1).maxDeletionLength << "\t"
-    //             << std::endl;
-
-    callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare1, SoftClip::compare2, res);
+    callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare1, SoftClip::compare2, calls);
   }
-  mergeCalls(res, calls);
+  // mergeCalls(res, calls);
 }
 
 void DFinder::mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out) {
@@ -197,6 +187,7 @@ void DFinder::mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out) 
   auto last = in.end();
   sort(first, last);
   if (first == last) return;
+  // for (auto itr = first; itr != last; ++itr) std::cout << (*itr).getStart2() << "\t" << (*itr).getEnd2() << "\t" << (*itr).length() << std::endl;
   auto next = first;
   Deletion d = *first;
   while (++next != last) {
@@ -255,15 +246,23 @@ void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& 
   // gets rid of intervals that contain sub-intervals
   std::vector<const ChrRegion*> remainder;
   removeSuperChrRegions(intervals[referenceId], remainder);
+  // std::transform(remainder.begin(), remainder.end(), std::ostream_iterator<const ChrRegion&>(std::cout, "\n"), [](const ChrRegion *cr) { return *cr; });
+  // std::cout << std::endl;
   // clusters pairwise overlapping intervals
-  // std::vector<ChrRegionCluster> clusters;
-  // clusterChrRegions(remainder, clusters);
+  std::vector<ChrRegionCluster> clusters;
+  clusterChrRegions(remainder, clusters);
 
-  for (auto itr = remainder.begin(); itr != remainder.end(); ++itr) {
-    regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
-            (*itr)->minDeletionLength(meanInsertSize, stdInsertSize),
-            (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)});
+  for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
+      TargetRegion r;
+      if ((*itr).getTargetRegion(meanInsertSize, stdInsertSize, r))
+	  regions.push_back(r);
   }
+
+  // for (auto itr = remainder.begin(); itr != remainder.end(); ++itr) {
+  //   regions.push_back({(*itr)->getStartPos(), (*itr)->getEndPos(),
+  //           (*itr)->minDeletionLength(meanInsertSize, stdInsertSize),
+  //           (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)});
+  // }
 
   // for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
   //   std::cout << (*itr).start << "\t" << (*itr).end << "\t" << (*itr).minDeletionLength << "\t" << (*itr).maxDeletionLength << std::endl;
@@ -298,10 +297,10 @@ void DFinder::printOverlaps(const std::string& filename, int readlength) {
     auto first2 = lower_bound(rightClips[id].begin(), rightClips[id].end(), (*itr).start, SoftClip::compare1);
     auto last2 =  lower_bound(rightClips[id].begin(), rightClips[id].end(), (*itr).start + readlength, SoftClip::compare1);
     Overlap overlap;
-    if (overlaps(first1, last1, first2, last2, ((*itr).length < 150) ? std::max(0, (*itr).length - stdInsertSize) : std::max(0, (*itr).length - 3 * stdInsertSize), ((*itr).length < 150) ? (*itr).length + stdInsertSize : (*itr).length + 3 * stdInsertSize, overlap)) {
-      std::cout << overlap << std::endl;
-      matched++;
-    }
+    // if (overlaps(first1, last1, first2, last2, ((*itr).length < 150) ? std::max(0, (*itr).length - stdInsertSize) : std::max(0, (*itr).length - 3 * stdInsertSize), ((*itr).length < 150) ? (*itr).length + stdInsertSize : (*itr).length + 3 * stdInsertSize, overlap)) {
+    //   std::cout << overlap << std::endl;
+    //   matched++;
+    // }
   }
   std::cout << "#Matched: " << matched << std::endl;
   std::cout << "Matching rate: " << float(matched) / cnt << std::endl;
@@ -345,8 +344,9 @@ bool DFinder::checkMyInterval(const MyInterval& myInterval, int refId, const std
   std::cout << std::endl;
   std::cout << myInterval.refname << ":" << myInterval.start << "-" << myInterval.end << "\t" << myInterval.length << std::endl;
   for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
-      if (((*itr)->getStartPos() >= myInterval.start && (*itr)->getStartPos() < myInterval.end) ||
-	  (myInterval.start >= (*itr)->getStartPos() && myInterval.start < (*itr)->getEndPos())) {
+    if ((*itr)->getStartPos() <= myInterval.start && (*itr)->getEndPos() >= myInterval.end) {
+      // if (((*itr)->getStartPos() >= myInterval.start && (*itr)->getStartPos() < myInterval.end) ||
+      // 	  (myInterval.start >= (*itr)->getStartPos() && myInterval.start < (*itr)->getEndPos())) {
       std::cout << **itr << std::endl;
       res = true;
     }

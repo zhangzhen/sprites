@@ -1,9 +1,10 @@
-#include "ChrRegion.h"
-#include <sstream>
 #include <cassert>
+#include "ChrRegion.h"
+#include "DFinderHelper.h"
+
 
 ChrRegion::ChrRegion(int id, int referenceId, int startPos, int endPos, int insertSize) :
-    id(id), referenceId(referenceId), startPos(startPos), endPos(endPos), insertSize(insertSize) {}
+    id(id), referenceId(referenceId), startPos(startPos), endPos(endPos), insertSize(insertSize), used(false) {}
 
 int ChrRegion::getId() const { return id; }
 
@@ -20,24 +21,29 @@ size_t ChrRegion::length() const { return endPos - startPos; }
 int ChrRegion::minDeletionLength(int mean, int std) const {
   assert(insertSize > mean);
   int delta = insertSize - mean;
-  return delta < 150 ? std::max(delta - std, 0) : std::max(delta - 3 * std, 0);
+  // return delta < 150 ? std::max(delta - std, 0) : std::max(delta - 3 * std, 0);
+  return std::max(delta - 3 * std, 0);
 }
 
 int ChrRegion::maxDeletionLength(int mean, int std) const {
   assert(insertSize > mean);
   int delta = insertSize - mean;
-  return delta < 150 ? delta + std : delta + 3 * std;
+  // return delta < 150 ? delta + std : delta + 3 * std;
+  return delta + 3 * std;
 }
+
+bool ChrRegion::isUsed() const { return used; }
+
+void ChrRegion::setUsed(bool used) { this->used = used; }
 
 // bool ChrRegion::overlapsWith(const ChrRegion& other) const {
 //   return false;
 // }
 
-// std::string ChrRegion::toString() const {
-//   std::stringstream ss;
-//   ss << chrom << ":" << startPos << "-" << endPos;
-//   return ss.str();
-// }
+std::string ChrRegion::toString() const {
+    return integerToString(referenceId) + ":" + integerToString(startPos)
+	+ "-" + integerToString(endPos) + "\t" + integerToString(length());
+}
 
 const EndPoint ChrRegion::getStart() const {
   return EndPoint(this, true);
@@ -59,9 +65,8 @@ const EndPoint ChrRegion::getEnd() const {
 //   return i1.end < i2.end;
 // }
 
-std::ostream& operator <<(std::ostream& os, const ChrRegion& self) {
-  return os << self.referenceId << ":" << self.startPos << "-" << self.endPos
-            << "\t" << self.insertSize;
+std::ostream& operator <<(std::ostream& os, const ChrRegion& cr) {
+    return os << cr.toString();
 }
 
 EndPoint::EndPoint(const ChrRegion* owner, bool start) :

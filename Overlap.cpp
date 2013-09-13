@@ -25,6 +25,10 @@ int Overlap::deletionLength() const {
   return second->position() + offset - first->position();
 }
 
+int Overlap::start() const { return first->position(); }
+
+int Overlap::end() const { return second->position() + offset; }
+
 double Overlap::score() const {
   return numMismatches / float(length);
 }
@@ -47,22 +51,29 @@ bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismat
 }
 
 // bug to fix in getBestOverlap
-bool Overlap::getHighScoreOverlap(std::vector<Overlap> overlaps, Overlap& ov) {
+bool Overlap::getHighScoreOverlap(const std::vector<Overlap>& overlaps, Overlap& ov) {
   if (overlaps.size() == 0) return false;
   ov = overlaps.front();
+  // if (ov.first->position() == 30255998) {
+  //     std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+  //     for (auto itr = overlaps.begin(); itr != overlaps.end(); ++itr)
+  // 	std::cout << *itr << std::endl;
+  // }
   double min = ov.score();
-  for (auto itr = overlaps.begin(); itr != overlaps.end(); ++itr) {
+  for (auto itr = overlaps.begin() + 1; itr != overlaps.end(); ++itr) {
+    // std::cout << *itr << std::endl;
     if (min > (*itr).score()) {
       min = (*itr).score();
-      ov = (*itr);
+      ov = *itr;
     }
   }
+  // if (ov.first->position() == 30255998) std::cout << ov << std::endl;
   return true;
 }
 
 std::ostream& operator <<(std::ostream& stream, const Overlap& o) {
   stream << "[CALL] " << o.first->referenceId() << ":" << o.first->position()
-         << "-" << o.second->position() << "\t" << o.deletionLength() << "\t"
+         << "-" << o.second->position() << "+(" << o.offset << ")\t" << o.deletionLength() << "\t"
          << o.score() << std::endl;
   if (o.first->lengthOfLeftPart() >= o.second->lengthOfLeftPart() + o.offset) {
     stream << std::string(o.first->lengthOfLeftPart(), ' ') << '+' << std::endl;

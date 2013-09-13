@@ -12,6 +12,7 @@ class ChrRegion {
   int startPos;
   int endPos;
   int insertSize;
+  bool used;
  public:
   ChrRegion(int id, int referenceId, int startPos, int endPos, int insertSize);
   int getId() const;
@@ -22,17 +23,18 @@ class ChrRegion {
   size_t length() const;
   int minDeletionLength(int mean, int std) const;
   int maxDeletionLength(int mean, int std) const;
+  bool isUsed() const;
+  void setUsed(bool used);
   // bool overlapsWith(const ChrRegion& other) const;
-  // std::string toString() const;
+  std::string toString() const;
 
   const EndPoint getStart() const;
   const EndPoint getEnd() const;
   // static bool compare(const ChrRegion& in1, const ChrRegion& in2);
-  
+
   // static bool compareByStart(const ChrRegion& i1, const ChrRegion& i2);
   // static bool compareByEnd(const ChrRegion& i1, const ChrRegion& i2);
-  friend std::ostream& operator <<(std::ostream& os, const ChrRegion& self);
-  
+  friend std::ostream& operator <<(std::ostream& os, const ChrRegion& cr);
 };
 
 class EndPoint {
@@ -43,7 +45,7 @@ class EndPoint {
   bool isStart() const;
   bool operator< (const EndPoint& other) const;
   const ChrRegion* getOwner() const;
-    
+
  private:
 
   const ChrRegion* owner;

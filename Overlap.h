@@ -18,12 +18,14 @@ class Overlap
   double score() const;
   Deletion getDeletion() const;
   static bool equals(const std::string& s1, const std::string& s2, int maxMismatches, int& numMismatches);
-  static bool getHighScoreOverlap(std::vector<Overlap> overlaps, Overlap& ov);
+  static bool getHighScoreOverlap(const std::vector<Overlap>& overlaps, Overlap& ov);
 
   friend std::ostream& operator <<(std::ostream& stream, const Overlap& o);
 
+  int start() const;
+  int end() const;
   int deletionLength() const;
-  
+
  private:
 
   const SoftClip *first;

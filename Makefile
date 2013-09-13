@@ -18,7 +18,7 @@ TESTLIBS = -L$(GTEST_ROOT)/lib -lgtest -lpthread $(LIBS)
 
 INCLUDE = -I$(BAMTOOLS_ROOT)/include -I$(GTEST_ROOT)/include
 
-OBJS = DFinder.o SoftClip.o error.o ChrRegion.o ChrRegionCluster.o Overlap.o Deletion.o $(BAMTOOLS_ROOT)/lib/libbamtools.a
+OBJS = DFinder.o SoftClip.o error.o DFinderHelper.o ChrRegion.o ChrRegionCluster.o Overlap.o Deletion.o $(BAMTOOLS_ROOT)/lib/libbamtools.a
 # TESTOBJS = SingleClipTest.o CallDelsTest.o SingleClippedClusterTest.o $(OBJS)
 
 # Builds the main program with the necessary libraries.

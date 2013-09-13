@@ -14,13 +14,17 @@ class ChrRegionCluster {
   ChrRegionCluster();
   void add(const ChrRegion *in);
   // bool empty() const;
-  // std::string toString() const;
-  TargetRegion getTargetRegion(int mean, int std);
-  // friend std::ostream& operator <<(std::ostream& os, const ChrRegionCluster& self)
+  std::string toString() const;
+  bool getTargetRegion(int mean, int std, TargetRegion& regionOfInterest);
+  friend std::ostream& operator <<(std::ostream& os, const ChrRegionCluster& crc)
       ;
  private:
   void removeAbnormalChrRegions(int threshold);
-  int avgInsertSize() const;
+  void removeOutliersWithMad(std::vector<const ChrRegion*>& cleanRegions);
+  void toLengthList(std::vector<int>& list);
+  static int average(const std::vector<int>& v);
+  static int median(std::vector<int>& v);
+  static int mad(std::vector<int>& v);
 };
 
 #endif /* _CHRREGIONCLUSTER_H_ */
