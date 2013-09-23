@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
   DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate, discordant);
   dfinder.callToFile(outFilename);
   // dfinder.checkAgainstGoldStandard("../gold-standard-svs/venter-chr22-known-dels.txt");
+  // dfinder.checkAgainstGoldStandard("../gold-standard-svs/NA19312-chr20-known-dels.txt");
   // dfinder.printOverlaps("../gold-standard-svs/venter-chr22-known-dels.txt", 75);
   return 0;
 }

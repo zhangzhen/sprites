@@ -1,6 +1,7 @@
 // #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <cctype>
 #include "Overlap.h"
 #include "SoftClip.h"
 
@@ -43,6 +44,7 @@ bool Overlap::equals(const std::string& s1, const std::string& s2, int maxMismat
   if (s1.size() != s2.size()) return false;
   // assert(s1.size() == s2.size());
   for (size_t i = 0; i < s1.size(); ++i) {
+      if (toupper(s1[i]) == 'N' || toupper(s2[i] == 'N')) continue;
     if (s1[i] != s2[i]) ++cnt;
     if (cnt > maxMismatches) return false;
   }

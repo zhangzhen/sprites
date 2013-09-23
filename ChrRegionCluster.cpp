@@ -35,6 +35,7 @@ bool ChrRegionCluster::getTargetRegion(int mean, int std, TargetRegion& regionOf
     // std::vector<int> lens;
     // toLengthList(lens);
     const ChrRegion *cr = cleanRegions[cleanRegions.size() / 2];
+    // const ChrRegion *cr = cleanRegions[0];
   int deltaLength = cr->getInsertSize() - mean;
   regionOfInterest = { cr->getStartPos(),
 		       cr->getEndPos(),
@@ -80,7 +81,11 @@ void ChrRegionCluster::removeOutliersWithMad(std::vector<const ChrRegion*>& clea
 	cleanRegions.push_back(elts[0]);
 	return;
     }
-    if (elts.size() == 2 && isInconsistent(elts[0]->length(), elts[1]->length())) return;
+    if (elts.size() == 2 && isInconsistent(elts[0]->length(), elts[1]->length())) {
+	cleanRegions.push_back(elts[0]);
+	cleanRegions.push_back(elts[1]);
+	return;
+    }
     std::vector<int> lens;
     toLengthList(lens);
     int m1 = median(lens);

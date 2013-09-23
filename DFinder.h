@@ -33,13 +33,18 @@ class DFinder
  private:
   void call(const std::string& filename, std::vector<Deletion>& calls);
 
-  void loadFrom(const std::string& filename);
+  void loadFrom();
+
+  bool isLargeInsertSize(int insertSize);
+
+  bool getMateOf(const BamTools::BamAlignment& it, BamTools::BamAlignment& itsMate);
 
   void identifyTargetRegions(int referenceId, std::vector<TargetRegion>& regions);
 
   static void mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out);
 
   // void computeConsensuses(int referenceId, std::vector<Consensus>& consensuses1, std::vector<Consensus>& consensuses2);
+  int numOfClipsIn(const TargetRegion& region, const std::vector<SoftClip*>& clips);
 
   template <typename T, typename Compare1, typename Compare2>
   void callAllDeletions(const std::vector<TargetRegion>& regions,
@@ -75,6 +80,7 @@ class DFinder
   BamTools::RefVector references;
   int size;
   static const int lengthThreshold = 50;
+  BamTools::BamReader r1, r2;
 
   std::vector<std::vector<SoftClip*> > leftClips;
   std::vector<std::vector<SoftClip*> > rightClips;
@@ -101,12 +107,12 @@ void DFinder::callAllDeletions(const std::vector<TargetRegion>& regions,
   for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
       /* std::cout << ">>>>>>>>>>>>>>>>>>>>>>>" << std::endl; */
       /* std::cout << *itr << std::endl; */
-    auto first1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).start, comp2);
+    auto first1 = lower_bound(consensuses1.begin(), consensuses1.end(), (*itr).start, comp1);
     auto last1 = upper_bound(consensuses1.begin(), consensuses1.end(), (*itr).end, comp2);
     if (last1 == consensuses1.end()) continue;
     auto first2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).start, comp1);
     if (first2 == consensuses2.end()) continue;
-    auto last2 = lower_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, comp1);
+    auto last2 = upper_bound(consensuses2.begin(), consensuses2.end(), (*itr).end, comp2);
     /* if ((*itr).start == 30255871) { */
     /*   for (auto itr2 = first1; itr2 != last1 + 1; ++itr2) */
     /*     std::cout << **itr2 << std::endl; */
@@ -141,7 +147,7 @@ bool DFinder::overlaps(ForwardIterator first1,
     std::map<std::pair<int,int>,std::vector<Overlap> > overlaps;
   /* std::vector<Overlap> ovs; */
   for (auto itr1 = first2; itr1 != last2; ++itr1) {
-    for (auto itr2 = last1; itr2 != first1 - 1; --itr2) {
+    for (auto itr2 = last1 - 1; itr2 != first1 - 1; --itr2) {
       if ((*itr1)->maxDeletionLength(**itr2) < std::max(lengthThreshold, region.minDeletionLength)) break;
       if ((*itr1)->minDeletionLength(**itr2) > region.maxDeletionLength) continue;
       Overlap ov;
