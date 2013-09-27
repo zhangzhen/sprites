@@ -27,23 +27,24 @@ bool ChrRegionCluster::getTargetRegion(int mean, int std, TargetRegion& regionOf
   //   removeAbnormalChrRegions(mean + 4*std);
   //   dirty = false;
   // }
-    std::vector<const ChrRegion*> cleanRegions;
-    removeOutliersWithMad(cleanRegions);
-    if (cleanRegions.empty()) return false;
+    // std::vector<const ChrRegion*> cleanRegions;
+    // removeOutliersWithMad(cleanRegions);
+    // if (cleanRegions.empty()) return false;
     // std::cout << "\n>>>>>>>>>>>>>>>>>>>>>>>> [" << cleanRegions.size() << "]" << std::endl;
     // std::transform(cleanRegions.begin(), cleanRegions.end(), std::ostream_iterator<const ChrRegion&>(std::cout, "\n"), [](const ChrRegion *cr) { return *cr; });
     // std::vector<int> lens;
     // toLengthList(lens);
-    const ChrRegion *cr = cleanRegions[cleanRegions.size() / 2];
+    // const ChrRegion *cr = *max_element(elts.begin(), elts.end(), [](const ChrRegion *r1, const ChrRegion *r2) { return r1->length() < r2->length(); });
+    const ChrRegion *cr = elts[elts.size() / 2];
     // const ChrRegion *cr = cleanRegions[0];
   int deltaLength = cr->getInsertSize() - mean;
   regionOfInterest = { cr->getStartPos(),
 		       cr->getEndPos(),
 		       std::max(0, deltaLength - 3*std),
 		       deltaLength + 3*std,
-		       cleanRegions.back()->getStartPos(),
-		       cleanRegions.front()->getEndPos(),
-		       cleanRegions.size() };
+		       elts.back()->getStartPos(),
+		       elts.front()->getEndPos(),
+		       elts.size() };
   // std::cout << r.start << "\t" << r.end << "\t" << r.minDeletionLength << "\t" << r.maxDeletionLength << std::endl;
   return true;
 }

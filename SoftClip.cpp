@@ -15,6 +15,10 @@ int SoftClip::referenceId() const { return refId; }
 
 int SoftClip::position() const { return pos; }
 
+int SoftClip::startPosition() const { return pos - lengthOfLeftPart(); }
+
+int SoftClip::endPosition() const { return pos - lengthOfRightPart() + 1; }
+
 const std::string& SoftClip::sequence() const { return seq; }
 
 int SoftClip::length() const { return seq.length(); }

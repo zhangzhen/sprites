@@ -11,11 +11,13 @@ class SoftClip {
   int clipPos;
   std::string seq;
   std::string quals;
-  
+
  public:
   SoftClip(int refId, int pos, int clipPos, const std::string& seq, const std::string& quals);
   int referenceId() const;
   int position() const;
+  int startPosition() const;
+  int endPosition() const;
   const std::string& sequence() const;
   int length() const;
   int lengthOfLeftPart() const;
@@ -25,7 +27,7 @@ class SoftClip {
   int minDeletionLength(const SoftClip& other) const;
   int maxDeletionLength(const SoftClip& other) const;
   bool overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
-  
+
   static bool compareL(SoftClip* s1, SoftClip* s2);
   static bool compareR(SoftClip* s1, SoftClip* s2);
   static bool compare1(SoftClip* o, const int pos);
