@@ -15,6 +15,7 @@ class ChrRegionCluster {
   void add(const ChrRegion *in);
   // bool empty() const;
   std::string toString() const;
+  void getOverlaps(int start, int end, std::vector<const ChrRegion*>& regions) const;
   bool getTargetRegion(int mean, int std, TargetRegion& regionOfInterest);
   friend std::ostream& operator <<(std::ostream& os, const ChrRegionCluster& crc)
       ;

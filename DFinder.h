@@ -7,6 +7,7 @@
 #include <utility>
 #include "SoftClip.h"
 #include "ChrRegion.h"
+#include "ChrRegionCluster.h"
 #include "TargetRegion.h"
 #include "api/BamReader.h"
 #include "DFinderHelper.h"
@@ -94,7 +95,7 @@ class DFinder
   };
 
   bool loadMyIntervals(const std::string& filename, std::vector<MyInterval>& out);
-  bool checkMyInterval(const MyInterval& myInterval, int refId, const std::vector<const ChrRegion*>& regions);
+  bool checkMyInterval(const MyInterval& myInterval, int refId, const std::vector<ChrRegionCluster>& regions);
 };
 
 template <typename T, typename Compare1, typename Compare2>

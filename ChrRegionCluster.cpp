@@ -22,6 +22,14 @@ std::string ChrRegionCluster::toString() const {
   return str;
 }
 
+void ChrRegionCluster::getOverlaps(int start, int end, std::vector<const ChrRegion*>& regions) const {
+    copy_if(elts.begin(), elts.end(), back_inserter(regions),
+	    [start, end](const ChrRegion *cr) {
+		return ((start >= cr->getStartPos() && start < cr->getEndPos()) ||
+			(cr->getStartPos() >= start && cr->getStartPos() < end));
+	    });
+}
+
 bool ChrRegionCluster::getTargetRegion(int mean, int std, TargetRegion& regionOfInterest) {
   // if (dirty) {
   //   removeAbnormalChrRegions(mean + 4*std);

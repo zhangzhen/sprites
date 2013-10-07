@@ -321,16 +321,17 @@ void DFinder::printOverlaps(const std::string& filename, int readlength) {
 void DFinder::checkAgainstGoldStandard(const std::string& filename) {
     std::vector<MyInterval> myIntervals;
     loadMyIntervals(filename, myIntervals);
-    std::map<int, std::vector<const ChrRegion*> > map;
+    std::map<int, std::vector<ChrRegionCluster> > map;
     int cnt = 0;
 
     for (auto itr = myIntervals.begin(); itr != myIntervals.end(); ++itr) {
 	int refid;
 	if (!findReferenceId((*itr).refname, refid)) continue;
-	std::vector<const ChrRegion*> regs;
 	if (!map.count(refid)) {
-	    // removeSuperChrRegions(intervals[refid], regs);
-	    map[refid] = regs;
+	    std::vector<ChrRegionCluster> clusters;
+	    if (intervals[refid].empty()) continue;
+	    clusterChrRegions(intervals[refid], clusters);
+	    map[refid] = clusters;
 	}
 	if (checkMyInterval(*itr, refid, map[refid])) cnt++;
     }
@@ -351,17 +352,17 @@ bool DFinder::loadMyIntervals(const std::string& filename, std::vector<MyInterva
     return true;
 }
 
-bool DFinder::checkMyInterval(const MyInterval& myInterval, int refId, const std::vector<const ChrRegion*>& regions) {
+bool DFinder::checkMyInterval(const MyInterval& myInterval, int refId, const std::vector<ChrRegionCluster>& clusters) {
     bool res = false;
     std::cout << std::endl;
     std::cout << myInterval.refname << ":" << myInterval.start << "-" << myInterval.end << "\t" << myInterval.length << std::endl;
-    for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
-	if ((*itr)->getStartPos() <= myInterval.start && (*itr)->getEndPos() >= myInterval.end) {
-	// if (((*itr)->getStartPos() >= myInterval.start && (*itr)->getStartPos() < myInterval.end) ||
-	//     (myInterval.start >= (*itr)->getStartPos() && myInterval.start < (*itr)->getEndPos())) {
-	    std::cout << **itr
-		      << "\t" << (*itr)->minDeletionLength(meanInsertSize, stdInsertSize)
-		      << "\t" << (*itr)->maxDeletionLength(meanInsertSize, stdInsertSize)
+    for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
+	std::vector<const ChrRegion*> regions;
+	(*itr).getOverlaps(myInterval.start, myInterval.end, regions);
+	for (auto itr2 = regions.begin(); itr2 != regions.end(); ++itr2) {
+	    std::cout << **itr2
+		      << "\t" << (*itr2)->minDeletionLength(meanInsertSize, stdInsertSize)
+		      << "\t" << (*itr2)->maxDeletionLength(meanInsertSize, stdInsertSize)
 		      << std::endl;
 	    res = true;
 	}
