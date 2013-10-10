@@ -1,6 +1,8 @@
 #include "Deletion.h"
 #include <cassert>
 
+Deletion::Deletion() {}
+
 Deletion::Deletion(int referenceId, int start2, int end1, int offset) :
     referenceId(referenceId), start2(start2), end1(end1), offset(offset) {
   assert(start2 > 0 && length() > 0);

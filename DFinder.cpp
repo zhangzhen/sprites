@@ -11,13 +11,13 @@ DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertS
 	std::cerr << "could not open BAM file" << std::endl;
     }
 
-    if (!r2.Open(filename)) {
-	std::cerr << "could not open BAM file" << std::endl;
-    }
-    if (!r2.LocateIndex()) {
-	if (!r2.CreateIndex())
-	    std::cerr << "could not find or create index" << std::endl;
-    }
+    // if (!r2.Open(filename)) {
+    // 	std::cerr << "could not open BAM file" << std::endl;
+    // }
+    // if (!r2.LocateIndex()) {
+    // 	if (!r2.CreateIndex())
+    // 	    std::cerr << "could not find or create index" << std::endl;
+    // }
 
     references = r1.GetReferenceData();
     size = r1.GetReferenceCount();
@@ -42,33 +42,11 @@ DFinder::~DFinder() {
 	for_each(intervals[i].begin(), intervals[i].end(), DeletePtr<ChrRegion>());
     }
     r1.Close();
-    r2.Close();
+    // r2.Close();
 }
 
 bool DFinder::isLargeInsertSize(int insertSize) {
     return insertSize >= meanInsertSize + round(discordant * stdInsertSize);
-}
-
-bool DFinder::getMateOf(const BamTools::BamAlignment& it, BamTools::BamAlignment& itsMate) {
-    int cnt = 0;
-
-    if (!r2.Jump(it.RefID, it.MatePosition)) {
-	std::cerr << "could not jump" << std::endl;
-	return false;
-    }
-
-    BamTools::BamAlignment al;
-    while (r2.GetNextAlignment(al)) {
-	cnt++;
-	if (al.Position > it.MatePosition) break;
-	if (it.Name == al.Name && it.IsFirstMate() != al.IsFirstMate()) {
-	    itsMate = al;
-	    // std::cout << "successful: " << cnt << std::endl;
-	    return true;
-	}
-    }
-    std::cout << "Failed: " << cnt << std::endl;
-    return false;
 }
 
 void DFinder::loadFrom() {
@@ -79,7 +57,10 @@ void DFinder::loadFrom() {
 
     BamTools::BamAlignment ba1;
     BamTools::BamAlignment ba2;
-    int xt1, xt2;
+    int xt1, mq;
+
+    std::map<std::string, int> endPositions;
+
     while (r1.GetNextAlignment(ba1)) {
 
 	if (!ba1.IsDuplicate() &&
@@ -88,10 +69,6 @@ void DFinder::loadFrom() {
 	    ba1.RefID == ba1.MateRefID &&
 	    ba1.IsReverseStrand() != ba1.IsMateReverseStrand() &&
 	    ba1.GetTag("XT", xt1)) {
-	    // && getMateOf(ba1, ba2) &&
-	    // ba2.GetTag("XT", xt2)) {
-	    // if (!ba1.IsProperPair() &&
-	    //     ((xt1 == 'M' && xt2 == 'U') || (xt1 == 'U' && xt2 == 'M'))) n_read2++;
 	    std::vector<int> clipSizes, readPositions, genomePositions;
 	    if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions)) {
 		if (ba1.Position == genomePositions.front() &&
@@ -116,16 +93,23 @@ void DFinder::loadFrom() {
 		}
 	    }
 
-	    if (!ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition &&
-		isLargeInsertSize(ba1.InsertSize)) {
+	    if (endPositions.count(ba1.Name) && ba1.MapQuality >= MapQualityThreshold) {
 		intervals[ba1.RefID].push_back(new ChrRegion(cnt,
+							     ba1.Name,
 							     ba1.RefID,
-							     ba1.GetEndPosition(),
-							     ba1.MatePosition,
-							     ba1.InsertSize));
-		// std::cout << *intervals[ba1.RefID].back() << std::endl;
+							     endPositions[ba1.Name],
+							     ba1.Position,
+							     -ba1.InsertSize,
+							     ba1.Length));
 		cnt++;
 	    }
+
+	    if (!ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition &&
+		ba1.MapQuality >= MapQualityThreshold &&
+		isLargeInsertSize(ba1.InsertSize)) {
+		endPositions[ba1.Name] = ba1.GetEndPosition();
+	    }
+
 	}
     }
 
@@ -168,70 +152,49 @@ void DFinder::callToVcf(const std::string& filename) {
     }
 }
 
-int DFinder::numOfClipsIn(const TargetRegion& region, const std::vector<SoftClip*>& clips) {
-    std::map<int,std::vector<SoftClip*> > map;
-    for (auto itr = clips.begin(); itr != clips.end(); ++itr) {
-    // for (auto itr = lower_bound(clips.begin(), clips.end(), region.start, SoftClip::compare1);
-    // 	 itr != upper_bound(clips.begin(), clips.end(), region.end, SoftClip::compare2);
-    // 	 ++itr) {
-	if ((region.start > (*itr)->position() && region.start <= (*itr)->endPosition()) ||
-	    ((*itr)->position() >= region.start && (*itr)->position() <= region.end) ||
-	    (region.end >= (*itr)->startPosition() && region.end < (*itr)->position()))
-	    map[(*itr)->position()].push_back(*itr);
-    }
-    for (auto itr = map.begin(); itr != map.end(); ++itr) {
-	std::transform(itr->second.begin(), itr->second.end(),
-		       std::ostream_iterator<const SoftClip&>(std::cout, "\n"),
-		       [](const SoftClip *sc) { return *sc; } );
-    }
-    std::cout << "######################" << std::endl;
-    return map.size();
-}
+// int DFinder::numOfClipsIn(const TargetRegion& region, const std::vector<SoftClip*>& clips) {
+//     std::map<int,std::vector<SoftClip*> > map;
+//     for (auto itr = clips.begin(); itr != clips.end(); ++itr) {
+//     // for (auto itr = lower_bound(clips.begin(), clips.end(), region.start, SoftClip::compare1);
+//     // 	 itr != upper_bound(clips.begin(), clips.end(), region.end, SoftClip::compare2);
+//     // 	 ++itr) {
+// 	if ((region.start > (*itr)->position() && region.start <= (*itr)->endPosition()) ||
+// 	    ((*itr)->position() >= region.start && (*itr)->position() <= region.end) ||
+// 	    (region.end >= (*itr)->startPosition() && region.end < (*itr)->position()))
+// 	    map[(*itr)->position()].push_back(*itr);
+//     }
+//     for (auto itr = map.begin(); itr != map.end(); ++itr) {
+// 	std::transform(itr->second.begin(), itr->second.end(),
+// 		       std::ostream_iterator<const SoftClip&>(std::cout, "\n"),
+// 		       [](const SoftClip *sc) { return *sc; } );
+//     }
+//     std::cout << "######################" << std::endl;
+//     return map.size();
+// }
 
 void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
-    std::vector<Deletion> res;
     for (int i = 0; i < size; i++) {
 
-	std::vector<TargetRegion> regions;
-	identifyTargetRegions(i, regions);
-	// for (auto itr = regions.begin(); itr != regions.end(); ++itr) {
-	//     std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
-	//     std::cout << *itr << std::endl;
-	//     std::cout << numOfClipsIn(*itr, leftClips[i]) << " - " << numOfClipsIn(*itr, rightClips[i]) << std::endl;
-	// }
+	std::vector<ChrRegionCluster> clusters;
+	if (intervals[i].empty()) continue;
+	clusterChrRegions(intervals[i], clusters);
 
-	callAllDeletions(regions, leftClips[i], rightClips[i], SoftClip::compare1, SoftClip::compare2, calls);
-    }
-    // mergeCalls(res, calls);
-}
-
-void DFinder::mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out) {
-    auto first = in.begin();
-    auto last = in.end();
-    sort(first, last);
-    if (first == last) return;
-    // for (auto itr = first; itr != last; ++itr) std::cout << (*itr).getStart2() << "\t" << (*itr).getEnd2() << "\t" << (*itr).length() << std::endl;
-    auto next = first;
-    Deletion d = *first;
-    while (++next != last) {
-	if ((*first).overlaps(*next)) {
-	    if (d.length() < (*next).length()) d = *next;
-	} else {
-	    out.push_back(d);
-	    d = *next;
+	for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
+	    std::cout << *itr << std::endl;
+	    Deletion deletion;
+	    if (callDeletionInCluster(*itr, deletion)) calls.push_back(deletion);
 	}
-	++first;
+
     }
-    out.push_back(d);
 }
 
-void removeLargeChrRegions(std::vector<const ChrRegion*>& regions) {
+void DFinder::removeLargeChrRegions(std::vector<ChrRegion*>& regions) {
     if (regions.size() < 2) return;
     int l = (*min_element(regions.begin(), regions.end(), [](const ChrRegion* r1, const ChrRegion* r2) { return r1->length() < r2->length(); }))->length();
-    regions.erase(remove_if(regions.begin(), regions.end(), [l](const ChrRegion *cr) { return cr->length() / l >= 10; }), regions.end());
+    regions.erase(remove_if(regions.begin(), regions.end(), [l, stdInsertSize](const ChrRegion *cr) { return cr->length() - l > 6 * stdInsertSize; }), regions.end());
 }
 
-void clusterChrRegions(const std::vector<ChrRegion*>& remainder, std::vector<ChrRegionCluster>& clusters) {
+void DFinder::clusterChrRegions(const std::vector<ChrRegion*>& remainder, std::vector<ChrRegionCluster>& clusters) {
     std::vector<EndPoint> endpoints;
     for (auto itr = remainder.begin(); itr != remainder.end(); ++itr) {
 	endpoints.push_back((*itr)->getStart());
@@ -239,14 +202,14 @@ void clusterChrRegions(const std::vector<ChrRegion*>& remainder, std::vector<Chr
     }
     sort(endpoints.begin(), endpoints.end());
     std::set<int> ids;
-    std::queue<const ChrRegion*> q;
+    std::queue<ChrRegion*> q;
     for (auto itr = endpoints.begin(); itr != endpoints.end(); ++itr) {
 	if ((*itr).isStart()) {
 	    q.push((*itr).getOwner());
 	}
 	else {
 	    if (ids.count((*itr).ownerId())) continue;
-	    std::vector<const ChrRegion*> vec;
+	    std::vector<ChrRegion*> vec;
 	    while (!q.empty()) {
 		vec.push_back(q.front());
 		ids.insert(q.front()->getId());
@@ -258,27 +221,6 @@ void clusterChrRegions(const std::vector<ChrRegion*>& remainder, std::vector<Chr
 	    clusters.push_back(clu);
 	}
     }
-}
-
-void DFinder::identifyTargetRegions(int referenceId, std::vector<TargetRegion>& regions) {
-    // gets rid of intervals that contain sub-intervals
-    // std::vector<const ChrRegion*> remainder;
-    // std::transform(intervals[referenceId].begin(), intervals[referenceId].end(), std::ostream_iterator<const ChrRegion&>(std::cout, "\n"), [](const ChrRegion *cr) { return *cr; });
-    // removeSuperChrRegions(intervals[referenceId], remainder);
-    // std::transform(remainder.begin(), remainder.end(), std::ostream_iterator<const ChrRegion&>(std::cout, "\n"), [](const ChrRegion *cr) { return *cr; });
-    // std::cout << std::endl;
-    // clusters pairwise overlapping intervals
-    std::vector<ChrRegionCluster> clusters;
-    if (intervals[referenceId].empty()) return;
-    clusterChrRegions(intervals[referenceId], clusters);
-
-    for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
-	TargetRegion r;
-	std::cout << *itr << std::endl;
-	if ((*itr).getTargetRegion(meanInsertSize, stdInsertSize, r))
-	    regions.push_back(r);
-    }
-
 }
 
 bool DFinder::findReferenceId(const std::string& name, int& id) {
@@ -368,4 +310,70 @@ bool DFinder::checkMyInterval(const MyInterval& myInterval, int refId, const std
 	}
     }
     return res;
+}
+
+bool DFinder::callDeletionInCluster(const ChrRegionCluster& cluster, Deletion& deletion) {
+    for (auto itr = cluster.end() - 1; itr != cluster.begin() - 1; --itr) {
+	Overlap overlap;
+	if (getOverlapsInRegion(**itr, overlap)) {
+	    deletion = overlap.getDeletion();
+	    return true;
+	}
+    }
+    return false;
+}
+
+bool DFinder::getOverlapsInRegion(const ChrRegion& region, Overlap& overlap) {
+    std::vector<SoftClip*> part1s;
+    getSoftClipsIn(getIntervalOfLeftClips(region), leftClips[region.getReferenceId()], part1s);
+    std::map<std::pair<int,int>, std::vector<Overlap> > overlaps;
+
+    for (auto ritr = part1s.rbegin(); ritr != part1s.rend(); ++ritr) {
+	std::vector<SoftClip*> part2s;
+	getSoftClipsIn(getIntervalOfRightClips(**ritr, region),
+		       rightClips[region.getReferenceId()],
+		       part2s);
+	for (auto itr = part2s.begin(); itr != part2s.end(); ++itr) {
+	    Overlap ov;
+	    if ((**itr).overlaps(**ritr, minOverlapLength, maxMismatchRate, ov) &&
+		ov.deletionLength() >= lengthThreshold) {
+		overlaps[std::make_pair(ov.start(), ov.end())].push_back(ov);
+	    }
+	}
+    }
+
+    if (overlaps.empty()) { return false; }
+
+    if (overlaps.size() == 1) {
+	return Overlap::getHighScoreOverlap(overlaps.begin()->second, overlap);
+    }
+
+    auto itr = overlaps.begin();
+    auto res = itr++;
+    for (; itr != overlaps.end(); ++itr) {
+	if (!contains(res->first, itr->first)) {
+	    return Overlap::getHighScoreOverlap(res->second, overlap);
+	}
+	if ((res->first.second - res->first.first) < (itr->first.second - itr->first.first))
+	    res = itr;
+	/* std::cout << "(" << itr->first.first << ", " << itr->first.second << ")" << std::endl; */
+    }
+    /* copy(ovs.begin(), ovs.end(), std::ostream_iterator<Overlap>(std::cout, "\n")); */
+    return Overlap::getHighScoreOverlap(res->second, overlap);
+}
+
+void DFinder::getSoftClipsIn(const Interval& interval, const std::vector<SoftClip*>& input, std::vector<SoftClip*>& output) {
+    copy(lower_bound(input.begin(), input.end(), interval.start, SoftClip::compare1),
+		 upper_bound(input.begin(), input.end(), interval.end, SoftClip::compare2),
+		 back_inserter(output));
+}
+
+Interval DFinder::getIntervalOfLeftClips(const ChrRegion& regionOfInterest) {
+    return { regionOfInterest.getEndPos() + 2 * regionOfInterest.getReadLength() - meanInsertSize - 3 * stdInsertSize,
+	    regionOfInterest.getEndPos() };
+}
+
+Interval DFinder::getIntervalOfRightClips(const SoftClip& leftClip, const ChrRegion& regionOfInterest) {
+    return { regionOfInterest.getStartPos(),
+	    regionOfInterest.getStartPos() + meanInsertSize - 2 * regionOfInterest.getReadLength() + 3 * stdInsertSize };
 }

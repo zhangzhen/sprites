@@ -4,16 +4,31 @@
 #include <iterator>
 #include <algorithm>
 
-ChrRegionCluster::ChrRegionCluster() : dirty(true) {}
+ChrRegionCluster::ChrRegionCluster() {}
 
-void ChrRegionCluster::add(const ChrRegion* in) {
+void ChrRegionCluster::add(ChrRegion* in) {
   elts.push_back(in);
-  if (!dirty) dirty = true;
 }
 
 // bool ChrRegionCluster::empty() const {
 //   return elts.empty();
 // }
+
+ChrRegionCluster::iterator ChrRegionCluster::begin() {
+    return elts.begin();
+}
+
+ChrRegionCluster::const_iterator ChrRegionCluster::begin() const {
+    return elts.begin();
+}
+
+ChrRegionCluster::iterator ChrRegionCluster::end() {
+    return elts.end();
+}
+
+ChrRegionCluster::const_iterator ChrRegionCluster::end() const {
+    return elts.end();
+}
 
 std::string ChrRegionCluster::toString() const {
   std::string str = ">>>>>>>>>>>>>>>>>>>>>>\n";

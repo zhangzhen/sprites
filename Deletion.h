@@ -4,6 +4,7 @@
 class Deletion
 {
  public:
+    Deletion();
   Deletion(int referenceId, int start2, int end1, int offset);
   int getReferenceId() const;
   int getStart1() const;

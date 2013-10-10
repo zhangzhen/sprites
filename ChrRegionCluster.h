@@ -8,17 +8,25 @@
 
 class ChrRegionCluster {
  private:
-  std::vector<const ChrRegion*> elts;
-  bool dirty;
- public:
+  std::vector<ChrRegion*> elts;
+
+public:
   ChrRegionCluster();
-  void add(const ChrRegion *in);
+  void add(ChrRegion *in);
   // bool empty() const;
   std::string toString() const;
   void getOverlaps(int start, int end, std::vector<const ChrRegion*>& regions) const;
   bool getTargetRegion(int mean, int std, TargetRegion& regionOfInterest);
-  friend std::ostream& operator <<(std::ostream& os, const ChrRegionCluster& crc)
-      ;
+  friend std::ostream& operator <<(std::ostream& os, const ChrRegionCluster& crc);
+
+  typedef typename std::vector<ChrRegion*>::iterator iterator;
+  typedef typename std::vector<ChrRegion*>::const_iterator const_iterator;
+
+  iterator begin();
+  const_iterator begin() const;
+  iterator end();
+  const_iterator end() const;
+
  private:
   void removeAbnormalChrRegions(int threshold);
   void removeOutliersWithMad(std::vector<const ChrRegion*>& cleanRegions);
