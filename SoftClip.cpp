@@ -60,7 +60,12 @@ bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxM
 
   // if (pos == 33115831) std::cout << lengthOfLeftPart() << '\t' << other.lengthOfLeftPart() << std::endl;
 
-  for (int i = std::max(0, minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart()); i < std::min(lengthOfLeftPart(), other.lengthOfRightPart()); ++i) {
+  int start = minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart();
+  // int start = std::max(0, minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart());
+  // int end = l1 + l2 - 2 * minOverlapLength;
+  int end = std::min(lengthOfLeftPart(), other.lengthOfRightPart());
+
+  for (int i = start; i <= end; ++i) {
     int n1 = std::min(lengthOfLeftPart(), other.lengthOfLeftPart() + i);
     int n2 = std::min(lengthOfRightPart(), other.lengthOfRightPart() - i);
     int n = n1 + n2;
