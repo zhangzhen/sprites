@@ -45,32 +45,26 @@ void ChrRegionCluster::getOverlaps(int start, int end, std::vector<const ChrRegi
 	    });
 }
 
-bool ChrRegionCluster::getTargetRegion(int mean, int std, TargetRegion& regionOfInterest) {
-  // if (dirty) {
-  //   removeAbnormalChrRegions(mean + 4*std);
-  //   dirty = false;
-  // }
-    // std::vector<const ChrRegion*> cleanRegions;
-    // removeOutliersWithMad(cleanRegions);
-    // if (cleanRegions.empty()) return false;
-    // std::cout << "\n>>>>>>>>>>>>>>>>>>>>>>>> [" << cleanRegions.size() << "]" << std::endl;
-    // std::transform(cleanRegions.begin(), cleanRegions.end(), std::ostream_iterator<const ChrRegion&>(std::cout, "\n"), [](const ChrRegion *cr) { return *cr; });
-    // std::vector<int> lens;
-    // toLengthList(lens);
-    // const ChrRegion *cr = *max_element(elts.begin(), elts.end(), [](const ChrRegion *r1, const ChrRegion *r2) { return r1->length() < r2->length(); });
-    const ChrRegion *cr = elts[elts.size() / 2];
-    // const ChrRegion *cr = cleanRegions[0];
-  int deltaLength = cr->getInsertSize() - mean;
-  regionOfInterest = { cr->getStartPos(),
-		       cr->getEndPos(),
-		       std::max(0, deltaLength - 3*std),
-		       deltaLength + 3*std,
-		       elts.back()->getStartPos(),
-		       elts.front()->getEndPos(),
-		       elts.size() };
-  // std::cout << r.start << "\t" << r.end << "\t" << r.minDeletionLength << "\t" << r.maxDeletionLength << std::endl;
-  return true;
-}
+// bool ChrRegionCluster::getTargetRegion(int mean, int std, TargetRegion& regionOfInterest) {
+//     std::vector<const ChrRegion*> cleanRegions;
+//     removeOutliersWithMad(cleanRegions);
+//     if (cleanRegions.empty()) return false;
+//     std::cout << "\n>>>>>>>>>>>>>>>>>>>>>>>> [" << cleanRegions.size() << "]" << std::endl;
+//     std::transform(cleanRegions.begin(), cleanRegions.end(), std::ostream_iterator<const ChrRegion&>(std::cout, "\n"), [](const ChrRegion *cr) { return *cr; });
+//     std::vector<int> lens;
+//     toLengthList(lens);
+//     const ChrRegion *cr = *max_element(elts.begin(), elts.end(), [](const ChrRegion *r1, const ChrRegion *r2) { return r1->length() < r2->length(); });
+//     const ChrRegion *cr = elts[elts.size() / 2];
+//   int deltaLength = cr->getInsertSize() - mean;
+//   regionOfInterest = { cr->getStartPos(),
+// 		       cr->getEndPos(),
+// 		       std::max(0, deltaLength - 3*std),
+// 		       deltaLength + 3*std,
+// 		       elts.back()->getStartPos(),
+// 		       elts.front()->getEndPos(),
+// 		       elts.size() };
+//   return true;
+// }
 
 void ChrRegionCluster::removeAbnormalChrRegions(int threshold) {
   if (elts.size() <= 1) return;

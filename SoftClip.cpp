@@ -1,4 +1,5 @@
 #include "SoftClip.h"
+#include "DFinderHelper.h"
 #include <cassert>
 #include <algorithm>
 #include <iostream>
@@ -81,6 +82,17 @@ bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxM
   }
 
   return false;
+}
+
+bool SoftClip::overlapWith(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const {
+    int mismatches, len;
+    if (overlaps2(seq, other.seq, maxMismatchRate, len, mismatches) &&
+	len >= minOverlapLength) {
+	int offset = len - lengthOfRightPart() - other.lengthOfLeftPart();
+	overlap = Overlap(this, &other, len, mismatches, offset);
+	return true;
+    }
+    return false;
 }
 
 bool SoftClip::compare1(SoftClip* o, const int pos) {

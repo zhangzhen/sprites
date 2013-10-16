@@ -50,7 +50,7 @@ class DFinder
 
   bool callDeletionInCluster(const ChrRegionCluster& cluster, Deletion& deletion);
 
-  bool getOverlapsInRegion(const ChrRegion& region, Overlap& overlap);
+  bool getOverlapInRegion(const ChrRegion& region, Overlap& overlap);
 
   /* int numOfClipsIn(const TargetRegion& region, const std::vector<SoftClip*>& clips); */
 
@@ -72,7 +72,11 @@ class DFinder
   BamTools::BamReader r1;
 
   std::vector<std::vector<SoftClip*> > leftClips;
+  std::vector<std::vector<SoftClip*> > leftParts;
+
   std::vector<std::vector<SoftClip*> > rightClips;
+  std::vector<std::vector<SoftClip*> > rightParts;
+
   std::vector<std::vector<ChrRegion*> > intervals;
 
   struct MyInterval {

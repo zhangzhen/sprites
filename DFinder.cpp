@@ -23,7 +23,11 @@ DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertS
     size = r1.GetReferenceCount();
 
     leftClips.resize(size);
+    leftParts.resize(size);
+
     rightClips.resize(size);
+    rightParts.resize(size);
+
     intervals.resize(size);
 
     loadFrom();
@@ -38,7 +42,9 @@ DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertS
 DFinder::~DFinder() {
     for (int i = 0; i < size; ++i) {
 	for_each(leftClips[i].begin(), leftClips[i].end(), DeletePtr<SoftClip>());
+	for_each(leftParts[i].begin(), leftParts[i].end(), DeletePtr<SoftClip>());
 	for_each(rightClips[i].begin(), rightClips[i].end(), DeletePtr<SoftClip>());
+	for_each(rightParts[i].begin(), rightParts[i].end(), DeletePtr<SoftClip>());
 	for_each(intervals[i].begin(), intervals[i].end(), DeletePtr<ChrRegion>());
     }
     r1.Close();
@@ -88,6 +94,22 @@ void DFinder::loadFrom() {
 		    rightClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
 								 genomePositions.back(),
 								 ba1.Length - clipSizes.back(),
+								 ba1.QueryBases,
+								 ba1.Qualities));
+		}
+	    } else {
+		if (ba1.MapQuality >= MapQualityThreshold &&
+		    ba1.IsProperPair() && !ba1.IsReverseStrand()) {
+		    leftParts[ba1.RefID].push_back(new SoftClip(ba1.RefID,
+								ba1.Position,
+								0,
+								ba1.QueryBases,
+								ba1.Qualities));
+		} else if (ba1.MapQuality >= MapQualityThreshold &&
+			   ba1.IsProperPair() && ba1.IsReverseStrand()) {
+		    rightParts[ba1.RefID].push_back(new SoftClip(ba1.RefID,
+								 ba1.GetEndPosition(),
+								 ba1.Length,
 								 ba1.QueryBases,
 								 ba1.Qualities));
 		}
@@ -180,7 +202,7 @@ void DFinder::call(const std::string& filename, std::vector<Deletion>& calls) {
 	clusterChrRegions(intervals[i], clusters);
 
 	for (auto itr = clusters.begin(); itr != clusters.end(); ++itr) {
-	    std::cout << *itr << std::endl;
+	    // std::cout << *itr << std::endl;
 	    Deletion deletion;
 	    if (callDeletionInCluster(*itr, deletion)) calls.push_back(deletion);
 	}
@@ -315,7 +337,7 @@ bool DFinder::checkMyInterval(const MyInterval& myInterval, int refId, const std
 bool DFinder::callDeletionInCluster(const ChrRegionCluster& cluster, Deletion& deletion) {
     for (auto itr = cluster.end() - 1; itr != cluster.begin() - 1; --itr) {
 	Overlap overlap;
-	if (getOverlapsInRegion(**itr, overlap)) {
+	if (getOverlapInRegion(**itr, overlap)) {
 	    deletion = overlap.getDeletion();
 	    return true;
 	}
@@ -323,7 +345,7 @@ bool DFinder::callDeletionInCluster(const ChrRegionCluster& cluster, Deletion& d
     return false;
 }
 
-bool DFinder::getOverlapsInRegion(const ChrRegion& region, Overlap& overlap) {
+bool DFinder::getOverlapInRegion(const ChrRegion& region, Overlap& overlap) {
     std::vector<SoftClip*> part1s;
     getSoftClipsIn(getIntervalOfLeftClips(region), leftClips[region.getReferenceId()], part1s);
     std::map<std::pair<int,int>, std::vector<Overlap> > overlaps;
@@ -338,6 +360,18 @@ bool DFinder::getOverlapsInRegion(const ChrRegion& region, Overlap& overlap) {
 	    if ((**itr).overlaps(**ritr, minOverlapLength, maxMismatchRate, ov) &&
 		ov.deletionLength() >= lengthThreshold) {
 		overlaps[std::make_pair(ov.start(), ov.end())].push_back(ov);
+	    }
+	}
+
+	std::vector<SoftClip*> otherParts;
+	getSoftClipsIn(getIntervalOfRightClips(**ritr, region),
+		       rightParts[region.getReferenceId()],
+		       otherParts);
+	for (auto itr = otherParts.begin(); itr != otherParts.end(); ++itr) {
+	    Overlap ov;
+	    if ((**itr).overlapWith(**ritr, minOverlapLength, maxMismatchRate, ov)) {
+		overlaps[std::make_pair(ov.start(), ov.end())].push_back(ov);
+		std::cout << ov << std::endl;
 	    }
 	}
     }

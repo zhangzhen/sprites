@@ -16,5 +16,7 @@
 std::string integerToString(int n);
 bool isInconsistent(int a, int b);
 bool contains(std::pair<int,int> a, std::pair<int,int> b);
+int numOfMismatches(const std::string& s1, const std::string& s2);
+bool overlaps2(const std::string& s1, const std::string& s2, double maxMismatchRate, int& lengthOfOverlaps, int& mismatches);
 
 #endif

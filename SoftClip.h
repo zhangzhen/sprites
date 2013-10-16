@@ -27,6 +27,7 @@ class SoftClip {
   int minDeletionLength(const SoftClip& other) const;
   int maxDeletionLength(const SoftClip& other) const;
   bool overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
+  bool overlapWith(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
 
   static bool compareL(SoftClip* s1, SoftClip* s2);
   static bool compareR(SoftClip* s1, SoftClip* s2);

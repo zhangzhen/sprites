@@ -2,7 +2,6 @@
 #define _CHRREGIONCLUSTER_H_
 
 #include "ChrRegion.h"
-#include "TargetRegion.h"
 #include <string>
 #include <vector>
 
@@ -16,7 +15,7 @@ public:
   // bool empty() const;
   std::string toString() const;
   void getOverlaps(int start, int end, std::vector<const ChrRegion*>& regions) const;
-  bool getTargetRegion(int mean, int std, TargetRegion& regionOfInterest);
+  /* bool getTargetRegion(int mean, int std, TargetRegion& regionOfInterest); */
   friend std::ostream& operator <<(std::ostream& os, const ChrRegionCluster& crc);
 
   typedef typename std::vector<ChrRegion*>::iterator iterator;
