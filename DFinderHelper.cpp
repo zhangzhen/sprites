@@ -24,7 +24,7 @@ int numOfMismatches(const std::string& s1, const std::string& s2) {
     int cnt = 0;
     assert(s1.length() == s2.length());
     for (int i = 0; i < s1.length(); ++i) {
-	if (s1[i] != 'N' && s2[i] != 'N' && s1[i] == s2[i])
+	if (s1[i] != 'N' && s2[i] != 'N' && s1[i] != s2[i])
 	    cnt++;
     }
     return cnt;

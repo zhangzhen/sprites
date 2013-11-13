@@ -1,3 +1,35 @@
+DFinder: a deletion finder using discordant read pairs
+  and overlaps between soft-clips
+
+Methods of discovering overlaps between soft-clips
+or between a soft-clip and a read have three advantages in comparison
+to those of re-mapping unmapped segments of soft-clips:
+
+First, the clip position of a read given by BWA where soft-clipping occurs is
+usually inaccurate because of sequencing errors. For example, the clip
+position might occur either before or after the real one. Methods
+relying on
+remapping need to take additional steps to adjust calls afterward in
+order to obtain accurate variant identification. Those relying on
+overlaps consider the fact while making calls, so they do not need such
+post-processing.
+
+Second, although the donor and reference genomes have huge similarity, they
+differ in many places. Among those differences, big
+ones are called structural variants, whereas small ones
+includes indels ($\leq$ 50 bps) and SNPs. Thus, finding overlaps between reads
+of the same genome
+ leads to better result than re-mapping a small segment of reads on
+ the reference.
+
+Third, reads of length 35 or 50 tend to result in very short unmapped
+segments, which causes difficulty in remapping them to the reference
+because there are too many hits to decide which one is the
+best. However, the length of an overlap is usually larger than the sum
+of unmapped segments of two corresponding soft-clips, so they can overcome the
+limitation and
+are good at dealing with those reads.
+
 我们看一个例子：
 Ref: 	AGCATGTTAGATA[AGATAGCTGTGCTA]GTAGGCAGTCAGCGCCAT
 Donor:	AGCATGTTAGATAGTAGGCAGTCAGCGCCAT

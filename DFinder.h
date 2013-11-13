@@ -56,7 +56,7 @@ class DFinder
 
   bool findReferenceId(const std::string& name, int& id);
   Interval getIntervalOfLeftClips(const ChrRegion& regionOfInterest);
-  Interval getIntervalOfRightClips(const SoftClip& leftClip, const ChrRegion& regionOfInterest);
+  Interval getIntervalOfRightClips(const ChrRegion& regionOfInterest);
 
   static void getSoftClipsIn(const Interval& interval, const std::vector<SoftClip*>& input, std::vector<SoftClip*>& output);
 

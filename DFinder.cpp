@@ -346,13 +346,14 @@ bool DFinder::callDeletionInCluster(const ChrRegionCluster& cluster, Deletion& d
 }
 
 bool DFinder::getOverlapInRegion(const ChrRegion& region, Overlap& overlap) {
+
     std::vector<SoftClip*> part1s;
     getSoftClipsIn(getIntervalOfLeftClips(region), leftClips[region.getReferenceId()], part1s);
     std::map<std::pair<int,int>, std::vector<Overlap> > overlaps;
 
     for (auto ritr = part1s.rbegin(); ritr != part1s.rend(); ++ritr) {
 	std::vector<SoftClip*> part2s;
-	getSoftClipsIn(getIntervalOfRightClips(**ritr, region),
+	getSoftClipsIn(getIntervalOfRightClips(region),
 		       rightClips[region.getReferenceId()],
 		       part2s);
 	for (auto itr = part2s.begin(); itr != part2s.end(); ++itr) {
@@ -364,16 +365,35 @@ bool DFinder::getOverlapInRegion(const ChrRegion& region, Overlap& overlap) {
 	}
 
 	std::vector<SoftClip*> otherParts;
-	getSoftClipsIn(getIntervalOfRightClips(**ritr, region),
+	getSoftClipsIn(getIntervalOfRightClips(region),
 		       rightParts[region.getReferenceId()],
 		       otherParts);
 	for (auto itr = otherParts.begin(); itr != otherParts.end(); ++itr) {
 	    Overlap ov;
-	    if ((**itr).overlapWith(**ritr, minOverlapLength, maxMismatchRate, ov)) {
+	    if ((**itr).overlapWith(**ritr, minOverlapLength, maxMismatchRate, ov) &&
+		ov.deletionLength() >= lengthThreshold) {
 		overlaps[std::make_pair(ov.start(), ov.end())].push_back(ov);
-		std::cout << ov << std::endl;
+		// std::cout << ov << std::endl;
 	    }
 	}
+    }
+
+    std::vector<SoftClip*> parts;
+    getSoftClipsIn(getIntervalOfRightClips(region), rightClips[region.getReferenceId()], parts);
+
+    for (auto ritr = parts.rbegin(); ritr != parts.rend(); ++ritr) {
+    	std::vector<SoftClip*> otherParts;
+    	getSoftClipsIn(getIntervalOfLeftClips(region),
+    		       leftParts[region.getReferenceId()],
+    		       otherParts);
+    	for (auto itr = otherParts.begin(); itr != otherParts.end(); ++itr) {
+    	    Overlap ov;
+    	    if ((**ritr).overlapWith(**itr, minOverlapLength, maxMismatchRate, ov) &&
+		ov.deletionLength() >= lengthThreshold) {
+    		overlaps[std::make_pair(ov.start(), ov.end())].push_back(ov);
+    		// std::cout << ov << std::endl;
+    	    }
+    	}
     }
 
     if (overlaps.empty()) { return false; }
@@ -403,11 +423,11 @@ void DFinder::getSoftClipsIn(const Interval& interval, const std::vector<SoftCli
 }
 
 Interval DFinder::getIntervalOfLeftClips(const ChrRegion& regionOfInterest) {
-    return { regionOfInterest.getEndPos() + 2 * regionOfInterest.getReadLength() - meanInsertSize - 3 * stdInsertSize,
+    return { regionOfInterest.getEndPos() - meanInsertSize + 2 * regionOfInterest.getReadLength() - 3 * stdInsertSize,
 	    regionOfInterest.getEndPos() };
 }
 
-Interval DFinder::getIntervalOfRightClips(const SoftClip& leftClip, const ChrRegion& regionOfInterest) {
+Interval DFinder::getIntervalOfRightClips(const ChrRegion& regionOfInterest) {
     return { regionOfInterest.getStartPos(),
 	    regionOfInterest.getStartPos() + meanInsertSize - 2 * regionOfInterest.getReadLength() + 3 * stdInsertSize };
 }
