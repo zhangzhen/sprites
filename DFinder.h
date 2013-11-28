@@ -24,7 +24,7 @@ class DeletePtr {
 class DFinder
 {
  public:
-  DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, double discordant);
+  DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, int numOfStd);
   ~DFinder();
   void callToFile(const std::string& filename);
   void callToVcf(const std::string& filename);
@@ -37,6 +37,7 @@ class DFinder
   void loadFrom();
 
   bool isLargeInsertSize(int insertSize);
+  bool isProperInsertSize(int insertSize);
 
   /* bool getMateOf(const BamTools::BamAlignment& it, BamTools::BamAlignment& itsMate); */
 
@@ -64,7 +65,7 @@ class DFinder
   int stdInsertSize;
   int minOverlapLength;
   double maxMismatchRate;
-  double discordant;
+  int numOfStd;
   BamTools::RefVector references;
   int size;
   static const int lengthThreshold = 50;

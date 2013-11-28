@@ -5,8 +5,8 @@
 #include "DFinder.h"
 #include "ChrRegionCluster.h"
 
-DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, double discordant) :
-    meanInsertSize(meanInsertSize), stdInsertSize(stdInsertSize), minOverlapLength(minOverlapLength), maxMismatchRate(maxMismatchRate), discordant(discordant) {
+DFinder::DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, int numOfStd) :
+    meanInsertSize(meanInsertSize), stdInsertSize(stdInsertSize), minOverlapLength(minOverlapLength), maxMismatchRate(maxMismatchRate), numOfStd(numOfStd) {
     if (!r1.Open(filename)) {
 	std::cerr << "could not open BAM file" << std::endl;
     }
@@ -52,7 +52,12 @@ DFinder::~DFinder() {
 }
 
 bool DFinder::isLargeInsertSize(int insertSize) {
-    return insertSize >= meanInsertSize + round(discordant * stdInsertSize);
+    return insertSize >= meanInsertSize + numOfStd * stdInsertSize;
+}
+
+bool DFinder::isProperInsertSize(int insertSize) {
+    return insertSize >= meanInsertSize - numOfStd * stdInsertSize &&
+	insertSize <= meanInsertSize + numOfStd * stdInsertSize;
 }
 
 void DFinder::loadFrom() {
@@ -62,8 +67,7 @@ void DFinder::loadFrom() {
     // int n_pairs = 0, found_pairs = 0;
 
     BamTools::BamAlignment ba1;
-    BamTools::BamAlignment ba2;
-    int xt1, mq;
+    int xt1;
 
     std::map<std::string, int> endPositions;
 
@@ -74,13 +78,14 @@ void DFinder::loadFrom() {
 	    ba1.IsMapped() && ba1.IsMateMapped() &&
 	    ba1.RefID == ba1.MateRefID &&
 	    ba1.IsReverseStrand() != ba1.IsMateReverseStrand() &&
+	    ba1.MapQuality >= MapQualityThreshold &&
 	    ba1.GetTag("XT", xt1)) {
 	    std::vector<int> clipSizes, readPositions, genomePositions;
 	    if (ba1.GetSoftClips(clipSizes, readPositions, genomePositions)) {
 		if (ba1.Position == genomePositions.front() &&
-		    ((xt1 == 'M' && ba1.IsProperPair() && !ba1.IsReverseStrand()) ||
-		     (xt1 == 'M' && ba1.IsReverseStrand() && ba1.Position > ba1.MatePosition && -ba1.InsertSize > meanInsertSize + 2 * stdInsertSize) ||
-		     (xt1 == 'U' && ba1.IsReverseStrand() && !ba1.IsProperPair() && ba1.Position > ba1.MatePosition))) {
+		    ((xt1 == 'M' && !ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition && isProperInsertSize(ba1.InsertSize)) ||
+		     (xt1 == 'M' && ba1.IsReverseStrand() && ba1.Position > ba1.MatePosition && isLargeInsertSize(-ba1.InsertSize)) ||
+		     (xt1 == 'U' && ba1.IsReverseStrand() && ba1.Position > ba1.MatePosition && isLargeInsertSize(-ba1.InsertSize)))) {
 		    leftClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
 								genomePositions.front(),
 								readPositions.front(),
@@ -88,9 +93,9 @@ void DFinder::loadFrom() {
 								ba1.Qualities));
 		}
 		if (ba1.Position != genomePositions.back() &&
-		    ((xt1 == 'M' && ba1.IsProperPair() && ba1.IsReverseStrand()) ||
-		     (xt1 == 'M' && !ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition && ba1.InsertSize > meanInsertSize + 2 * stdInsertSize) ||
-		     (xt1 == 'U' && !ba1.IsReverseStrand() && !ba1.IsProperPair() && ba1.Position < ba1.MatePosition))) {
+		    ((xt1 == 'M' && ba1.IsReverseStrand() && ba1.Position > ba1.MatePosition && isProperInsertSize(-ba1.InsertSize)) ||
+		     (xt1 == 'M' && !ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition && isLargeInsertSize(ba1.InsertSize)) ||
+		     (xt1 == 'U' && !ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition && isLargeInsertSize(ba1.InsertSize)))) {
 		    rightClips[ba1.RefID].push_back(new SoftClip(ba1.RefID,
 								 genomePositions.back(),
 								 ba1.Length - clipSizes.back(),
@@ -98,15 +103,15 @@ void DFinder::loadFrom() {
 								 ba1.Qualities));
 		}
 	    } else {
-		if (ba1.MapQuality >= MapQualityThreshold &&
-		    ba1.IsProperPair() && !ba1.IsReverseStrand()) {
+		if (!ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition &&
+		    isProperInsertSize(ba1.InsertSize)) {
 		    leftParts[ba1.RefID].push_back(new SoftClip(ba1.RefID,
 								ba1.Position,
 								0,
 								ba1.QueryBases,
 								ba1.Qualities));
-		} else if (ba1.MapQuality >= MapQualityThreshold &&
-			   ba1.IsProperPair() && ba1.IsReverseStrand()) {
+		} else if (ba1.IsReverseStrand() && ba1.Position > ba1.MatePosition &&
+			   isProperInsertSize(-ba1.InsertSize)) {
 		    rightParts[ba1.RefID].push_back(new SoftClip(ba1.RefID,
 								 ba1.GetEndPosition(),
 								 ba1.Length,
@@ -115,7 +120,7 @@ void DFinder::loadFrom() {
 		}
 	    }
 
-	    if (endPositions.count(ba1.Name) && ba1.MapQuality >= MapQualityThreshold) {
+	    if (endPositions.count(ba1.Name)) {
 		intervals[ba1.RefID].push_back(new ChrRegion(cnt,
 							     ba1.Name,
 							     ba1.RefID,
@@ -127,7 +132,6 @@ void DFinder::loadFrom() {
 	    }
 
 	    if (!ba1.IsReverseStrand() && ba1.Position < ba1.MatePosition &&
-		ba1.MapQuality >= MapQualityThreshold &&
 		isLargeInsertSize(ba1.InsertSize)) {
 		endPositions[ba1.Name] = ba1.GetEndPosition();
 	    }
@@ -397,6 +401,12 @@ bool DFinder::getOverlapInRegion(const ChrRegion& region, Overlap& overlap) {
     }
 
     if (overlaps.empty()) { return false; }
+
+    // std::cout << std::endl << ">>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+    // for (auto it = overlaps.begin(); it != overlaps.end(); ++it) {
+    // 	std::cout << it->first.first << "\t" << it->first.second << "\t"
+    // 		  << it->first.second - it->first.first << std::endl;
+    // }
 
     if (overlaps.size() == 1) {
 	return Overlap::getHighScoreOverlap(overlaps.begin()->second, overlap);

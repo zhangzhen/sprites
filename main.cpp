@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
   int std = 10;
   int minOverlapLen = 15;
   double maxMismatchRate = 0.1;
-  double discordant = 5.0;
+  int numOfStd = 4;
   std::string outFilename;
   int c, status = 0;
 
@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
         maxMismatchRate = atof(optarg);
         break;
       case 'd':
-        discordant = atof(optarg);
+        numOfStd = atoi(optarg);
         break;
       case 'o':
         outFilename = std::string(optarg);
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
   }
 
   std::string filename(argv[optind]);
-  DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate, discordant);
+  DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate, numOfStd);
   dfinder.callToFile(outFilename);
   // dfinder.checkAgainstGoldStandard("../gold-standard-svs/venter-chr22-known-dels.txt");
   // dfinder.checkAgainstGoldStandard("../gold-standard-svs/NA19312-chr20-known-dels.txt");
