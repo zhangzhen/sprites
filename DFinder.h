@@ -5,90 +5,64 @@
 #include <iterator>
 #include <map>
 #include <utility>
+#include <unordered_set>
+
 #include "SoftClip.h"
 #include "Interval.h"
 #include "ChrRegion.h"
 #include "ChrRegionCluster.h"
 #include "api/BamReader.h"
 #include "DFinderHelper.h"
+#include "library.h"
 
 
 template<typename T>
 class DeletePtr {
- public:
-  void operator() (T* ptr) {
-    delete ptr;
-  }
+public:
+    void operator() (T* ptr) {
+        delete ptr;
+    }
 };
 
 class DFinder
 {
- public:
-  DFinder(const std::string& filename, int meanInsertSize, int stdInsertSize, int minOverlapLength, double maxMismatchRate, int numOfStd);
-  ~DFinder();
-  void callToFile(const std::string& filename);
-  void callToVcf(const std::string& filename);
-  void printOverlaps(const std::string& filename, int readlength);
-  void checkAgainstGoldStandard(const std::string& filename);
+public:
+    DFinder(const std::string& filename, const std::string& referenceName, int minOverlapLength, double maxMismatchRate);
+    ~DFinder();
+    void callToFile(const std::string& filename);
 
- private:
-  void call(const std::string& filename, std::vector<Deletion>& calls);
+private:
+    void call(std::vector<Deletion>& calls);
+    void getSpanningPairsFor(const SoftClip& softclip, std::vector<SoftClip>& results);
 
-  void loadFrom();
+    bool callFor(const SoftClip& softclip, Deletion& del);
+    bool callFor(const SoftClip& softclip, const SoftClip& spanner, Deletion& del);
+    bool callFor(const SoftClip &softclip, const std::vector<SoftClip> &candidates, Deletion &del);
 
-  bool isLargeInsertSize(int insertSize);
-  bool isProperInsertSize(int insertSize);
+    bool isValidAlignment(const BamTools::BamAlignment& al);
+    bool isCorrectOrientation(const BamTools::BamAlignment& al);
+    bool isValidPartnerCandidateFor(const SoftClip& orig, const SoftClip &partner);
 
-  /* bool getMateOf(const BamTools::BamAlignment& it, BamTools::BamAlignment& itsMate); */
+    bool findReferenceId(const std::string& name, int& id);
 
-  /* void identifyTargetRegions(int referenceId, std::vector<TargetRegion>& regions); */
+    std::string referenceName;
+    int referenceId;
 
-  /* static void mergeCalls(std::vector<Deletion>& in, std::vector<Deletion>& out); */
+    int minOverlapLength;
+    double maxMismatchRate;
 
-  void removeLargeChrRegions(std::vector<ChrRegion*>& regions);
+    static const int lengthThreshold = 50;
+    static const int MapQualityThreshold = 1;
 
-  void clusterChrRegions(const std::vector<ChrRegion*>& remainder, std::vector<ChrRegionCluster>& clusters);
+    BamTools::BamReader r1;
+    BamTools::BamReader r2;
 
-  bool callDeletionInCluster(const ChrRegionCluster& cluster, Deletion& deletion);
+    std::unordered_set<std::string> readNames;
 
-  bool getOverlapInRegion(const ChrRegion& region, Overlap& overlap);
+    std::map<std::string, Library*> libraries;
+    std::map<std::string, ReadGroup*> readgroups;
 
-  /* int numOfClipsIn(const TargetRegion& region, const std::vector<SoftClip*>& clips); */
-
-  bool findReferenceId(const std::string& name, int& id);
-  Interval getIntervalOfLeftClips(const ChrRegion& regionOfInterest);
-  Interval getIntervalOfRightClips(const ChrRegion& regionOfInterest);
-
-  static void getSoftClipsIn(const Interval& interval, const std::vector<SoftClip*>& input, std::vector<SoftClip*>& output);
-
-  int meanInsertSize;
-  int stdInsertSize;
-  int minOverlapLength;
-  double maxMismatchRate;
-  int numOfStd;
-  BamTools::RefVector references;
-  int size;
-  static const int lengthThreshold = 50;
-  static const int MapQualityThreshold = 10;
-  BamTools::BamReader r1;
-
-  std::vector<std::vector<SoftClip*> > leftClips;
-  std::vector<std::vector<SoftClip*> > leftParts;
-
-  std::vector<std::vector<SoftClip*> > rightClips;
-  std::vector<std::vector<SoftClip*> > rightParts;
-
-  std::vector<std::vector<ChrRegion*> > intervals;
-
-  struct MyInterval {
-    std::string refname;
-    int start;
-    int end;
-    int length;
-  };
-
-  bool loadMyIntervals(const std::string& filename, std::vector<MyInterval>& out);
-  bool checkMyInterval(const MyInterval& myInterval, int refId, const std::vector<ChrRegionCluster>& regions);
+    void findPartnerCandidates(const SoftClip &softclip, int start, int end, std::vector<SoftClip> &softclips, std::vector<SoftClip> &reads);
 };
 
 #endif /* _DFINDER_H_ */

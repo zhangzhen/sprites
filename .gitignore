@@ -6,3 +6,9 @@ dfinder
 *~
 result*
 output
+DFinder.config
+DFinder.creator
+DFinder.files
+DFinder.includes
+*.creator.user
+*.cretaor.user.*

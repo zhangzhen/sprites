@@ -3,38 +3,72 @@
 
 #include <string>
 #include "Overlap.h"
+#include "readgroup.h"
+#include "library.h"
 
 class SoftClip {
- private:
-  int refId;
-  int pos;
-  int clipPos;
-  std::string seq;
-  std::string quals;
+private:
+    int referenceId;
 
- public:
-  SoftClip(int refId, int pos, int clipPos, const std::string& seq, const std::string& quals);
-  int referenceId() const;
-  int position() const;
-  int startPosition() const;
-  int endPosition() const;
-  const std::string& sequence() const;
-  int length() const;
-  int lengthOfLeftPart() const;
-  int lengthOfRightPart() const;
-  char at(int i) const;
-  char qual(int i) const;
-  int minDeletionLength(const SoftClip& other) const;
-  int maxDeletionLength(const SoftClip& other) const;
-  bool overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
-  bool overlapWith(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
+    int genomePosition;
 
-  static bool compareL(SoftClip* s1, SoftClip* s2);
-  static bool compareR(SoftClip* s1, SoftClip* s2);
-  static bool compare1(SoftClip* o, const int pos);
-  static bool compare2(const int pos, SoftClip* o);
+    int clipPosition;
+    int orientation;
+    int localClipPosition;
 
-  friend std::ostream& operator <<(std::ostream& stream, const SoftClip& o);
+    int mateGenomePosition;
+    int mateOrientation;
+    int insertSize;
+    std::string sequence;
+
+    bool isPartiallyMapped() const;
+
+    bool overlaps2(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
+
+    ReadGroup *readgroup;
+
+    static const int DiscordantScalar = 5;
+
+public:
+
+    SoftClip(int referenceId, int genomePosition, int clipPosition, int localClipPosition, int orientation, int mateGenomePosition,
+             int mateOrientation, int insertSize, const std::string& sequence, ReadGroup *readgroup);
+
+    int length() const;
+    int lengthOfLeftPart() const;
+    int lengthOfRightPart() const;
+    char at(int i) const;
+
+    bool overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
+    bool overlapWith(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const;
+
+    static bool compareL(SoftClip* s1, SoftClip* s2);
+    static bool compareR(SoftClip* s1, SoftClip* s2);
+    static bool compare1(SoftClip* o, const int clipPosition);
+    static bool compare2(const int clipPosition, SoftClip* o);
+
+    friend std::ostream& operator <<(std::ostream& stream, const SoftClip& o);
+    int getReferenceId() const;
+    int getClipPosition() const;
+    std::string getSequence() const;
+
+    bool isLeftPartClipped() const;
+
+    bool searchRangeForSpanningPair(const Library& library, int& start, int& end) const;
+    void searchRangeForSoftClip(const SoftClip& orig, int minSize, int& start, int& end) const;
+
+    int getInsertSize() const;
+    int lengthOfClippedPart() const;
+
+    int getMeanOfInsertSize() const;
+    int getSdOfInsertSize() const;
+
+    bool isPartOfSpanningPair() const;
+    int getOrientation() const;
+    int getMateGenomePosition() const;
+
+    bool isDiscordantInsertSize() const;
+
 };
 
 #endif /* _SOFTCLIP_H_ */

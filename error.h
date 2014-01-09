@@ -33,12 +33,13 @@
 
 
 class ErrorException : public std::exception {
- public:
-  ErrorException(std::string msg);
-  virtual ~ErrorException() throw ();
-  virtual std::string getMessage();
- private:
-  std::string msg;
+public:
+    ErrorException(std::string msg);
+    virtual ~ErrorException() throw ();
+    virtual std::string getMessage() const;
+    virtual const char *what() const throw ();
+private:
+    std::string msg;
 };
 
 /*

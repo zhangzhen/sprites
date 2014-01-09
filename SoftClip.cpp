@@ -4,108 +4,194 @@
 #include <algorithm>
 #include <iostream>
 
-SoftClip::SoftClip(int refId, int pos, int clipPos, const std::string& seq, const std::string& quals)
-    : refId(refId),
-      pos(pos),
-      clipPos(clipPos),
-      seq(seq),
-      quals(quals) {
+using namespace std;
+
+int SoftClip::getReferenceId() const
+{
+    return referenceId;
 }
 
-int SoftClip::referenceId() const { return refId; }
 
-int SoftClip::position() const { return pos; }
+int SoftClip::getClipPosition() const
+{
+    return clipPosition;
+}
 
-int SoftClip::startPosition() const { return pos - lengthOfLeftPart(); }
 
-int SoftClip::endPosition() const { return pos - lengthOfRightPart() + 1; }
+std::string SoftClip::getSequence() const
+{
+    return sequence;
+}
 
-const std::string& SoftClip::sequence() const { return seq; }
+bool SoftClip::searchRangeForSpanningPair(const Library& library, int &start, int &end) const
+{
+    int readLength = library.getReadLength();
+    int mean = library.getMeanOfInsertSize();
+    int sd = library.getSdOfInsertSize();
 
-int SoftClip::length() const { return seq.length(); }
+    if (isPartiallyMapped() && isLeftPartClipped() && orientation)
+    {
+        start = clipPosition;
+        end = clipPosition - 2 * readLength + mean + 3 * sd;
+        return true;
+    }
+    if (isPartiallyMapped() && !isLeftPartClipped() && !orientation)
+    {
+        start = clipPosition + readLength - mean - 3 * sd;
+        end = clipPosition - readLength;
+        return true;
+    }
+    return false;
+}
 
-int SoftClip::lengthOfLeftPart() const { return clipPos; }
 
-int SoftClip::lengthOfRightPart() const { return length() - clipPos; }
+void SoftClip::searchRangeForSoftClip(const SoftClip &orig, int minSize, int& start, int& end) const
+{
+    start = mateOrientation ? mateGenomePosition + length() - orig.lengthOfClippedPart() :
+                              max(clipPosition + minSize,
+                                  mateGenomePosition - getMeanOfInsertSize() - orig.lengthOfClippedPart() + 2 * length() - 3 *getSdOfInsertSize());
+    end = mateOrientation ? min(mateGenomePosition + getMeanOfInsertSize() - orig.lengthOfClippedPart() - length() + 3 * getSdOfInsertSize(),
+                                clipPosition - minSize - orig.lengthOfClippedPart()) :
+                            mateGenomePosition;
+}
 
-char SoftClip::at(int i) const { return seq[i]; }
+int SoftClip::getInsertSize() const
+{
+    return insertSize;
+}
 
-char SoftClip::qual(int i) const { return quals[i]; }
+bool SoftClip::isLeftPartClipped() const
+{
+    return genomePosition == clipPosition;
+}
+
+
+int SoftClip::getOrientation() const
+{
+    return orientation;
+}
+
+
+int SoftClip::getMateGenomePosition() const
+{
+    return mateGenomePosition;
+}
+
+bool SoftClip::isPartiallyMapped() const
+{
+    return lengthOfClippedPart() != 0;
+}
+
+int SoftClip::lengthOfClippedPart() const
+{
+    return isLeftPartClipped() ? localClipPosition : length() - localClipPosition;
+}
+
+int SoftClip::getMeanOfInsertSize() const
+{
+    return readgroup->getMeanOfInsertSize();
+}
+
+int SoftClip::getSdOfInsertSize() const
+{
+    return readgroup->getSdOfInsertSize();
+}
+
+bool SoftClip::isPartOfSpanningPair() const
+{
+    return isDiscordantInsertSize() &&
+            ((isLeftPartClipped() && !orientation) ||
+             (!isLeftPartClipped() && orientation));
+}
+
+bool SoftClip::isDiscordantInsertSize() const
+{
+    return insertSize > getMeanOfInsertSize() + DiscordantScalar * getSdOfInsertSize();
+}
+
+SoftClip::SoftClip(int referenceId, int genomePosition, int clipPosition, int localClipPosition, int orientation,
+                   int mateGenomePosition, int mateOrientation, int insertSize, const std::string &sequence, ReadGroup *readgroup)
+    : referenceId(referenceId),
+      genomePosition(genomePosition),
+      clipPosition(clipPosition),
+      localClipPosition(localClipPosition),
+      orientation(orientation),
+      mateGenomePosition(mateGenomePosition),
+      mateOrientation(mateOrientation),
+      insertSize(abs(insertSize)),
+      sequence(sequence),
+      readgroup(readgroup)
+{}
+
+int SoftClip::length() const { return sequence.length(); }
+
+int SoftClip::lengthOfLeftPart() const { return localClipPosition; }
+
+int SoftClip::lengthOfRightPart() const { return length() - localClipPosition; }
+
+char SoftClip::at(int i) const { return sequence[i]; }
+
+bool SoftClip::overlaps(const SoftClip &other, int minOverlapLength, double maxMismatchRate, Overlap &overlap) const
+{
+    if (isLeftPartClipped()) return other.overlaps2(*this, minOverlapLength, maxMismatchRate, overlap);
+    return overlaps2(other, minOverlapLength, maxMismatchRate, overlap);
+}
 
 bool SoftClip::compareL(SoftClip* s1, SoftClip* s2) {
-  if (s1->pos != s2->pos)
-    return s1->pos < s2->pos;
-  return s1->lengthOfLeftPart() < s2->lengthOfLeftPart();
+    if (s1->clipPosition != s2->clipPosition)
+        return s1->clipPosition < s2->clipPosition;
+    return s1->lengthOfLeftPart() < s2->lengthOfLeftPart();
 }
 
 bool SoftClip::compareR(SoftClip* s1, SoftClip* s2) {
-  if (s1->pos != s2->pos)
-    return s1->pos < s2->pos;
-  return s1->lengthOfRightPart() > s2->lengthOfRightPart();
+    if (s1->clipPosition != s2->clipPosition)
+        return s1->clipPosition < s2->clipPosition;
+    return s1->lengthOfRightPart() > s2->lengthOfRightPart();
 }
 
-int SoftClip::minDeletionLength(const SoftClip& other) const {
-  return std::max(other.pos - pos, 0);
-}
+bool SoftClip::overlaps2(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const {
+    assert(referenceId == other.referenceId);
 
-int SoftClip::maxDeletionLength(const SoftClip& other) const {
-  return other.pos - pos + std::min(lengthOfLeftPart(), other.lengthOfRightPart());
-}
+    int l1 = length();
+    int l2 = other.length();
 
-bool SoftClip::overlaps(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const {
-  assert(refId == other.refId);
-  if (maxDeletionLength(other) < 0) return false;
+    int mn = max(max(lengthOfClippedPart(), other.lengthOfClippedPart()), minOverlapLength);
+    int mx = min(l1, l2);
 
-  int l1 = length();
-  int l2 = other.length();
-
-  // if (pos == 33115831) std::cout << lengthOfLeftPart() << '\t' << other.lengthOfLeftPart() << std::endl;
-
-  int start = minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart();
-  // int start = std::max(0, minOverlapLength - lengthOfRightPart() - other.lengthOfLeftPart());
-  // int end = l1 + l2 - 2 * minOverlapLength;
-  int end = std::min(lengthOfLeftPart(), other.lengthOfRightPart());
-
-  for (int i = start; i <= end; ++i) {
-    int n1 = std::min(lengthOfLeftPart(), other.lengthOfLeftPart() + i);
-    int n2 = std::min(lengthOfRightPart(), other.lengthOfRightPart() - i);
-    int n = n1 + n2;
-    int st1 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? lengthOfLeftPart() - other.lengthOfLeftPart() - i : 0;
-    int st2 = (lengthOfLeftPart() > other.lengthOfLeftPart() + i) ? 0 : other.lengthOfLeftPart() + i - lengthOfLeftPart();
-    int maxMismatches = ceil(n * maxMismatchRate);
-    int numMismatches;
-    if (Overlap::equals(seq.substr(st1, n), other.seq.substr(st2, n), maxMismatches, numMismatches)) {
-      overlap = Overlap(this, &other, n, numMismatches, i);
-      // if (pos == 30255998) std::cout << overlap << std::endl;
-      return true;
+    for (int i = mx; i >= mn; i--) {
+        int maxMismatches = ceil(i * maxMismatchRate);
+        int numMismatches;
+        if (Overlap::equals(sequence.substr(l1 - i, i), other.sequence.substr(0, i), maxMismatches, numMismatches)) {
+            overlap = Overlap(this, &other, i, numMismatches, i - lengthOfClippedPart() - other.lengthOfClippedPart());
+            return true;
+        }
     }
-  }
 
-  return false;
+    return false;
 }
 
 bool SoftClip::overlapWith(const SoftClip& other, int minOverlapLength, double maxMismatchRate, Overlap& overlap) const {
     int mismatches, len;
-    if (overlaps2(seq, other.seq, maxMismatchRate, len, mismatches) &&
-	len >= minOverlapLength) {
-	int offset = len - lengthOfRightPart() - other.lengthOfLeftPart();
-	overlap = Overlap(this, &other, len, mismatches, offset);
-	return true;
+    if (::overlaps2(sequence, other.sequence, maxMismatchRate, len, mismatches) &&
+            len >= minOverlapLength) {
+        int offset = len - lengthOfRightPart() - other.lengthOfLeftPart();
+        overlap = Overlap(this, &other, len, mismatches, offset);
+        return true;
     }
     return false;
 }
 
 bool SoftClip::compare1(SoftClip* o, const int pos) {
-  return o->pos < pos;
+    return o->clipPosition < pos;
 }
 
 bool SoftClip::compare2(const int pos, SoftClip* o) {
-  return pos < o->pos;
+    return pos < o->clipPosition;
 }
 
 std::ostream& operator <<(std::ostream& stream, const SoftClip& o) {
-  stream << o.refId << ":" << o.pos << std::endl;
-  stream << std::string(o.lengthOfLeftPart(), ' ') << '+' << std::endl;
-  stream << o.seq << std::endl;
-  return stream;
+    stream << o.referenceId << ":" << o.clipPosition << std::endl;
+    stream << std::string(o.lengthOfLeftPart(), ' ') << '+' << std::endl;
+    stream << o.sequence << std::endl;
+    return stream;
 }
