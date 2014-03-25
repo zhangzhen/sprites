@@ -108,8 +108,7 @@ void DFinder::call(vector<Deletion>& calls)
     {
         Deletion del;
         vector<int> clipSizes, readPositions, genomePositions;
-        if (isValidAlignment(al) &&
-                isCorrectOrientation(al) &&
+        if (al.IsProperPair() &&
                 al.GetSoftClips(clipSizes, readPositions, genomePositions) &&
                 clipSizes.size() == 1 &&
                 al.GetTag("RG", rg) &&

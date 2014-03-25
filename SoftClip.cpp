@@ -47,11 +47,9 @@ bool SoftClip::searchRangeForSpanningPair(const Library& library, int &start, in
 
 void SoftClip::searchRangeForSoftClip(const SoftClip &orig, int minSize, int& start, int& end) const
 {
-    start = mateOrientation ? mateGenomePosition + length() - orig.lengthOfClippedPart() :
-                              max(clipPosition + minSize,
-                                  mateGenomePosition - getMeanOfInsertSize() - orig.lengthOfClippedPart() + 2 * length() - 3 *getSdOfInsertSize());
-    end = mateOrientation ? min(mateGenomePosition + getMeanOfInsertSize() - orig.lengthOfClippedPart() - length() + 3 * getSdOfInsertSize(),
-                                clipPosition - minSize - orig.lengthOfClippedPart()) :
+    start = mateOrientation ? mateGenomePosition :
+                              mateGenomePosition - length() - getMeanOfInsertSize() - 3 * getSdOfInsertSize();
+    end = mateOrientation ? mateGenomePosition + length() + getMeanOfInsertSize() + 3 * getSdOfInsertSize() :
                             mateGenomePosition;
 }
 
