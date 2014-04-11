@@ -3,6 +3,8 @@
 #include <algorithm>
 #include "error.h"
 #include "DFinder.h"
+#include "softclipreader.h"
+#include "caller.h"
 
 // const std::string ControlFilename = "../sv/chr22_report.txt";
 
@@ -57,8 +59,22 @@ int main(int argc, char *argv[]) {
   std::string filename(argv[optind]);
   DFinder dfinder(filename, mean, std, minOverlapLen, maxMismatchRate, numOfStd);
   dfinder.callToFile(outFilename);
+
+
+
   // dfinder.checkAgainstGoldStandard("../gold-standard-svs/venter-chr22-known-dels.txt");
   // dfinder.checkAgainstGoldStandard("../gold-standard-svs/NA19312-chr20-known-dels.txt");
   // dfinder.printOverlaps("../gold-standard-svs/venter-chr22-known-dels.txt", 75);
   return 0;
+}
+
+void call(const std::string& input, const std::string& output)
+{
+    SoftClipReader reader(input);
+    Caller caller(input, minOverlap, minIdentity, insertMean, insertStd);
+    SoftClip clip;
+    while (reader.getSoftClip(clip))
+    {
+        caller.call(clip);
+    }
 }
