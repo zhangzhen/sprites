@@ -1,8 +1,10 @@
 #include "SoftClip.h"
-#include "DFinderHelper.h"
 #include <cassert>
 #include <algorithm>
 #include <iostream>
+
+SoftClip::SoftClip() {
+}
 
 SoftClip::SoftClip(int referenceId,
                    int position,

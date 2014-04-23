@@ -11,24 +11,18 @@ public:
     BamStatCalculator(const std::string& filename);
     virtual ~BamStatCalculator();
 
-    int getInsert() const;
-    int getStd() const;
+    int getInsertMean();
+    int getInsertSd();
 
 private:
     void loadInserts();
+    int mean();
+    int sd();
 
     BamTools::BamReader reader;
-    std::vector<int> inserts;
-    int insert;
-    int std;
+    std::vector<u_int32_t> inserts;
+    int insertMean;
+    int insertSd;
 };
-
-namespace BasicStat {
-
-double mean(const std::vector<int>& v);
-
-double std(const std::vector<int>& v);
-
-}
 
 #endif // BAMSTATCALCULATOR_H

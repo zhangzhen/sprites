@@ -1,6 +1,9 @@
-#include "caller.h"
+#include "Caller.h"
+#include "error.h"
+
 #include <cassert>
 #include <numeric>
+#include <algorithm>
 
 #include "Thirdparty/overlapper.h"
 
@@ -19,6 +22,8 @@ Caller::Caller(const string &filename,
 {
     if (!reader.Open(filename))
         error("Could not open the input BAM file.");
+    if (!reader.LocateIndex())
+        error("Could not locate index.");
 }
 
 Caller::~Caller()
@@ -26,31 +31,41 @@ Caller::~Caller()
     reader.Close();
 }
 
-Deletion Caller::call(const SoftClip &clip)
+bool Caller::call(const SoftClip &clip, Deletion &del)
 {
+    bool result = false;
     vector<Deletion> deletions;
 
     if ((!clip.isReverse() && clip.isLeft()) || (clip.isReverse() && !clip.isLeft()))
     {
         vector<int> matePositions;
-        getSuppMatePositions(clip, matePositions);
+        if (!getSuppMatePositions(clip, matePositions))
+            return false;
         vector<TargetRegion> regions;
         getTargetRegions(clip, matePositions, regions);
         for (auto itr = regions.begin(); itr != regions.end(); ++itr)
         {
-            deletions.push_back(call(clip, *itr));
+            Deletion d;
+            if (call(clip, *itr, d)) {
+                deletions.push_back(d);
+                result = true;
+            }
         }
     }
+    return result;
 }
 
-Deletion Caller::call(const SoftClip &clip, const TargetRegion &region)
+bool Caller::call(const SoftClip &clip, const TargetRegion &region, Deletion &del)
 {
-    MultipleAlignment ma = buildMultipleAlignment(query, region);
-    return getDeletion(ma);
+    MultipleAlignment ma = buildMultipleAlignment(clip.getSequence(), region);
+    ma.print(110);
+    return false;
 }
 
-void Caller::getSuppMatePositions(const SoftClip &clip, vector<int> &matePositions)
+bool Caller::getSuppMatePositions(const SoftClip &clip, vector<int> &matePositions)
 {
+    bool result = false;
+
     int start, end;
     if (!clip.isReverse())
     {
@@ -64,15 +79,21 @@ void Caller::getSuppMatePositions(const SoftClip &clip, vector<int> &matePositio
                                                                  0;
     }
     assert(start < end);
-    reader.SetRegion(clip.getReferenceId(), start, clip.getReferenceId(), end);
+    if (!reader.SetRegion(clip.getReferenceId(), start, clip.getReferenceId(), end)) {
+        cerr << "Could not set the region.";
+        return false;
+    }
 
     BamAlignment al;
     while(reader.GetNextAlignmentCore(al))
     {
         if ((!clip.isReverse() && al.IsReverseStrand() && al.Position > al.MatePosition) ||
-                (clip.isReverse() && !al.IsMateReverseStrand() && al.Position < al.MatePosition))
+                (clip.isReverse() && !al.IsMateReverseStrand() && al.Position < al.MatePosition)) {
             matePositions.push_back(al.MatePosition);
+            result = true;
+        }
     }
+    return result;
 }
 
 TargetRegion Caller::getTargetRegion(const SoftClip& clip, int matePosition)
@@ -90,21 +111,26 @@ void Caller::getTargetRegions(const SoftClip& clip,
 {
     sort(matePositions.begin(), matePositions.end());
 
+    regions.push_back(getTargetRegion(clip, matePositions[0]));
     if (matePositions.size() == 1)
     {
-        regions.push_back(getTargetRegion(clip, matePositions[0]));
         return;
     }
 
     std::vector<int> diffs(matePositions.size());
 
-    adjacent_difference(matePositions.begin(), matePositions.end(), diffs);
+    adjacent_difference(matePositions.begin(), matePositions.end(), diffs.begin());
 
-    for (int i = 1; i < diffs.size(); ++i)
-    {
-        if (abs(diffs[i]) <= clip.size() + insertMean + 3 * insertStd)
+    for (size_t i = 1; i < diffs.size(); ++i) {
+        int start;
+        TargetRegion tr = getTargetRegion(clip, matePositions[i]);
+        if (abs(diffs[i]) <= clip.size() + insertMean + 3 * insertStd) {
+            start = regions.back().start;
             regions.pop_back();
-        regions.push_back(getTargetRegion(clip, matePositions[i]));
+        } else {
+            start = tr.start;
+        }
+        regions.push_back({tr.referenceId, start, tr.end});
     }
 }
 
@@ -122,6 +148,7 @@ MultipleAlignment Caller::buildMultipleAlignment(const string &query, const Targ
 
 void Caller::retrieveMatches(const string &query, const TargetRegion &region, SequenceOverlapPairVector &result)
 {
+    assert(region.start < region.end);
     reader.SetRegion(region.referenceId, region.start, region.referenceId, region.end);
     BamAlignment al;
     while (reader.GetNextAlignment(al))

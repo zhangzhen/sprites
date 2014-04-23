@@ -15,6 +15,7 @@ private:
     std::string sequence;
 
 public:
+    SoftClip();
     SoftClip(int referenceId,
              int position,
              int clipPosition,

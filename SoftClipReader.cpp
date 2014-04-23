@@ -1,4 +1,4 @@
-#include "softclipreader.h"
+#include "SoftClipReader.h"
 #include "error.h"
 
 #include <vector>

@@ -3,6 +3,7 @@
 
 #include "api/BamReader.h"
 #include "SoftClip.h"
+#include "Deletion.h"
 #include "Thirdparty/multiple_alignment.h"
 
 #include <string>
@@ -36,12 +37,12 @@ public:
            int insertStd);
     virtual ~Caller();
 
-    Deletion call(const SoftClip& clip);
+    bool call(const SoftClip& clip, Deletion& del);
 
 private:
-    Deletion call(const SoftClip& clip, const TargetRegion& region);
+    bool call(const SoftClip& clip, const TargetRegion& region, Deletion& del);
 
-    void getSuppMatePositions(const SoftClip& clip, std::vector<int>& matePositions);
+    bool getSuppMatePositions(const SoftClip& clip, std::vector<int>& matePositions);
     TargetRegion getTargetRegion(const SoftClip &clip,
                          int matePosition);
     void getTargetRegions(const SoftClip &clip,
