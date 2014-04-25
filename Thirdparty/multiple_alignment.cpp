@@ -48,10 +48,12 @@ const char* MultipleAlignment::m_alphabet = "ACGTN-";
 MultipleAlignmentElement::MultipleAlignmentElement(const std::string& _name, 
                                                    const std::string& _sequence,
                                                    const std::string& _quality,
+                                                   size_t position,
                                                    size_t leading,
                                                    size_t trailing) : name(_name), 
                                                                       padded_sequence(_sequence),
                                                                       padded_quality(_quality),
+                                                                      position(position),
                                                                       leading_columns(leading),
                                                                       trailing_columns(trailing)
 {
@@ -205,31 +207,34 @@ bool SymbolCount::countOrderDescending(const SymbolCount& a, const SymbolCount& 
 //
 void MultipleAlignment::addBaseSequence(const std::string& name, 
                                         const std::string& sequence, 
-                                        const std::string& quality)
+                                        const std::string& quality,
+                                        size_t position)
 {
-    m_sequences.push_back(MultipleAlignmentElement(name, sequence, quality, 0, 0));
+    m_sequences.push_back(MultipleAlignmentElement(name, sequence, quality, position, 0, 0));
 }
 
 // See header
 void MultipleAlignment::addOverlap(const std::string& incoming_name,
                                    const std::string& incoming_sequence,
                                    const std::string& incoming_quality,
+                                   size_t position,
                                    const SequenceOverlap& reference_incoming_overlap)
 {
     // This function cannot be called before a base element has been added
     assert(!m_sequences.empty());
-    _addSequence(incoming_name, incoming_sequence, incoming_quality, 0, reference_incoming_overlap, false);
+    _addSequence(incoming_name, incoming_sequence, incoming_quality, position, 0, reference_incoming_overlap, false);
 }
 
 //
 void MultipleAlignment::addExtension(const std::string& incoming_name,
                                      const std::string& incoming_sequence,
                                      const std::string& incoming_quality,
+                                     size_t position,
                                      const SequenceOverlap& previous_incoming_overlap)
 {
     // This function cannot be called before a base element has been added
     assert(!m_sequences.empty());
-    _addSequence(incoming_name, incoming_sequence, incoming_quality, m_sequences.size() - 1, previous_incoming_overlap, true);
+    _addSequence(incoming_name, incoming_sequence, incoming_quality, position, m_sequences.size() - 1, previous_incoming_overlap, true);
 }
 
 // Adds a new string into the multiple alignment using the overlap
@@ -237,8 +242,9 @@ void MultipleAlignment::addExtension(const std::string& incoming_name,
 // multiple alignment to calculate the new padded string
 void MultipleAlignment::_addSequence(const std::string& name,
                                      const std::string& sequence,
-                                     const std::string& quality, 
-                                     size_t template_element_index, 
+                                     const std::string& quality,
+                                     size_t position,
+                                     size_t template_element_index,
                                      const SequenceOverlap& overlap,
                                      bool is_extension)
 {
@@ -378,7 +384,7 @@ void MultipleAlignment::_addSequence(const std::string& name,
     if(is_extension)
         assert(incoming_trailing == 0);
 
-    MultipleAlignmentElement incoming_element(name, padded_output, padded_quality, 
+    MultipleAlignmentElement incoming_element(name, padded_output, padded_quality, position,
                                               incoming_leading, incoming_trailing);
 
     m_sequences.push_back(incoming_element);
@@ -988,7 +994,7 @@ void MultipleAlignment::print(size_t max_columns) const
             }
             // Check if this string is blank, if so don't print it
             if(print_string.find_first_not_of(" ") != std::string::npos)
-                printf("\t%s\t%s\n", print_string.c_str(), m_sequences[current_index].name.c_str());
+                printf("\t%s\t%s(%d)\n", print_string.c_str(), m_sequences[current_index].name.c_str(), m_sequences[current_index].position);
         }
         printf("\n\n");
     }

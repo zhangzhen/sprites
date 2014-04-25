@@ -33,10 +33,11 @@
 struct MultipleAlignmentElement
 {
     // Functions
-    MultipleAlignmentElement(const std::string& _name, 
-                             const std::string& _sequence, 
+    MultipleAlignmentElement(const std::string& _name,
+                             const std::string& _sequence,
                              const std::string& _quality,
-                             size_t leading, 
+                             size_t position,
+                             size_t leading,
                              size_t trailing);
 
     // Returns the total number of columns in the multiple alignment
@@ -117,6 +118,7 @@ struct MultipleAlignmentElement
     std::string name;
     std::string padded_sequence;
     std::string padded_quality;
+    size_t position;
 
     // The number of columns in the multiple alignment before/after
     // the sequence data
@@ -153,7 +155,7 @@ class MultipleAlignment
 
         // Add the first element to the multiple alignment
         // The quality field is allowed to be empty
-        void addBaseSequence(const std::string& name, const std::string& sequence, const std::string& quality);
+        void addBaseSequence(const std::string& name, const std::string& sequence, const std::string& quality, size_t position);
 
         // Add a new sequence to the multiple alignment, which overlaps
         // the first sequence added to the multiple alignment (the base sequence).
@@ -164,6 +166,7 @@ class MultipleAlignment
         void addOverlap(const std::string& incoming_name,
                         const std::string& incoming_sequence,
                         const std::string& incoming_quality,
+                        size_t position,
                         const SequenceOverlap& reference_incoming_overlap);
 
         // Add a new sequence to the multiple alignment by extending the last sequence added.
@@ -175,6 +178,7 @@ class MultipleAlignment
         void addExtension(const std::string& incoming_name,
                           const std::string& incoming_sequence,
                           const std::string& incoming_quality,
+                          size_t position,
                           const SequenceOverlap& previous_incoming_overlap);
 
         // Returns an overlap object describing the alignment between the pair of rows
@@ -272,7 +276,8 @@ class MultipleAlignment
         // addSequenceClipped/addSequenceExtend
         void _addSequence(const std::string& name, 
                           const std::string& sequence, 
-                          const std::string& quality, 
+                          const std::string& quality,
+                          size_t position,
                           size_t template_element_index, 
                           const SequenceOverlap& overlap,
                           bool is_extension);

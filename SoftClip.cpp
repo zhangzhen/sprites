@@ -8,6 +8,7 @@ SoftClip::SoftClip() {
 
 SoftClip::SoftClip(int referenceId,
                    int position,
+                   int leftmostPosition,
                    int clipPosition,
                    int matePosition,
                    bool is_reverse,
@@ -16,6 +17,7 @@ SoftClip::SoftClip(int referenceId,
                    const std::string &sequence) :
     referenceId(referenceId),
     position(position),
+    leftmostPosition(leftmostPosition),
     clipPosition(clipPosition),
     matePosition(matePosition),
     is_reverse(is_reverse),
@@ -30,6 +32,11 @@ SoftClip::SoftClip(int referenceId,
 int SoftClip::getAdjustedPosition() const
 {
     return clipPosition + offset;
+}
+
+int SoftClip::getLeftmostPosition() const
+{
+    return leftmostPosition;
 }
 
 bool SoftClip::isReverse() const

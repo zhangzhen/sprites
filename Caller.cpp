@@ -57,8 +57,9 @@ bool Caller::call(const SoftClip &clip, Deletion &del)
 
 bool Caller::call(const SoftClip &clip, const TargetRegion &region, Deletion &del)
 {
-    MultipleAlignment ma = buildMultipleAlignment(clip.getSequence(), region);
-    ma.print(110);
+    MultipleAlignment ma = buildMultipleAlignment(clip, region);
+    if (ma.getNumRows() > 1)
+        ma.print(110);
     return false;
 }
 
@@ -69,12 +70,12 @@ bool Caller::getSuppMatePositions(const SoftClip &clip, vector<int> &matePositio
     int start, end;
     if (!clip.isReverse())
     {
-        start = clip.getPosition() + clip.getClippedSize();
+        start = clip.getLeftmostPosition();
         end = start + insertMean + 3 * insertStd + clip.size();
     }
     else
     {
-        end = clip.getPosition() + clip.size();
+        end = clip.getLeftmostPosition() + clip.size();
         start = end > insertMean + 3 * insertStd + clip.size() ? end - insertMean - 3 * insertStd - clip.size() :
                                                                  0;
     }
@@ -134,25 +135,29 @@ void Caller::getTargetRegions(const SoftClip& clip,
     }
 }
 
-MultipleAlignment Caller::buildMultipleAlignment(const string &query, const TargetRegion &region)
+MultipleAlignment Caller::buildMultipleAlignment(const SoftClip &clip, const TargetRegion &region)
 {
     SequenceOverlapPairVector overlap_vector;
-    retrieveMatches(query, region, overlap_vector);
+    retrieveMatches(clip, region, overlap_vector);
 
     MultipleAlignment multiple_alignment;
-    multiple_alignment.addBaseSequence("query", query, "");
+    multiple_alignment.addBaseSequence("query", clip.getSequence(), "", clip.getClipPosition());
     for(size_t i = 0; i < overlap_vector.size(); ++i)
-        multiple_alignment.addOverlap("null", overlap_vector[i].sequence[1], "", overlap_vector[i].overlap);
+        multiple_alignment.addOverlap("null", overlap_vector[i].sequence[1], "", overlap_vector[i].position[1], overlap_vector[i].overlap);
     return multiple_alignment;
 }
 
-void Caller::retrieveMatches(const string &query, const TargetRegion &region, SequenceOverlapPairVector &result)
+void Caller::retrieveMatches(const SoftClip &clip, const TargetRegion &region, SequenceOverlapPairVector &result)
 {
     assert(region.start < region.end);
     reader.SetRegion(region.referenceId, region.start, region.referenceId, region.end);
     BamAlignment al;
+    string query = clip.getSequence();
     while (reader.GetNextAlignment(al))
     {
+        if ((clip.isLeft() && !clip.isReverse() && al.Position + al.Length >= clip.getClipPosition()) ||
+                (!clip.isLeft() && clip.isReverse() && al.Position <= clip.getClipPosition()))
+            break;
         SequenceOverlap overlap = Overlapper::computeOverlap(query, al.QueryBases, ungapped_params);
         if (overlap.getOverlapLength() >= minOverlap &&
                 overlap.getPercentIdentity() / 100 >= minIdentity)
@@ -160,6 +165,8 @@ void Caller::retrieveMatches(const string &query, const TargetRegion &region, Se
             SequenceOverlapPair op;
             op.sequence[0] = query;
             op.sequence[1] = al.QueryBases;
+            op.position[0] = clip.getClipPosition();
+            op.position[1] = al.Position;
             op.overlap = overlap;
             result.push_back(op);
         }

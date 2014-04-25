@@ -33,6 +33,7 @@ bool SoftClipReader::getSoftClip(SoftClip &clip)
             {
                 clip = SoftClip(al.RefID,
                                 al.Position,
+                                al.Position - clipSizes[0],
                                 genomePositions[0],
                                 al.MatePosition,
                                 al.IsReverseStrand(),
@@ -48,6 +49,7 @@ bool SoftClipReader::getSoftClip(SoftClip &clip)
             {
                 clip = SoftClip(al.RefID,
                                 al.Position,
+                                al.Position - (size == 2) ? clipSizes[0] : 0,
                                 genomePositions[size - 1],
                                 al.MatePosition,
                                 al.IsReverseStrand(),

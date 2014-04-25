@@ -20,6 +20,7 @@ struct SequenceOverlapPair
 {
     std::string sequence[2];
     SequenceOverlap overlap;
+    size_t position[2];
 
     static bool sortByOverlapLengthDesc(const SequenceOverlapPair& a, const SequenceOverlapPair& b) { return a.overlap.getOverlapLength() > b.overlap.getOverlapLength(); }
 
@@ -49,8 +50,8 @@ private:
                           std::vector<int>& matePositions,
                           std::vector<TargetRegion>& regions);
 
-    MultipleAlignment buildMultipleAlignment(const std::string& query, const TargetRegion& region);
-    void retrieveMatches(const std::string& query, const TargetRegion& region, SequenceOverlapPairVector& result);
+    MultipleAlignment buildMultipleAlignment(const SoftClip& clip, const TargetRegion& region);
+    void retrieveMatches(const SoftClip& clip, const TargetRegion& region, SequenceOverlapPairVector& result);
 
     BamTools::BamReader reader;
     int minOverlap;

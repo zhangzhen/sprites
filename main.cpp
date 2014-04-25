@@ -18,7 +18,7 @@
 #define PROGRAM_NAME "dfinder"
 #define PROGRAM_VERSION "1.0"
 #define PROGRAM_BUGREPORT "zhangz@csu.edu.cn"
-#define DEFAULT_MIN_OVERLAP 31
+#define DEFAULT_MIN_OVERLAP 21
 
 static const char *CORRECT_VERSION_MESSAGE =
 PROGRAM_NAME " Version " PROGRAM_VERSION "\n"
@@ -87,7 +87,6 @@ int main(int argc, char *argv[]) {
         std::cout << "Mean: " << opt::insertMean << std::endl;
         std::cout << "Sd: " << opt::insertSd << std::endl;
     }
-    return 0;
 
     SoftClipReader reader(opt::bamFile);
 

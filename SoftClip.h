@@ -7,6 +7,7 @@ class SoftClip {
 private:
     int referenceId;
     int position;
+    int leftmostPosition;
     int clipPosition;
     int matePosition;
     bool is_reverse;
@@ -18,6 +19,7 @@ public:
     SoftClip();
     SoftClip(int referenceId,
              int position,
+             int leftmostPosition,
              int clipPosition,
              int matePosition,
              bool is_reverse,
@@ -29,6 +31,7 @@ public:
     int getPosition() const;
     int getClipPosition() const;
     int getAdjustedPosition() const;
+    int getLeftmostPosition() const;
 
     bool isReverse() const;
     bool isLeft() const;
