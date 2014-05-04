@@ -6,15 +6,23 @@
 using namespace std;
 using namespace BamTools;
 
-SoftClipReader::SoftClipReader(const string &filename)
+SoftClipReader::SoftClipReader(const string &filename, int minClip) :
+    minClip(minClip)
 {
     if (!reader.Open(filename))
         error("Could not open the input BAM file.");
+    if (!reader.LocateIndex())
+        error("Could not locate the index file");
 }
 
 SoftClipReader::~SoftClipReader()
 {
     reader.Close();
+}
+
+int SoftClipReader::getReferenceId(const string &referenceName)
+{
+    return reader.GetReferenceID(referenceName);
 }
 
 bool SoftClipReader::getSoftClip(SoftClip &clip)
@@ -27,9 +35,9 @@ bool SoftClipReader::getSoftClip(SoftClip &clip)
         {
             int size = clipSizes.size();
             if (!al.IsReverseStrand() && al.Position == genomePositions[0] &&
-                    clipSizes[0] > 5 &&
+                    clipSizes[0] > minClip &&
                     (size == 1 ||
-                     (size == 2 && clipSizes[1] <= 5)))
+                     (size == 2 && clipSizes[1] <= minClip)))
             {
                 clip = SoftClip(al.RefID,
                                 al.Position,
@@ -43,9 +51,9 @@ bool SoftClipReader::getSoftClip(SoftClip &clip)
                 return true;
             }
             if (al.IsReverseStrand() && al.Position != genomePositions[size - 1] &&
-                    clipSizes[size - 1] > 5 &&
+                    clipSizes[size - 1] > minClip &&
                     (size == 1 ||
-                     (size == 2 && clipSizes[0] <= 5)))
+                     (size == 2 && clipSizes[0] <= minClip)))
             {
                 clip = SoftClip(al.RefID,
                                 al.Position,
@@ -62,4 +70,9 @@ bool SoftClipReader::getSoftClip(SoftClip &clip)
     }
 
     return false;
+}
+
+bool SoftClipReader::setRegion(int leftRefId, int leftPosition, int rightRefId, int rightPosition)
+{
+    return reader.SetRegion(leftRefId, leftPosition, rightRefId, rightPosition);
 }

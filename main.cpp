@@ -20,13 +20,13 @@
 #define PROGRAM_BUGREPORT "zhangz@csu.edu.cn"
 #define DEFAULT_MIN_OVERLAP 21
 
-static const char *CORRECT_VERSION_MESSAGE =
+static const char *DFINDER_VERSION_MESSAGE =
 PROGRAM_NAME " Version " PROGRAM_VERSION "\n"
 "Written by Zhen Zhang.\n"
 "\n"
 "Copyright 2013 netlab.csu.edu.cn\n";
 
-static const char *CORRECT_USAGE_MESSAGE =
+static const char *DFINDER_USAGE_MESSAGE =
 "Usage: " PROGRAM_NAME " [OPTION] ... BAMFILE\n"
 "Find deletions from records in BAMFILE\n"
 "\n"
@@ -35,6 +35,7 @@ static const char *CORRECT_USAGE_MESSAGE =
 "      -o, --outfile=FILE               write the deletion calls to FILE (default: BAMFILE.calls)\n"
 "      -e, --error-rate=F               the maximum error rate allowed between two sequences to consider them overlapped (default: 0.04)\n"
 "      -m, --min-overlap=LEN            minimum overlap required between two reads (default: 31)\n"
+"      -c, --min-clip=SIZE              a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
 "\nThe following two option must appear together (if ommitted, attempt ot learn the mean and the standard deviation of insert size):\n"
 "      -i, --insert-mean=N              the mean of insert size\n"
 "      -s, --insert-sd=N                the standard deviation of insert size\n"
@@ -47,19 +48,21 @@ namespace opt
     static std::string outFile;
     static double errorRate = 0.04;
     static unsigned int minOverlap = DEFAULT_MIN_OVERLAP;
+    static unsigned int minClip = 5;
 
     static bool bLearnInsert = true;
     static int insertMean;
     static int insertSd;
 }
 
-static const char* shortopts = "o:e:m:i:s:v";
+static const char* shortopts = "o:e:m:c:i:s:v";
 
 enum { OPT_HELP = 1, OPT_VERSION };
 
 static const struct option longopts[] = {
     { "verbose",       no_argument,       NULL, 'v' },
     { "min-overlap",   required_argument, NULL, 'm' },
+    { "min-clip",      required_argument, NULL, 'c' },
     { "outfile",       required_argument, NULL, 'o' },
     { "error-rate",    required_argument, NULL, 'e' },
     { "insert-mean",   required_argument, NULL, 'i' },
@@ -88,7 +91,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Sd: " << opt::insertSd << std::endl;
     }
 
-    SoftClipReader reader(opt::bamFile);
+    SoftClipReader reader(opt::bamFile, opt::minClip);
 
     double minIdentity = 1.0f - opt::errorRate;
     Caller caller(opt::bamFile, opt::minOverlap, minIdentity, opt::insertMean, opt::insertSd);
@@ -123,6 +126,7 @@ void parseOptions(int argc, char** argv)
         std::istringstream arg(optarg != NULL ? optarg : "");
         switch (c)
         {
+            case 'c': arg >> opt::minClip; break;
             case 'm': arg >> opt::minOverlap; break;
             case 'o': arg >> opt::outFile; break;
             case 'e': arg >> opt::errorRate; break;
@@ -131,10 +135,10 @@ void parseOptions(int argc, char** argv)
             case 'i': arg >> opt::insertMean; bInsertMean = true; break;
             case 's': arg >> opt::insertSd; bInsertSd = true; break;
             case OPT_HELP:
-                std::cout << CORRECT_USAGE_MESSAGE;
+                std::cout << DFINDER_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);
             case OPT_VERSION:
-                std::cout << CORRECT_VERSION_MESSAGE;
+                std::cout << DFINDER_VERSION_MESSAGE;
                 exit(EXIT_SUCCESS);
         }
     }
@@ -167,7 +171,7 @@ void parseOptions(int argc, char** argv)
 
     if (die)
     {
-        std::cout << "\n" << CORRECT_USAGE_MESSAGE;
+        std::cout << "\n" << DFINDER_USAGE_MESSAGE;
         exit(EXIT_FAILURE);
     }
 
