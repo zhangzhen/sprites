@@ -12,6 +12,7 @@ SoftClip::SoftClip(int referenceId,
                    int clipPosition,
                    int matePosition,
                    bool is_reverse,
+                   bool is_mate_reverse,
                    int clippedSize,
                    int offset,
                    const std::string &sequence) :
@@ -21,6 +22,7 @@ SoftClip::SoftClip(int referenceId,
     clipPosition(clipPosition),
     matePosition(matePosition),
     is_reverse(is_reverse),
+    is_mate_reverse(is_mate_reverse),
     clippedSize(clippedSize),
     offset(offset),
     sequence(sequence)
@@ -47,6 +49,36 @@ bool SoftClip::isReverse() const
 bool SoftClip::isLeft() const
 {
     return position == clipPosition;
+}
+
+bool SoftClip::isTypeIForLeftBp() const
+{
+    return position != clipPosition && is_reverse && !is_mate_reverse && position > matePosition;
+}
+
+bool SoftClip::isTypeIIForLeftBp() const
+{
+    return position != clipPosition && !is_reverse && is_mate_reverse && position < matePosition;
+}
+
+bool SoftClip::isTypeIForRightBp() const
+{
+    return position == clipPosition && !is_reverse && is_mate_reverse && position < matePosition;
+}
+
+bool SoftClip::isTypeIIForRightBp() const
+{
+    return position == clipPosition && is_reverse && !is_mate_reverse && position > matePosition;
+}
+
+bool SoftClip::isForLeftBp() const
+{
+    return isTypeIForLeftBp() || isTypeIIForLeftBp();
+}
+
+bool SoftClip::isForRightBp() const
+{
+    return isTypeIForRightBp() || isTypeIIForRightBp();
 }
 
 int SoftClip::getReferenceId() const { return referenceId; }

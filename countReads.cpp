@@ -2,6 +2,7 @@
 #include "SoftClipCounter.h"
 #include <getopt.h>
 #include <sstream>
+#include <vector>
 
 using namespace std;
 
@@ -24,6 +25,7 @@ static const char *COUNTREADS_USAGE_MESSAGE =
 "Count reads in BAMFILE for each deletion given by DELFILE\n"
 "\n"
 "      --help                           display this help and exit\n"
+"      --plus                           count exra reads\n"
 "      -v, --verbose                    display verbose output\n"
 "      -d, --del-file=FILE              all known deletions are stored in FILE\n"
 "      -r, --radius=INT                 the radius for search area (default: 50)\n"
@@ -36,13 +38,14 @@ namespace opt
     static std::string bamFile;
     static std::string delFile;
     static unsigned int radius = 50;
+    static bool bPlus = false;
 
     static unsigned int minClip = DEFAULT_MIN_CLIP;
 }
 
 static const char* shortopts = "d:c:r:v";
 
-enum { OPT_HELP = 1, OPT_VERSION };
+enum { OPT_HELP = 1, OPT_VERSION, OPT_PLUS};
 
 static const struct option longopts[] = {
     { "verbose",       no_argument,       NULL, 'v' },
@@ -51,6 +54,7 @@ static const struct option longopts[] = {
     { "del-file",      required_argument, NULL, 'd' },
     { "help",          no_argument,       NULL, OPT_HELP },
     { "version",       no_argument,       NULL, OPT_VERSION },
+    { "plus",          no_argument,       NULL, OPT_PLUS },
     { NULL, 0, NULL, 0 }
 };
 
@@ -68,16 +72,47 @@ int main(int argc, char *argv[]) {
     SoftClipReader *pReader = new SoftClipReader(opt::bamFile, opt::minClip);
     SoftClipCounter counter(pReader, opt::radius);
 
+    int n1 = 0;
+    int n2 = 0;
+    int n3 = 0;
+
+    vector<int> labels(dels.size(), -1);
+
+    int i = 0;
     // for each deletion count soft-clips that are used to call it    
     for (auto itr = dels.begin(); itr != dels.end(); ++itr) {
         int referenceId = pReader->getReferenceId((*itr).referenceName);
-        if (referenceId == -1) continue;
-        int cntLeftBp = counter.count(referenceId, (*itr).leftBp);
-        int cntRightBp = counter.count(referenceId, (*itr).rightBp);
-        cout << cntLeftBp << "\t" << cntRightBp << endl;
+        if (referenceId == -1) {
+            i++;
+            continue;
+        }
+//        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).leftBp << "\t[left]" << endl;
+        int cntLeftBp = counter.countLeftBp(referenceId, (*itr).leftBp, opt::bPlus);
+//        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).rightBp << "\t[right]" << endl;
+        int cntRightBp = counter.countRightBp(referenceId, (*itr).rightBp, opt::bPlus);
+//        cout << cntLeftBp << "\t" << cntRightBp << endl;
+        int s = cntLeftBp + cntRightBp;
+        if (s == 0) {
+            labels[i] = 0;
+            n1++;
+        } else if (cntLeftBp > 0 && cntRightBp > 0) {
+            labels[i] = 2;
+            n3++;
+        } else {
+            labels[i] = 1;
+            n2++;
+        }
+        i++;
     }
 
     // output the counting result to a file
+    cout << n1 << "\t" << n2 << "\t" << n3 << endl;
+
+    ofstream out("deletion-labels.txt");
+    for(size_t i = 0; i < labels.size(); ++i) {
+        out << i << "\t" << labels[i] << endl;
+    }
+
     delete pReader;
 
     return 0;
@@ -99,6 +134,7 @@ void parseOptions(int argc, char** argv)
             case 'd': arg >> opt::delFile; break;
             case '?': die = true; break;
             case 'v': opt::verbose++; break;
+            case OPT_PLUS: opt::bPlus = true; break;
             case OPT_HELP:
                 std::cout << COUNTREADS_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);

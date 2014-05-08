@@ -11,6 +11,7 @@ private:
     int clipPosition;
     int matePosition;
     bool is_reverse;
+    bool is_mate_reverse;
     int clippedSize;
     int offset;
     std::string sequence;
@@ -23,6 +24,7 @@ public:
              int clipPosition,
              int matePosition,
              bool is_reverse,
+             bool is_mate_reverse,
              int clippedSize,
              int offset,
              const std::string& sequence);
@@ -35,6 +37,14 @@ public:
 
     bool isReverse() const;
     bool isLeft() const;
+
+    bool isTypeIForLeftBp() const;
+    bool isTypeIIForLeftBp() const;
+    bool isTypeIForRightBp() const;
+    bool isTypeIIForRightBp() const;
+
+    bool isForLeftBp() const;
+    bool isForRightBp() const;
 
     const std::string& getSequence() const;
     int size() const;

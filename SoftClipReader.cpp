@@ -25,7 +25,7 @@ int SoftClipReader::getReferenceId(const string &referenceName)
     return reader.GetReferenceID(referenceName);
 }
 
-bool SoftClipReader::getSoftClip(SoftClip &clip)
+bool SoftClipReader::getSoftClip(SoftClip &clip, bool plus)
 {
     BamAlignment al;
     while (reader.GetNextAlignment(al)) {
@@ -45,6 +45,7 @@ bool SoftClipReader::getSoftClip(SoftClip &clip)
                                 genomePositions[0],
                                 al.MatePosition,
                                 al.IsReverseStrand(),
+                                al.IsMateReverseStrand(),
                                 clipSizes[0],
                                 0,
                                 al.QueryBases);
@@ -61,7 +62,45 @@ bool SoftClipReader::getSoftClip(SoftClip &clip)
                                 genomePositions[size - 1],
                                 al.MatePosition,
                                 al.IsReverseStrand(),
+                                al.IsMateReverseStrand(),
                                 clipSizes[size - 1],
+                                0,
+                                al.QueryBases);
+                return true;
+            }
+        }
+
+        clipSizes.clear();
+        readPositions.clear();
+        genomePositions.clear();
+        if (plus && al.GetSoftClips(clipSizes, readPositions, genomePositions)) {
+            int size = clipSizes.size();
+            if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.Position < al.MatePosition &&
+                    al.Position != genomePositions[size - 1] && clipSizes[size - 1] > minClip &&
+                    (size == 1 || (size == 2 && clipSizes[0] <= minClip))) {
+                clip = SoftClip(al.RefID,
+                                al.Position,
+                                al.Position - (size == 2) ? clipSizes[0] : 0,
+                                genomePositions[size - 1],
+                                al.MatePosition,
+                                al.IsReverseStrand(),
+                                al.IsMateReverseStrand(),
+                                clipSizes[size - 1],
+                                0,
+                                al.QueryBases);
+                return true;
+            }
+            if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.Position > al.MatePosition &&
+                    al.Position == genomePositions[0] && clipSizes[0] > minClip &&
+                    (size == 1 || (size == 2 && clipSizes[1] <= minClip))) {
+                clip = SoftClip(al.RefID,
+                                al.Position,
+                                al.Position - clipSizes[0],
+                                genomePositions[0],
+                                al.MatePosition,
+                                al.IsReverseStrand(),
+                                al.IsMateReverseStrand(),
+                                clipSizes[0],
                                 0,
                                 al.QueryBases);
                 return true;

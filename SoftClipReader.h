@@ -14,7 +14,7 @@ public:
 
     int getReferenceId(const std::string& referenceName);
 
-    bool getSoftClip(SoftClip& clip);
+    bool getSoftClip(SoftClip& clip, bool plus=false);
     bool setRegion(int leftRefId, int leftPosition, int rightRefId, int rightPosition);
 
 private:

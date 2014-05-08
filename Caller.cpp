@@ -150,7 +150,11 @@ MultipleAlignment Caller::buildMultipleAlignment(const SoftClip &clip, const Tar
 void Caller::retrieveMatches(const SoftClip &clip, const TargetRegion &region, SequenceOverlapPairVector &result)
 {
     assert(region.start < region.end);
-    reader.SetRegion(region.referenceId, region.start, region.referenceId, region.end);
+    if(!reader.SetRegion(region.referenceId, region.start, region.referenceId, region.end)) {
+        cerr << "Could not set the region.";
+        return;
+    }
+
     BamAlignment al;
     string query = clip.getSequence();
     while (reader.GetNextAlignment(al))
