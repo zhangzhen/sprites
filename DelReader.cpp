@@ -1,5 +1,6 @@
 #include "DelReader.h"
 #include <fstream>
+#include <iostream>
 
 using namespace std;
 
@@ -9,14 +10,24 @@ std::vector<Del> DelReader::readDelsFromFile(const std::string &filename)
 
     std::vector<Del> dels;
 
+    int id;
     string referenceName;
     int leftBp;
     int rightBp;
     int length;
+    string svtype;
+    string alternative;
+    string homseq;
+    string genotype;
 
-    while (input >> referenceName >> leftBp >> rightBp >> length) {
-        Del del = {referenceName, leftBp, rightBp};
+    string head;
+    getline(input, head);
+
+    while (input >> id >> referenceName >> leftBp >> rightBp >> svtype >> length >> alternative >> homseq >> genotype) {
+        Del del = {id, "chr" + referenceName, leftBp, rightBp, length,
+                   alternative, homseq == "-" ? "" : homseq, genotype};
         dels.push_back(del);
     }
+
     return dels;
 }

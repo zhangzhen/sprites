@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -60,6 +61,8 @@ static const struct option longopts[] = {
 
 void parseOptions(int argc, char** argv);
 
+void count(const vector<Del>& dels);
+
 //
 // Main
 //
@@ -68,52 +71,32 @@ int main(int argc, char *argv[]) {
 
     // read deletion records from file
     std::vector<Del> dels = DelReader::readDelsFromFile(opt::delFile);
+    count(dels);
 
-    SoftClipReader *pReader = new SoftClipReader(opt::bamFile, opt::minClip);
-    SoftClipCounter counter(pReader, opt::radius);
+//    std::vector<Del> input;
 
-    int n1 = 0;
-    int n2 = 0;
-    int n3 = 0;
+//    copy_if(dels.begin(), dels.end(), back_inserter(input), [](const Del& d) { return d.isHomogeneous(); });
+//    count(input);
 
-    vector<int> labels(dels.size(), -1);
+//    input.clear();
+//    copy_if(dels.begin(), dels.end(), back_inserter(input), [](const Del& d) { return !d.isHomogeneous(); });
+//    count(input);
 
-    int i = 0;
-    // for each deletion count soft-clips that are used to call it    
-    for (auto itr = dels.begin(); itr != dels.end(); ++itr) {
-        int referenceId = pReader->getReferenceId((*itr).referenceName);
-        if (referenceId == -1) {
-            i++;
-            continue;
-        }
-//        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).leftBp << "\t[left]" << endl;
-        int cntLeftBp = counter.countLeftBp(referenceId, (*itr).leftBp, opt::bPlus);
-//        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).rightBp << "\t[right]" << endl;
-        int cntRightBp = counter.countRightBp(referenceId, (*itr).rightBp, opt::bPlus);
-//        cout << cntLeftBp << "\t" << cntRightBp << endl;
-        int s = cntLeftBp + cntRightBp;
-        if (s == 0) {
-            labels[i] = 0;
-            n1++;
-        } else if (cntLeftBp > 0 && cntRightBp > 0) {
-            labels[i] = 2;
-            n3++;
-        } else {
-            labels[i] = 1;
-            n2++;
-        }
-        i++;
-    }
+//    input.clear();
+//    copy_if(dels.begin(), dels.end(), back_inserter(input), [](const Del& d) { return d.hasInsertedSeq(); });
+//    count(input);
 
-    // output the counting result to a file
-    cout << n1 << "\t" << n2 << "\t" << n3 << endl;
+//    input.clear();
+//    copy_if(dels.begin(), dels.end(), back_inserter(input), [](const Del& d) { return !d.hasInsertedSeq(); });
+//    count(input);
 
-    ofstream out("deletion-labels.txt");
-    for(size_t i = 0; i < labels.size(); ++i) {
-        out << i << "\t" << labels[i] << endl;
-    }
+//    input.clear();
+//    copy_if(dels.begin(), dels.end(), back_inserter(input), [](const Del& d) { return d.hasHomseq(); });
+//    count(input);
 
-    delete pReader;
+//    input.clear();
+//    copy_if(dels.begin(), dels.end(), back_inserter(input), [](const Del& d) { return !d.hasHomseq(); });
+//    count(input);
 
     return 0;
 }
@@ -163,4 +146,52 @@ void parseOptions(int argc, char** argv)
 
     // Parse the input filename
     opt::bamFile = argv[optind++];
+}
+
+void count(const vector<Del>& dels) {
+    SoftClipReader *pReader = new SoftClipReader(opt::bamFile, opt::minClip);
+    SoftClipCounter counter(pReader, opt::radius);
+
+    int n1 = 0;
+    int n2 = 0;
+    int n3 = 0;
+
+    vector<int> labels(dels.size(), -1);
+
+    int i = 0;
+    // for each deletion count soft-clips that are used to call it
+    for (auto itr = dels.begin(); itr != dels.end(); ++itr) {
+        int referenceId = pReader->getReferenceId((*itr).referenceName);
+        if (referenceId == -1) {
+            i++;
+            continue;
+        }
+        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).leftBp << "\t[left]" << endl;
+        int cntLeftBp = counter.countLeftBp(referenceId, (*itr).leftBp, opt::bPlus);
+        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).rightBp << "\t[right]" << endl;
+        int cntRightBp = counter.countRightBp(referenceId, (*itr).rightBp, opt::bPlus);
+        cout << cntLeftBp << "\t" << cntRightBp << endl;
+        int s = cntLeftBp + cntRightBp;
+        if (s == 0) {
+            labels[i] = 0;
+            n1++;
+        } else if (cntLeftBp > 0 && cntRightBp > 0) {
+            labels[i] = 2;
+            n3++;
+        } else {
+            labels[i] = 1;
+            n2++;
+        }
+        i++;
+    }
+
+    // output the counting result to a file
+    cout << n1 << "\t" << n2 << "\t" << n3 << endl;
+
+    ofstream out("deletion-labels.txt");
+    for(size_t i = 0; i < labels.size(); ++i) {
+        out << i << "\t" << labels[i] << endl;
+    }
+
+    delete pReader;
 }

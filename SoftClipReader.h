@@ -17,6 +17,8 @@ public:
     bool getSoftClip(SoftClip& clip, bool plus=false);
     bool setRegion(int leftRefId, int leftPosition, int rightRefId, int rightPosition);
 
+    int getMinClip() const;
+
 private:
     BamTools::BamReader reader;
     int minClip;

@@ -3,14 +3,29 @@
 
 #include <string>
 #include <vector>
+#include <set>
+
 
 struct Del {
+    int id;
     std::string referenceName;
     int leftBp;
     int rightBp;
+    int length;
+    std::string alternative;
+    std::string homseq;
+    std::string genotype;
 
-    int length() {
-        return rightBp - leftBp;
+    bool hasInsertedSeq() const {
+        return alternative.length() > 1;
+    }
+
+    bool hasHomseq() const {
+        return homseq == "-";
+    }
+
+    bool isHomogeneous() const {
+        return genotype == "1/1" || genotype == "1|1";
     }
 };
 
