@@ -46,11 +46,6 @@ bool SoftClip::isReverse() const
     return is_reverse;
 }
 
-bool SoftClip::isLeft() const
-{
-    return position == clipPosition;
-}
-
 bool SoftClip::isTypeIForLeftBp() const
 {
     return position != clipPosition && is_reverse && !is_mate_reverse && position > matePosition;

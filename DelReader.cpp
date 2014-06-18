@@ -24,7 +24,7 @@ std::vector<Del> DelReader::readDelsFromFile(const std::string &filename)
     getline(input, head);
 
     while (input >> id >> referenceName >> leftBp >> rightBp >> svtype >> length >> alternative >> homseq >> genotype) {
-        Del del = {id, "chr" + referenceName, leftBp, rightBp, length,
+        Del del = {id, referenceName, leftBp, rightBp, length,
                    alternative, homseq == "-" ? "" : homseq, genotype};
         dels.push_back(del);
     }

@@ -2,6 +2,7 @@
 #define SOFTCLIPCOUNTER_H
 
 #include "SoftClipReader.h"
+#include <vector>
 
 class SoftClipCounter
 {

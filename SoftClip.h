@@ -36,7 +36,6 @@ public:
     int getLeftmostPosition() const;
 
     bool isReverse() const;
-    bool isLeft() const;
 
     bool isTypeIForLeftBp() const;
     bool isTypeIIForLeftBp() const;

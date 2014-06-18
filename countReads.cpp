@@ -63,15 +63,22 @@ void parseOptions(int argc, char** argv);
 
 void count(const vector<Del>& dels);
 
+void showDiff(const vector<int>& positions);
+
+void fetchClippingPositions(vector<int>& positions);
+
 //
 // Main
 //
 int main(int argc, char *argv[]) {
     parseOptions(argc, argv);
+    vector<int> positions;
+    fetchClippingPositions(positions);
+    showDiff(positions);
 
     // read deletion records from file
-    std::vector<Del> dels = DelReader::readDelsFromFile(opt::delFile);
-    count(dels);
+//    std::vector<Del> dels = DelReader::readDelsFromFile(opt::delFile);
+//    count(dels);
 
 //    std::vector<Del> input;
 
@@ -194,4 +201,21 @@ void count(const vector<Del>& dels) {
     }
 
     delete pReader;
+}
+
+void showDiff(const vector<int> &positions)
+{
+    for (size_t i=1; i < positions.size(); ++i) {
+        int diff = positions[i] - positions[i-1];
+        if (diff < 100)
+            cout << positions[i-1] << "\t" << positions[i] << "\t" << diff << endl;
+    }
+}
+
+void fetchClippingPositions(vector<int> &positions) {
+    SoftClipReader reader(opt::bamFile, opt::minClip);
+    SoftClip clip;
+    while (reader.getSoftClip(clip, opt::bPlus)) {
+        if (clip.isForRightBp()) positions.push_back(clip.getClipPosition());
+    }
 }

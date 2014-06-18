@@ -36,7 +36,7 @@ bool Caller::call(const SoftClip &clip, Deletion &del)
     bool result = false;
     vector<Deletion> deletions;
 
-    if ((!clip.isReverse() && clip.isLeft()) || (clip.isReverse() && !clip.isLeft()))
+    if (clip.isForRightBp())
     {
         vector<int> matePositions;
         if (!getSuppMatePositions(clip, matePositions))
@@ -159,8 +159,8 @@ void Caller::retrieveMatches(const SoftClip &clip, const TargetRegion &region, S
     string query = clip.getSequence();
     while (reader.GetNextAlignment(al))
     {
-        if ((clip.isLeft() && !clip.isReverse() && al.Position + al.Length >= clip.getClipPosition()) ||
-                (!clip.isLeft() && clip.isReverse() && al.Position <= clip.getClipPosition()))
+        if ((clip.isForRightBp() && al.Position + al.Length >= clip.getClipPosition()) ||
+                (clip.isForLeftBp() && al.Position <= clip.getClipPosition()))
             break;
         SequenceOverlap overlap = Overlapper::computeOverlap(query, al.QueryBases, ungapped_params);
         if (overlap.getOverlapLength() >= minOverlap &&

@@ -72,6 +72,7 @@ static const struct option longopts[] = {
     { NULL, 0, NULL, 0 }
 };
 
+SoftClip getOptimalRbClip(const std::vector<SoftClip>& buffer);
 void writeToFile(const std::string& filename, std::vector<Deletion>& deletions);
 
 void parseOptions(int argc, char** argv);
@@ -96,17 +97,43 @@ int main(int argc, char *argv[]) {
     double minIdentity = 1.0f - opt::errorRate;
     Caller caller(opt::bamFile, opt::minOverlap, minIdentity, opt::insertMean, opt::insertSd);
     std::vector<Deletion> deletions;
+    std::vector<SoftClip> rbClips;
+    std::vector<SoftClip> buffer;
+
     SoftClip clip;
     while (reader.getSoftClip(clip))
     {
-        Deletion del;
-        if (caller.call(clip, del)) {
-            deletions.push_back(del);
+        if (clip.isForLeftBp()) continue;
+        if (buffer.empty()) {
+            buffer.push_back(clip);
+            continue;
         }
+        if (buffer[0].getClipPosition() == clip.getClipPosition()) {
+            buffer.push_back(clip);
+            continue;
+        }
+        rbClips.push_back(getOptimalRbClip(buffer));
+        buffer.clear();
+        buffer.push_back(clip);
+
+//        Deletion del;
+//        if (caller.call(clip, del)) {
+//            deletions.push_back(del);
+//        }
     }
+    if (!buffer.empty()) {
+        rbClips.push_back(getOptimalRbClip(buffer));
+        buffer.clear();
+    }
+    std::cout << rbClips.size() << std::endl;
     writeToFile(opt::outFile, deletions);
 
     return 0;
+}
+
+SoftClip getOptimalRbClip(const std::vector<SoftClip>& buffer) {
+    assert(!buffer.empty());
+    return buffer[0];
 }
 
 void writeToFile(const std::string& filename, std::vector<Deletion>& deletions) {
