@@ -12,8 +12,7 @@ private:
     int matePosition;
     bool is_reverse;
     bool is_mate_reverse;
-    int clippedSize;
-    int offset;
+    size_t clippedSize;
     std::string sequence;
 
 public:
@@ -25,31 +24,30 @@ public:
              int matePosition,
              bool is_reverse,
              bool is_mate_reverse,
-             int clippedSize,
-             int offset,
+             size_t clippedSize,
              const std::string& sequence);
 
     int getReferenceId() const;
     int getPosition() const;
     int getClipPosition() const;
-    int getAdjustedPosition() const;
+    int getClipPositionInRead() const;
     int getLeftmostPosition() const;
 
     bool isReverse() const;
-
-    bool isTypeIForLeftBp() const;
-    bool isTypeIIForLeftBp() const;
-    bool isTypeIForRightBp() const;
-    bool isTypeIIForRightBp() const;
 
     bool isForLeftBp() const;
     bool isForRightBp() const;
 
     const std::string& getSequence() const;
-    int size() const;
-    int getClippedSize() const;
+    size_t size() const;
 
     friend std::ostream& operator <<(std::ostream& stream, const SoftClip& o);
+
+private:
+    bool isTypeIForLeftBp() const;
+    bool isTypeIIForLeftBp() const;
+    bool isTypeIForRightBp() const;
+    bool isTypeIIForRightBp() const;
 
 };
 

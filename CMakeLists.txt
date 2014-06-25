@@ -11,7 +11,7 @@ Deletion.cpp Thirdparty/overlapper.cpp Thirdparty/multiple_alignment.cpp
 BamStatCalculator.cpp Caller.cpp SoftClipReader.cpp)
 target_link_libraries(dfinder bamtools)
 
-add_executable(countReads countReads.cpp DelReader.cpp SoftClip.cpp SoftClipReader.cpp
+add_executable(countReads countReads.cpp Deletion.cpp DeletionReader.cpp SoftClip.cpp SoftClipReader.cpp
 SoftClipCounter.cpp error.cpp)
 target_link_libraries(countReads bamtools)
 

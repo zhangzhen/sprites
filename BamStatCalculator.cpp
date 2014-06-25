@@ -3,6 +3,7 @@
 
 #include <numeric>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 using namespace BamTools;
@@ -39,12 +40,12 @@ int BamStatCalculator::getInsertSd()
 void BamStatCalculator::loadInserts()
 {
     BamAlignment al;
-    uint32_t cnt = 0;
-    while (reader.GetNextAlignmentCore(al) && cnt <= 10000)
+    size_t cnt = 0;
+    while (reader.GetNextAlignmentCore(al) && cnt < 10000)
     {
         if (al.IsProperPair() && al.MatePosition > al.Position)
         {
-            uint32_t insert = al.MatePosition + al.Length - al.Position;
+            uint64_t insert = al.MatePosition + al.Length - al.Position;
             if (insert < 10000) {
                 inserts.push_back(insert);
                 cnt++;
@@ -62,5 +63,8 @@ int BamStatCalculator::mean()
 int BamStatCalculator::sd()
 {
     int m =  getInsertMean();
-    return sqrt(inner_product(inserts.begin(), inserts.end(), inserts.begin(), 0) / inserts.size() - m * m);
+    vector<int> temp;
+    transform(inserts.begin(), inserts.end(), back_inserter(temp), [](int x) { return x*x; });
+    uint32_t sum = accumulate(temp.begin(), temp.end(), 0);
+    return sqrt( sum / temp.size() - m * m);
 }

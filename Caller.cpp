@@ -1,41 +1,94 @@
 #include "Caller.h"
 #include "error.h"
+#include "SoftClipReader.h"
 
 #include <cassert>
 #include <numeric>
 #include <algorithm>
+#include <fstream>
+#include <iterator>
 
 #include "Thirdparty/overlapper.h"
 
 using namespace std;
 using namespace BamTools;
 
-Caller::Caller(const string &filename,
-               int minOverlap,
-               double minIdentity,
-               int insertMean,
-               int insertStd) :
-    minOverlap(minOverlap),
-    minIdentity(minIdentity),
-    insertMean(insertMean),
-    insertStd(insertStd)
-{
-    if (!reader.Open(filename))
+Caller::Caller(const string& filename, const Parameters &params) :
+    params(params) {
+    idCount = 0;
+    pReader = new SoftClipReader(filename, params.minClip, params.mode);
+
+    if (!bamReader.Open(filename))
         error("Could not open the input BAM file.");
-    if (!reader.LocateIndex())
+    if (!bamReader.LocateIndex())
         error("Could not locate index.");
 }
 
-Caller::~Caller()
+Caller::~Caller() {
+    delete pReader;
+}
+
+void Caller::readClipsForRightBp(std::vector<SoftClip> &clips)
 {
-    reader.Close();
+    std::vector<SoftClip> buffer;
+
+    SoftClip clip;
+    while (pReader->getSoftClip(clip))
+    {
+        if (clip.isForRightBp()) buffer.push_back(clip);
+    }
+
+    refineClips(buffer, clips);
+}
+
+void Caller::call(const std::vector<SoftClip> &clips, std::vector<Deletion> &dels)
+{
+    for (auto it = clips.begin(); it != clips.end(); ++it) {
+        Deletion del;
+        if (call(*it, del)) {
+            dels.push_back(del);
+        }
+    }
+}
+
+void Caller::output(const string &filename, const std::vector<Deletion> &dels)
+{
+    ofstream out(filename.c_str());
+    out << "ID\tCHROM\tSTART\tEND\tTYPE\tLENGTH\tALT\tHOMSEQ\tGENOTYPE" << endl;
+    copy(dels.begin(), dels.end(), ostream_iterator<Deletion>(out, "\n"));
+}
+
+void Caller::refineClips(const std::vector<SoftClip> &orig, std::vector<SoftClip> &result)
+{
+    std::vector<SoftClip> buffer;
+
+    for (auto it = orig.begin(); it != orig.end(); ++it){
+        if (buffer.empty()) {
+            buffer.push_back(*it);
+            continue;
+        }
+        if (buffer[0].getClipPosition() == (*it).getClipPosition()) {
+            buffer.push_back(*it);
+            continue;
+        }
+        result.push_back(chooseBestClipFrom(buffer));
+        buffer.clear();
+        buffer.push_back(*it);
+    }
+    if (!buffer.empty()) {
+        result.push_back(chooseBestClipFrom(buffer));
+        buffer.clear();
+    }
+}
+
+SoftClip Caller::chooseBestClipFrom(const std::vector<SoftClip> &buffer)
+{
+    assert(!buffer.empty());
+    return buffer[0];
 }
 
 bool Caller::call(const SoftClip &clip, Deletion &del)
 {
-    bool result = false;
-    vector<Deletion> deletions;
-
     if (clip.isForRightBp())
     {
         vector<int> matePositions;
@@ -45,21 +98,43 @@ bool Caller::call(const SoftClip &clip, Deletion &del)
         getTargetRegions(clip, matePositions, regions);
         for (auto itr = regions.begin(); itr != regions.end(); ++itr)
         {
-            Deletion d;
-            if (call(clip, *itr, d)) {
-                deletions.push_back(d);
-                result = true;
+            if (call(clip, *itr, del)) {
+                return true;
             }
         }
     }
-    return result;
+    return false;
 }
 
 bool Caller::call(const SoftClip &clip, const TargetRegion &region, Deletion &del)
 {
-    MultipleAlignment ma = buildMultipleAlignment(clip, region);
-    if (ma.getNumRows() > 1)
-        ma.print(110);
+    assert(clip.isForRightBp());
+
+    vector<SoftClip> buffer;
+
+    if (!pReader->setRegion(region.referenceId, region.start, region.referenceId, region.end))
+        error("could not set region");
+
+    SoftClip other;
+    while (pReader->getSoftClip(other)) {
+        if (other.isForLeftBp()) {
+            buffer.push_back(other);
+        }
+    }
+
+    vector<SoftClip> refined;
+    refineClips(buffer, refined);
+
+    for (auto it = refined.begin(); it != refined.end(); ++it) {
+        SequenceOverlap overlap = Overlapper::computeOverlap(clip.getSequence(), (*it).getSequence(), ungapped_params);
+        if (overlap.getOverlapLength() >= params.minOverlap &&
+                overlap.getPercentIdentity() / 100 >= params.minIdentity)
+        {
+            overlap.printAlignment(clip.getSequence(), (*it).getSequence());
+            if (createDeletionFrom(overlap, clip, (*it), del)) return true;
+        }
+    }
+
     return false;
 }
 
@@ -71,22 +146,21 @@ bool Caller::getSuppMatePositions(const SoftClip &clip, vector<int> &matePositio
     if (!clip.isReverse())
     {
         start = clip.getLeftmostPosition();
-        end = start + insertMean + 3 * insertStd + clip.size();
+        end = start + params.insertMean + 3 * params.insertSd + clip.size();
     }
     else
     {
         end = clip.getLeftmostPosition() + clip.size();
-        start = end > insertMean + 3 * insertStd + clip.size() ? end - insertMean - 3 * insertStd - clip.size() :
+        start = end > params.insertMean + 3 * params.insertSd + clip.size() ? end - params.insertMean - 3 * params.insertSd - clip.size() :
                                                                  0;
     }
     assert(start < end);
-    if (!reader.SetRegion(clip.getReferenceId(), start, clip.getReferenceId(), end)) {
-        cerr << "Could not set the region.";
-        return false;
-    }
+
+    if (!bamReader.SetRegion(clip.getReferenceId(), start, clip.getReferenceId(), end))
+        error("Could not set the region.");
 
     BamAlignment al;
-    while(reader.GetNextAlignmentCore(al))
+    while(bamReader.GetNextAlignmentCore(al))
     {
         if ((!clip.isReverse() && al.IsReverseStrand() && al.Position > al.MatePosition) ||
                 (clip.isReverse() && !al.IsMateReverseStrand() && al.Position < al.MatePosition)) {
@@ -100,8 +174,8 @@ bool Caller::getSuppMatePositions(const SoftClip &clip, vector<int> &matePositio
 TargetRegion Caller::getTargetRegion(const SoftClip& clip, int matePosition)
 {
     int start = !clip.isReverse() ? matePosition :
-                                    matePosition - 3 * insertStd;
-    int end = !clip.isReverse() ? matePosition + clip.size() + insertMean + 3 * insertStd :
+                                    matePosition - 3 * params.insertSd;
+    int end = !clip.isReverse() ? matePosition + clip.size() + params.insertMean + 3 * params.insertSd :
                                   matePosition + clip.size();
     return {clip.getReferenceId(), start, end};
 }
@@ -125,7 +199,7 @@ void Caller::getTargetRegions(const SoftClip& clip,
     for (size_t i = 1; i < diffs.size(); ++i) {
         int start;
         TargetRegion tr = getTargetRegion(clip, matePositions[i]);
-        if (abs(diffs[i]) <= clip.size() + insertMean + 3 * insertStd) {
+        if (abs(diffs[i]) <= clip.size() + params.insertMean + 3 * params.insertSd) {
             start = regions.back().start;
             regions.pop_back();
         } else {
@@ -135,46 +209,24 @@ void Caller::getTargetRegions(const SoftClip& clip,
     }
 }
 
-MultipleAlignment Caller::buildMultipleAlignment(const SoftClip &clip, const TargetRegion &region)
+bool Caller::createDeletionFrom(const SequenceOverlap &overlap, const SoftClip& c1, const SoftClip& c2, Deletion& del)
 {
-    SequenceOverlapPairVector overlap_vector;
-    retrieveMatches(clip, region, overlap_vector);
-
-    MultipleAlignment multiple_alignment;
-    multiple_alignment.addBaseSequence("query", clip.getSequence(), "", clip.getClipPosition());
-    for(size_t i = 0; i < overlap_vector.size(); ++i)
-        multiple_alignment.addOverlap("null", overlap_vector[i].sequence[1], "", overlap_vector[i].position[1], overlap_vector[i].overlap);
-    return multiple_alignment;
+    int diff = (c1.getClipPositionInRead() - overlap.match[0].start) -
+            (c2.getClipPositionInRead() - overlap.match[1].start);
+    int length = c2.getClipPosition() - c1.getClipPosition() + diff;
+    if (length > SVLEN_THRESHOLD) return false;
+    int leftBp = (diff < 0) ? c2.getClipPosition() + diff : c2.getClipPosition();
+    del = Deletion(getId(), getReferenceName(c1.getReferenceId()), leftBp - 1, c1.getClipPosition() - 1, length);
+    return true;
 }
 
-void Caller::retrieveMatches(const SoftClip &clip, const TargetRegion &region, SequenceOverlapPairVector &result)
+string Caller::getReferenceName(int referenceId) const
 {
-    assert(region.start < region.end);
-    if(!reader.SetRegion(region.referenceId, region.start, region.referenceId, region.end)) {
-        cerr << "Could not set the region.";
-        return;
-    }
-
-    BamAlignment al;
-    string query = clip.getSequence();
-    while (reader.GetNextAlignment(al))
-    {
-        if ((clip.isForRightBp() && al.Position + al.Length >= clip.getClipPosition()) ||
-                (clip.isForLeftBp() && al.Position <= clip.getClipPosition()))
-            break;
-        SequenceOverlap overlap = Overlapper::computeOverlap(query, al.QueryBases, ungapped_params);
-        if (overlap.getOverlapLength() >= minOverlap &&
-                overlap.getPercentIdentity() / 100 >= minIdentity)
-        {
-            SequenceOverlapPair op;
-            op.sequence[0] = query;
-            op.sequence[1] = al.QueryBases;
-            op.position[0] = clip.getClipPosition();
-            op.position[1] = al.Position;
-            op.overlap = overlap;
-            result.push_back(op);
-        }
-    }
-
+    assert(referenceId >= 0 && referenceId < bamReader.GetReferenceCount());
+    return bamReader.GetReferenceData()[referenceId].RefName;
 }
 
+int Caller::getId()
+{
+    return idCount++;
+}

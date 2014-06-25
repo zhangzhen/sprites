@@ -10,7 +10,7 @@
 #include "BamStatCalculator.h"
 #include "Caller.h"
 #include "Helper.h"
-
+#include "Parameters.h"
 
 //
 // Getopt
@@ -38,6 +38,7 @@ static const char *DFINDER_USAGE_MESSAGE =
 "      -c, --min-clip=SIZE              a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
 "\nThe following two option must appear together (if ommitted, attempt ot learn the mean and the standard deviation of insert size):\n"
 "      -i, --insert-mean=N              the mean of insert size\n"
+"          --enhanced-mode              enable the enhanced mode, in which reads of type 2 are considered besides type 1\n"
 "      -s, --insert-sd=N                the standard deviation of insert size\n"
 "\nReport bugs to " PROGRAM_BUGREPORT "\n\n";
 
@@ -47,8 +48,9 @@ namespace opt
     static std::string bamFile;
     static std::string outFile;
     static double errorRate = 0.04;
-    static unsigned int minOverlap = DEFAULT_MIN_OVERLAP;
-    static unsigned int minClip = 5;
+    static int minOverlap = DEFAULT_MIN_OVERLAP;
+    static int minClip = 5;
+    static int mode = 0;
 
     static bool bLearnInsert = true;
     static int insertMean;
@@ -57,23 +59,21 @@ namespace opt
 
 static const char* shortopts = "o:e:m:c:i:s:v";
 
-enum { OPT_HELP = 1, OPT_VERSION };
+enum { OPT_HELP = 1, OPT_VERSION, OPT_ENHANCED_MODE };
 
 static const struct option longopts[] = {
-    { "verbose",       no_argument,       NULL, 'v' },
-    { "min-overlap",   required_argument, NULL, 'm' },
-    { "min-clip",      required_argument, NULL, 'c' },
-    { "outfile",       required_argument, NULL, 'o' },
-    { "error-rate",    required_argument, NULL, 'e' },
-    { "insert-mean",   required_argument, NULL, 'i' },
-    { "insert-sd",     required_argument, NULL, 's' },
-    { "help",          no_argument,       NULL, OPT_HELP },
-    { "version",       no_argument,       NULL, OPT_VERSION },
+    { "verbose",        no_argument,       NULL, 'v' },
+    { "min-overlap",    required_argument, NULL, 'm' },
+    { "min-clip",       required_argument, NULL, 'c' },
+    { "outfile",        required_argument, NULL, 'o' },
+    { "error-rate",     required_argument, NULL, 'e' },
+    { "insert-mean",    required_argument, NULL, 'i' },
+    { "insert-sd",      required_argument, NULL, 's' },
+    { "help",           no_argument,       NULL, OPT_HELP },
+    { "version",        no_argument,       NULL, OPT_VERSION },
+    { "enhanced-mode",  no_argument,       NULL, OPT_ENHANCED_MODE },
     { NULL, 0, NULL, 0 }
 };
-
-SoftClip getOptimalRbClip(const std::vector<SoftClip>& buffer);
-void writeToFile(const std::string& filename, std::vector<Deletion>& deletions);
 
 void parseOptions(int argc, char** argv);
 
@@ -92,52 +92,24 @@ int main(int argc, char *argv[]) {
         std::cout << "Sd: " << opt::insertSd << std::endl;
     }
 
-    SoftClipReader reader(opt::bamFile, opt::minClip);
+    Parameters params = { opt::minClip,
+                          opt::mode,
+                          opt::minOverlap,
+                          1.0f - opt::errorRate,
+                          opt::insertMean,
+                          opt::insertSd };
 
-    double minIdentity = 1.0f - opt::errorRate;
-    Caller caller(opt::bamFile, opt::minOverlap, minIdentity, opt::insertMean, opt::insertSd);
-    std::vector<Deletion> deletions;
-    std::vector<SoftClip> rbClips;
-    std::vector<SoftClip> buffer;
+    Caller caller(opt::bamFile, params);
 
-    SoftClip clip;
-    while (reader.getSoftClip(clip))
-    {
-        if (clip.isForLeftBp()) continue;
-        if (buffer.empty()) {
-            buffer.push_back(clip);
-            continue;
-        }
-        if (buffer[0].getClipPosition() == clip.getClipPosition()) {
-            buffer.push_back(clip);
-            continue;
-        }
-        rbClips.push_back(getOptimalRbClip(buffer));
-        buffer.clear();
-        buffer.push_back(clip);
+    std::vector<SoftClip> clips;
+    caller.readClipsForRightBp(clips);
 
-//        Deletion del;
-//        if (caller.call(clip, del)) {
-//            deletions.push_back(del);
-//        }
-    }
-    if (!buffer.empty()) {
-        rbClips.push_back(getOptimalRbClip(buffer));
-        buffer.clear();
-    }
-    std::cout << rbClips.size() << std::endl;
-    writeToFile(opt::outFile, deletions);
+    std::vector<Deletion> dels;
+    caller.call(clips, dels);
+
+    caller.output(opt::outFile, dels);
 
     return 0;
-}
-
-SoftClip getOptimalRbClip(const std::vector<SoftClip>& buffer) {
-    assert(!buffer.empty());
-    return buffer[0];
-}
-
-void writeToFile(const std::string& filename, std::vector<Deletion>& deletions) {
-
 }
 
 //
@@ -161,6 +133,7 @@ void parseOptions(int argc, char** argv)
             case 'v': opt::verbose++; break;
             case 'i': arg >> opt::insertMean; bInsertMean = true; break;
             case 's': arg >> opt::insertSd; bInsertSd = true; break;
+            case OPT_ENHANCED_MODE: opt::mode = true; break;
             case OPT_HELP:
                 std::cout << DFINDER_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);

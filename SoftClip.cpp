@@ -13,8 +13,7 @@ SoftClip::SoftClip(int referenceId,
                    int matePosition,
                    bool is_reverse,
                    bool is_mate_reverse,
-                   int clippedSize,
-                   int offset,
+                   size_t clippedSize,
                    const std::string &sequence) :
     referenceId(referenceId),
     position(position),
@@ -24,16 +23,9 @@ SoftClip::SoftClip(int referenceId,
     is_reverse(is_reverse),
     is_mate_reverse(is_mate_reverse),
     clippedSize(clippedSize),
-    offset(offset),
     sequence(sequence)
 {
     assert(clippedSize < sequence.size());
-}
-
-// todo
-int SoftClip::getAdjustedPosition() const
-{
-    return clipPosition + offset;
 }
 
 int SoftClip::getLeftmostPosition() const
@@ -85,11 +77,14 @@ int SoftClip::getClipPosition() const
     return clipPosition;
 }
 
+int SoftClip::getClipPositionInRead() const {
+    if (isForRightBp()) return clippedSize;
+    return size() - clippedSize;
+}
+
 const std::string& SoftClip::getSequence() const { return sequence; }
 
-int SoftClip::size() const { return sequence.size(); }
-
-int SoftClip::getClippedSize() const { return clippedSize; }
+size_t SoftClip::size() const { return sequence.size(); }
 
 std::ostream& operator <<(std::ostream& stream, const SoftClip& o) {
   stream << o.referenceId << ":" << o.clipPosition << std::endl;

@@ -1,10 +1,11 @@
 #ifndef CALLER_H
 #define CALLER_H
 
-#include "api/BamReader.h"
 #include "SoftClip.h"
 #include "Deletion.h"
-#include "Thirdparty/multiple_alignment.h"
+#include "Thirdparty/overlapper.h"
+#include "Parameters.h"
+#include "SoftClipReader.h"
 
 #include <string>
 #include <vector>
@@ -16,31 +17,25 @@ struct TargetRegion
     int end;
 };
 
-struct SequenceOverlapPair
-{
-    std::string sequence[2];
-    SequenceOverlap overlap;
-    size_t position[2];
-
-    static bool sortByOverlapLengthDesc(const SequenceOverlapPair& a, const SequenceOverlapPair& b) { return a.overlap.getOverlapLength() > b.overlap.getOverlapLength(); }
-
-};
-
-typedef std::vector<SequenceOverlapPair> SequenceOverlapPairVector;
-
 class Caller
 {
 public:
-    Caller(const std::string& filename,
-           int minOverlap,
-           double minIdentity,
-           int insertMean,
-           int insertStd);
+    Caller(const std::string &filename, const Parameters& params);
+
     virtual ~Caller();
+
+    void readClipsForRightBp(std::vector<SoftClip>& clips);
+
+    void call(const std::vector<SoftClip>& clips, std::vector<Deletion>& dels);
+
+    void output(const std::string& filename, const std::vector<Deletion>& dels);
+
+private:
+    void refineClips(const std::vector<SoftClip>& orig, std::vector<SoftClip>& result);
+    SoftClip chooseBestClipFrom(const std::vector<SoftClip>& buffer);
 
     bool call(const SoftClip& clip, Deletion& del);
 
-private:
     bool call(const SoftClip& clip, const TargetRegion& region, Deletion& del);
 
     bool getSuppMatePositions(const SoftClip& clip, std::vector<int>& matePositions);
@@ -50,14 +45,19 @@ private:
                           std::vector<int>& matePositions,
                           std::vector<TargetRegion>& regions);
 
-    MultipleAlignment buildMultipleAlignment(const SoftClip& clip, const TargetRegion& region);
-    void retrieveMatches(const SoftClip& clip, const TargetRegion& region, SequenceOverlapPairVector& result);
+    bool createDeletionFrom(const SequenceOverlap& overlap, const SoftClip &c1, const SoftClip &c2, Deletion& del);
 
-    BamTools::BamReader reader;
-    int minOverlap;
-    double minIdentity;
-    int insertMean;
-    int insertStd;
+    std::string getReferenceName(int referenceId) const;
+
+    int getId();
+
+    SoftClipReader *pReader;
+    BamTools::BamReader bamReader;
+
+    Parameters params;
+
+    int idCount;
+
 };
 
 #endif // CALLER_H

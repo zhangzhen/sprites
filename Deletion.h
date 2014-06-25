@@ -1,26 +1,61 @@
 #ifndef _DELETION_H_
 #define _DELETION_H_
 
-class Deletion
-{
- public:
+#include <string>
+#include <iostream>
+
+#define SVLEN_THRESHOLD -50
+
+class Deletion {
+public:
     Deletion();
-  Deletion(int referenceId, int start2, int end1, int offset);
-  int getReferenceId() const;
-  int getStart1() const;
-  int getEnd1() const;
-  int getStart2() const;
-  int getEnd2() const;
-  int length() const;
-  bool overlaps(const Deletion& other) const;
-  bool operator <(const Deletion& other) const;
-  // double score() const;
+    Deletion(int id, std::string referenceName, int leftBp, int rightBp, int length,
+             std::string alternative=".", std::string homseq=".", std::string genotype=".");
+
+    virtual ~Deletion();
+
+    bool hasInsertedSeq() const {
+        return alternative.length() > 1;
+    }
+
+    bool hasHomseq() const {
+        return homseq == "-";
+    }
+
+    bool isHomogeneous() const {
+        return genotype == "1/1" || genotype == "1|1";
+    }
+
+    int getId() const;
+
+    std::string getReferenceName() const;
+
+    int getLeftBp() const;
+
+    int getRightBp() const;
+
+    int getLength() const;
+
+    std::string getAlternative() const;
+
+    std::string getHomseq() const;
+
+    std::string getGenotype() const;
+
+    friend std::ostream& operator <<(std::ostream& stream, const Deletion& del);
+
 private:
-  int referenceId;
-  int start2;
-  int end1;
-  int offset;
-  // double score;
+    int id;
+    std::string referenceName;
+    int leftBp;
+    int rightBp;
+    int length;
+    std::string alternative;
+    std::string homseq;
+    std::string genotype;
+
+    bool checkRep() const;
+
 };
 
 #endif /* _DELETION_H_ */

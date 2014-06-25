@@ -20,7 +20,7 @@ private:
     int sd();
 
     BamTools::BamReader reader;
-    std::vector<u_int32_t> inserts;
+    std::vector<int> inserts;
     int insertMean;
     int insertSd;
 };

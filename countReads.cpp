@@ -1,4 +1,4 @@
-#include "DelReader.h"
+#include "DeletionReader.h"
 #include "SoftClipCounter.h"
 #include <getopt.h>
 #include <sstream>
@@ -26,11 +26,11 @@ static const char *COUNTREADS_USAGE_MESSAGE =
 "Count reads in BAMFILE for each deletion given by DELFILE\n"
 "\n"
 "      --help                           display this help and exit\n"
-"      --plus                           count exra reads\n"
 "      -v, --verbose                    display verbose output\n"
 "      -d, --del-file=FILE              all known deletions are stored in FILE\n"
 "      -r, --radius=INT                 the radius for search area (default: 50)\n"
 "      -c, --min-clip=SIZE              a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
+"          --enhanced-mode              enable the enhanced mode, in which reads of type 2 are considered besides type 1\n"
 "\nReport bugs to " PROGRAM_BUGREPORT "\n\n";
 
 namespace opt
@@ -39,29 +39,29 @@ namespace opt
     static std::string bamFile;
     static std::string delFile;
     static unsigned int radius = 50;
-    static bool bPlus = false;
+    static int mode = 0;
 
     static unsigned int minClip = DEFAULT_MIN_CLIP;
 }
 
 static const char* shortopts = "d:c:r:v";
 
-enum { OPT_HELP = 1, OPT_VERSION, OPT_PLUS};
+enum { OPT_HELP = 1, OPT_VERSION, OPT_ENHANCED_MODE };
 
 static const struct option longopts[] = {
-    { "verbose",       no_argument,       NULL, 'v' },
-    { "min-clip",      required_argument, NULL, 'c' },
-    { "radius",        required_argument, NULL, 'r' },
-    { "del-file",      required_argument, NULL, 'd' },
-    { "help",          no_argument,       NULL, OPT_HELP },
-    { "version",       no_argument,       NULL, OPT_VERSION },
-    { "plus",          no_argument,       NULL, OPT_PLUS },
+    { "verbose",        no_argument,       NULL, 'v' },
+    { "min-clip",       required_argument, NULL, 'c' },
+    { "radius",         required_argument, NULL, 'r' },
+    { "del-file",       required_argument, NULL, 'd' },
+    { "help",           no_argument,       NULL, OPT_HELP },
+    { "version",        no_argument,       NULL, OPT_VERSION },
+    { "enhanced-mode",  no_argument,       NULL, OPT_ENHANCED_MODE },
     { NULL, 0, NULL, 0 }
 };
 
 void parseOptions(int argc, char** argv);
 
-void count(const vector<Del>& dels);
+void count(const vector<Deletion>& dels);
 
 void showDiff(const vector<int>& positions);
 
@@ -124,7 +124,7 @@ void parseOptions(int argc, char** argv)
             case 'd': arg >> opt::delFile; break;
             case '?': die = true; break;
             case 'v': opt::verbose++; break;
-            case OPT_PLUS: opt::bPlus = true; break;
+            case OPT_ENHANCED_MODE: opt::mode = true; break;
             case OPT_HELP:
                 std::cout << COUNTREADS_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);
@@ -155,8 +155,8 @@ void parseOptions(int argc, char** argv)
     opt::bamFile = argv[optind++];
 }
 
-void count(const vector<Del>& dels) {
-    SoftClipReader *pReader = new SoftClipReader(opt::bamFile, opt::minClip);
+void count(const vector<Deletion> &dels) {
+    SoftClipReader *pReader = new SoftClipReader(opt::bamFile, opt::minClip, opt::mode);
     SoftClipCounter counter(pReader, opt::radius);
 
     int n1 = 0;
@@ -168,15 +168,15 @@ void count(const vector<Del>& dels) {
     int i = 0;
     // for each deletion count soft-clips that are used to call it
     for (auto itr = dels.begin(); itr != dels.end(); ++itr) {
-        int referenceId = pReader->getReferenceId((*itr).referenceName);
+        int referenceId = pReader->getReferenceId((*itr).getReferenceName());
         if (referenceId == -1) {
             i++;
             continue;
         }
-        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).leftBp << "\t[left]" << endl;
-        int cntLeftBp = counter.countLeftBp(referenceId, (*itr).leftBp, opt::bPlus);
-        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).rightBp << "\t[right]" << endl;
-        int cntRightBp = counter.countRightBp(referenceId, (*itr).rightBp, opt::bPlus);
+        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).getLeftBp() << "\t[left]" << endl;
+        int cntLeftBp = counter.countLeftBp(referenceId, (*itr).getLeftBp());
+        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).getRightBp() << "\t[right]" << endl;
+        int cntRightBp = counter.countRightBp(referenceId, (*itr).getRightBp());
         cout << cntLeftBp << "\t" << cntRightBp << endl;
         int s = cntLeftBp + cntRightBp;
         if (s == 0) {
@@ -213,9 +213,9 @@ void showDiff(const vector<int> &positions)
 }
 
 void fetchClippingPositions(vector<int> &positions) {
-    SoftClipReader reader(opt::bamFile, opt::minClip);
+    SoftClipReader reader(opt::bamFile, opt::minClip, opt::mode);
     SoftClip clip;
-    while (reader.getSoftClip(clip, opt::bPlus)) {
+    while (reader.getSoftClip(clip)) {
         if (clip.isForRightBp()) positions.push_back(clip.getClipPosition());
     }
 }

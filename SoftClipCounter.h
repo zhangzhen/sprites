@@ -8,8 +8,8 @@ class SoftClipCounter
 {
 public:
     SoftClipCounter(SoftClipReader *reader, int radius);
-    int countLeftBp(int refId, int position, int plus=false);
-    int countRightBp(int refId, int position, int plus=false);
+    int countLeftBp(int refId, int position);
+    int countRightBp(int refId, int position);
 
 private:
     SoftClipReader *reader;
