@@ -58,6 +58,7 @@ void Caller::output(const string &filename, const std::vector<Deletion> &dels)
     copy(dels.begin(), dels.end(), ostream_iterator<Deletion>(out, "\n"));
 }
 
+// require orig be ordered by clipping position
 void Caller::refineClips(const std::vector<SoftClip> &orig, std::vector<SoftClip> &result)
 {
     std::vector<SoftClip> buffer;
@@ -122,6 +123,7 @@ bool Caller::call(const SoftClip &clip, const TargetRegion &region, Deletion &de
         }
     }
 
+    sort(buffer.begin(), buffer.end(), [](const SoftClip& c1, const SoftClip& c2) { return c1.getClipPosition() < c2.getClipPosition(); });
     vector<SoftClip> refined;
     refineClips(buffer, refined);
 
