@@ -32,7 +32,8 @@ public:
 
 private:
     void refineClips(const std::vector<SoftClip>& orig, std::vector<SoftClip>& result);
-    SoftClip chooseBestClipFrom(const std::vector<SoftClip>& buffer);
+    SoftClip chooseBestClipFrom(std::vector<SoftClip> &buffer);
+    void displayBuffer(const std::vector<SoftClip>& buffer);
 
     bool call(const SoftClip& clip, Deletion& del);
 

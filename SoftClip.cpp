@@ -3,6 +3,12 @@
 #include <algorithm>
 #include <iostream>
 
+
+size_t SoftClip::getClippedSize() const
+{
+    return clippedSize;
+}
+
 SoftClip::SoftClip() {
 }
 

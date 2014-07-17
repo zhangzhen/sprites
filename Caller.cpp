@@ -73,19 +73,45 @@ void Caller::refineClips(const std::vector<SoftClip> &orig, std::vector<SoftClip
             continue;
         }
         result.push_back(chooseBestClipFrom(buffer));
+        displayBuffer(buffer);
         buffer.clear();
         buffer.push_back(*it);
     }
     if (!buffer.empty()) {
         result.push_back(chooseBestClipFrom(buffer));
+        displayBuffer(buffer);
         buffer.clear();
     }
 }
 
-SoftClip Caller::chooseBestClipFrom(const std::vector<SoftClip> &buffer)
+SoftClip Caller::chooseBestClipFrom(std::vector<SoftClip> &buffer)
 {
     assert(!buffer.empty());
-    return buffer[0];
+    sort(buffer.begin(), buffer.end(), [](const SoftClip& c1, const SoftClip& c2) { return c1.getClippedSize() < c2.getClippedSize(); });
+    return buffer[buffer.size() - 1];
+}
+
+void Caller::displayBuffer(const std::vector<SoftClip> &buffer)
+{
+    if (buffer.size() == 1) {
+        //cout << buffer[0].getSequence() << endl;
+        return;
+    }
+    int min = buffer[0].getClippedSize();
+    int max = buffer[buffer.size() - 1].getClippedSize();
+
+    cout << endl << ">>>>>>>>>>>>>>>\t" << buffer[0].getClipPosition() << "\t" << buffer.size() << endl;
+    for (auto itr = buffer.begin(); itr != buffer.end(); ++itr) {
+        string s;
+        if ((*itr).isForRightBp()) {
+            s.append(max - (*itr).getClippedSize(), ' ');
+        } else {
+            s.append((*itr).getClippedSize() - min, ' ');
+        }
+        s.append((*itr).getSequence());
+        cout << s << endl;
+    }
+
 }
 
 bool Caller::call(const SoftClip &clip, Deletion &del)
@@ -123,17 +149,19 @@ bool Caller::call(const SoftClip &clip, const TargetRegion &region, Deletion &de
         }
     }
 
-    sort(buffer.begin(), buffer.end(), [](const SoftClip& c1, const SoftClip& c2) { return c1.getClipPosition() < c2.getClipPosition(); });
-    vector<SoftClip> refined;
-    refineClips(buffer, refined);
+//    sort(buffer.begin(), buffer.end(), [](const SoftClip& c1, const SoftClip& c2) { return c1.getClipPosition() < c2.getClipPosition(); });
+//    vector<SoftClip> refined;
+//    refineClips(buffer, refined);
 
-    for (auto it = refined.begin(); it != refined.end(); ++it) {
+    for (auto it = buffer.begin(); it != buffer.end(); ++it) {
         SequenceOverlap overlap = Overlapper::computeOverlap(clip.getSequence(), (*it).getSequence(), ungapped_params);
         if (overlap.getOverlapLength() >= params.minOverlap &&
                 overlap.getPercentIdentity() / 100 >= params.minIdentity)
         {
-            overlap.printAlignment(clip.getSequence(), (*it).getSequence());
-            if (createDeletionFrom(overlap, clip, (*it), del)) return true;
+            if (createDeletionFrom(overlap, clip, (*it), del)) {
+                overlap.printAlignment(clip.getSequence(), (*it).getSequence());
+                return true;
+            }
         }
     }
 

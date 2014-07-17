@@ -43,6 +43,8 @@ public:
 
     friend std::ostream& operator <<(std::ostream& stream, const SoftClip& o);
 
+    size_t getClippedSize() const;
+
 private:
     bool isTypeIForLeftBp() const;
     bool isTypeIIForLeftBp() const;
