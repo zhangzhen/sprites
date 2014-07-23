@@ -30,6 +30,25 @@ Caller::~Caller() {
 
 void Caller::readClipsForRightBp(std::vector<SoftClip> &clips)
 {
+    SequenceOverlap overlap = Overlapper::computeOverlapSW("TTATCCACCTGTTTCCACCACCTCTCCCTAGAGATGCAGCTGCTCTCATGCCCCTGAATT"
+                                                           "AGACTCTGAGCCTACAGAGTGCAGAGCCAGCCCAGGACAGGGGACAATTACACAGGCGAA"
+                                                           "GGAGGATGGAGCAGGTTGTCCATGGCCTCCCATCTGCTCCATCCTCCTTCGCCTCATTCA"
+                                                           "GGCGATGGTCCTAAGAACCGAACCTTCCAATCCCAAAACTCTAGACAGGTATCCAATACC"
+                                                           "TACTGTGTTTTTGTAGAAGAAGTACAGCACCATGTTGGCAAGTCGGGAGTAGCACCAATG"
+                                                           "C",
+                                                           "GCCTACAGAGTGCAGAGCCAGCCCAGGACAGGGGACAATTACACAGGCGATGGTCCTAAGAACCGAACCTTCCAATCCCAAAACTCTAGACAGGTATCCAA",
+                                                           ungapped_params);
+
+    cout << endl;
+
+    overlap.printAlignment("TTATCCACCTGTTTCCACCACCTCTCCCTAGAGATGCAGCTGCTCTCATGCCCCTGAATT"
+                           "AGACTCTGAGCCTACAGAGTGCAGAGCCAGCCCAGGACAGGGGACAATTACACAGGCGAA"
+                           "GGAGGATGGAGCAGGTTGTCCATGGCCTCCCATCTGCTCCATCCTCCTTCGCCTCATTCA"
+                           "GGCGATGGTCCTAAGAACCGAACCTTCCAATCCCAAAACTCTAGACAGGTATCCAATACC"
+                           "TACTGTGTTTTTGTAGAAGAAGTACAGCACCATGTTGGCAAGTCGGGAGTAGCACCAATG"
+                           "C",
+                           "GCCTACAGAGTGCAGAGCCAGCCCAGGACAGGGGACAATTACACAGGCGATGGTCCTAAGAACCGAACCTTCCAATCCCAAAACTCTAGACAGGTATCCAA");
+
     std::vector<SoftClip> buffer;
 
     SoftClip clip;
@@ -159,6 +178,7 @@ bool Caller::call(const SoftClip &clip, const TargetRegion &region, Deletion &de
                 overlap.getPercentIdentity() / 100 >= params.minIdentity)
         {
             if (createDeletionFrom(overlap, clip, (*it), del)) {
+                cout << endl << ">>>>>>>>>>>>>>>" << endl;
                 overlap.printAlignment(clip.getSequence(), (*it).getSequence());
                 return true;
             }
