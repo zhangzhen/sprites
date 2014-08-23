@@ -11,6 +11,7 @@
 #include "Caller.h"
 #include "Helper.h"
 #include "Parameters.h"
+#include "clip.h"
 
 //
 // Getopt
@@ -32,10 +33,11 @@ static const char *DFINDER_USAGE_MESSAGE =
 "\n"
 "      --help                           display this help and exit\n"
 "      -v, --verbose                    display verbose output\n"
+"      -r, --reffile=FILE           read the reference sequence from FILE"
 "      -o, --outfile=FILE               write the deletion calls to FILE (default: BAMFILE.calls)\n"
 "      -e, --error-rate=F               the maximum error rate allowed between two sequences to consider them overlapped (default: 0.04)\n"
 "      -m, --min-overlap=LEN            minimum overlap required between two reads (default: 31)\n"
-"      -c, --min-clip=SIZE              a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
+"      -n, --allowed-num=SIZE              a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
 "\nThe following two option must appear together (if ommitted, attempt ot learn the mean and the standard deviation of insert size):\n"
 "      -i, --insert-mean=N              the mean of insert size\n"
 "          --enhanced-mode              enable the enhanced mode, in which reads of type 2 are considered besides type 1\n"
@@ -46,10 +48,11 @@ namespace opt
 {
     static unsigned int verbose;
     static std::string bamFile;
+    static std::string refFile;
     static std::string outFile;
     static double errorRate = 0.04;
     static int minOverlap = DEFAULT_MIN_OVERLAP;
-    static int minClip = 5;
+    static int allowedNum = 5;
     static int mode = 0;
 
     static bool bLearnInsert = true;
@@ -57,14 +60,15 @@ namespace opt
     static int insertSd;
 }
 
-static const char* shortopts = "o:e:m:c:i:s:v";
+static const char* shortopts = "o:r:e:m:n:i:s:v";
 
 enum { OPT_HELP = 1, OPT_VERSION, OPT_ENHANCED_MODE };
 
 static const struct option longopts[] = {
     { "verbose",        no_argument,       NULL, 'v' },
     { "min-overlap",    required_argument, NULL, 'm' },
-    { "min-clip",       required_argument, NULL, 'c' },
+    { "allowed-num",       required_argument, NULL, 'n' },
+    {"reffile", required_argument, NULL, 'r'},
     { "outfile",        required_argument, NULL, 'o' },
     { "error-rate",     required_argument, NULL, 'e' },
     { "insert-mean",    required_argument, NULL, 'i' },
@@ -92,12 +96,29 @@ int main(int argc, char *argv[]) {
         std::cout << "Sd: " << opt::insertSd << std::endl;
     }
 
-    Parameters params = { opt::minClip,
+    Parameters params = { opt::allowedNum,
                           opt::mode,
                           opt::minOverlap,
                           1.0f - opt::errorRate,
                           opt::insertMean,
                           opt::insertSd };
+
+/*
+    BamTools::BamReader bamReader;
+    bamReader.Open(opt::bamFile);
+
+    ClipReader creader(opt::bamFile, opt::allowedNum, opt::mode);
+    std::vector<Deletion> deletions;
+
+    AbstractClip *pClip;
+    while (!(pClip = creader.nextClip())) {
+        try {
+            deletions.push_back(pClip->call(bamReader, faidx,
+                                            opt::insertMean + 3 * opt::insertSd, opt::minOverlap, 1.0f - opt::errorRate));
+        } catch (ErrorException& ex) {
+        }
+    }
+*/
 
     Caller caller(opt::bamFile, params);
 
@@ -125,8 +146,9 @@ void parseOptions(int argc, char** argv)
         std::istringstream arg(optarg != NULL ? optarg : "");
         switch (c)
         {
-            case 'c': arg >> opt::minClip; break;
+            case 'n': arg >> opt::allowedNum; break;
             case 'm': arg >> opt::minOverlap; break;
+            case 'r' : arg >> opt::refFile; break;
             case 'o': arg >> opt::outFile; break;
             case 'e': arg >> opt::errorRate; break;
             case '?': die = true; break;
