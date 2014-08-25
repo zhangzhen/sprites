@@ -4,11 +4,8 @@
 #include <string>
 #include <iostream>
 
-#define SVLEN_THRESHOLD -50
-
 class Deletion {
 public:
-    Deletion();
     Deletion(int id, std::string referenceName, int leftBp, int rightBp, int length,
              std::string alternative=".", std::string homseq=".", std::string genotype=".");
 

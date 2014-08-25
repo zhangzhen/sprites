@@ -1,5 +1,6 @@
 #include "FaidxWrapper.h"
 #include "error.h"
+#include <algorithm>
 
 using namespace std;
 
@@ -22,6 +23,8 @@ size_t FaidxWrapper::size()
 string FaidxWrapper::fetch(const string &chrom, int start, int end)
 {
     int len;
-    char *s = faidx_fetch_seq(fai, chrom.c_str(), start, end, len);
-    return string(s);
+    char *s = faidx_fetch_seq(fai, (char *)chrom.c_str(), start, end, &len);
+    string str(s);
+    transform(str.begin(), str.end(),str.begin(), ::toupper);
+    return str;
 }

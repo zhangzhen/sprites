@@ -31,7 +31,9 @@ AbstractClip::~AbstractClip() {
 
 Deletion AbstractClip::call(BamReader &reader, FaidxWrapper &faidx, int insLength, int minOverlap, double minIdentity)
 {
-    return call(faidx, tRegions(reader, insLength), minOverlap, minIdentity);
+    vector<TargetRegion> regions;
+    tRegions(reader, insLength, regions);
+    return call(faidx, regions, minOverlap, minIdentity);
 }
 
 void AbstractClip::tRegions(BamReader &reader, int insLength, std::vector<TargetRegion> &regions) {
@@ -43,8 +45,9 @@ void AbstractClip::tRegions(BamReader &reader, int insLength, std::vector<Target
 
     sort(anchors.begin(), anchors.end());
 
+    regions.push_back(tRegion(Helper::getReferenceName(reader, referenceId), anchors[0], insLength));
+
     if (anchors.size() == 1) {
-        regions.push_back(tRegion(anchors[0], insLength));
         return;
     }
 
@@ -54,8 +57,8 @@ void AbstractClip::tRegions(BamReader &reader, int insLength, std::vector<Target
 
     for (size_t i = 1; i < diffs.size(); ++i) {
         int start;
-        TargetRegion tr = tRegion(Helper::getReferenceName(referenceId), anchors[i], insLength);
-        if (abs(diffs[i]) <= length() + insLength) {
+        TargetRegion tr = tRegion(Helper::getReferenceName(reader, referenceId), anchors[i], insLength);
+        if (diffs[i] <= length() + insLength) {
             start = regions.back().start;
             regions.pop_back();
         } else {
@@ -83,9 +86,11 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
                     : (*it).start + overlap.match[0].end;
             int len = leftBp - rightBp;
             if (overlap.getOverlapLength() < cigar[0].Length) len += cigar[0].Length - overlap.getOverlapLength();
-            return Deletion(referenceId,leftBp, rightBp, len);
+            if (len > Helper::SVLEN_THRESHOLD) error("Deletion is too short.");
+            return Deletion(0, (*it).referenceName, leftBp, rightBp, len);
         }
     }
+    error("No deletion is found.");
 }
 
 TargetRegion ForwardBClip::tRegion(const string &referenceName, int anchor, int insLength) {
@@ -117,11 +122,6 @@ ReverseBClip::ReverseBClip(int referenceId, int mapPosition, int clipPosition, i
 
 }
 
-Deletion ReverseBClip::call(const std::vector<Reference> &references, int minOverlap, double minIdentity)
-{
-
-}
-
 void ReverseBClip::fetchAnchors(BamReader &reader, int insLength, std::vector<int> &anchors) {
     anchors.push_back(matePosition);
 }
@@ -130,7 +130,12 @@ TargetRegion ReverseBClip::tRegion(const string &referenceName, int anchor, int 
     return { referenceName,
              anchor,
              anchor + insLength
-           };
+    };
+}
+
+Deletion ReverseBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
+{
+
 }
 
 
@@ -171,7 +176,8 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
             leftBp--;   // left breakpoint refers the position of the last base prior to the clipped part conforming to the VCF format.
             int len = leftBp - rightBp;
             if (overlap.getOverlapLength() < cigar[cigar.size() - 1].Length) len += cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
-            return Deletion(referenceId,leftBp, rightBp, len);
+            if (len > Helper::SVLEN_THRESHOLD) error("Deletion is too short.");
+            return Deletion(0, (*it).referenceName,leftBp, rightBp, len);
         }
     }
     error("No deletion is found.");
@@ -198,7 +204,7 @@ TargetRegion ReverseEClip::tRegion(const string &referenceName, int anchor, int 
              anchor + length() };
 }
 
-string TargetRegion::sequence(FaidxWrapper& faidx)
+string TargetRegion::sequence(FaidxWrapper& faidx) const
 {
     return faidx.fetch(referenceName, start, end);
 }

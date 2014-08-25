@@ -13,6 +13,7 @@ std::string stripDirectories(const std::string& filename);
 
 namespace Helper {
 std::string getReferenceName(BamTools::BamReader& reader, int referenceId);
+const int SVLEN_THRESHOLD = -50;
 }
 
 #endif // HELPER_H

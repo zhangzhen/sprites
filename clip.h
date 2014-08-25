@@ -4,6 +4,7 @@
 #include "api/BamAux.h"
 #include "api/BamReader.h"
 #include "Deletion.h"
+#include "FaidxWrapper.h"
 
 #include <string>
 #include <vector>
@@ -14,7 +15,7 @@ struct TargetRegion
     int start;
     int end;
 
-    std::string sequence(FaidxWrapper &faidx);
+    std::string sequence(FaidxWrapper &faidx) const;
 };
 
 

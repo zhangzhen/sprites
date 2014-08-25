@@ -3,14 +3,14 @@
 #include <algorithm>
 #include <getopt.h>
 #include <sstream>
+#include <iterator>
 
 #include "error.h"
 #include "Deletion.h"
-#include "SoftClipReader.h"
+#include "ClipReader.h"
 #include "BamStatCalculator.h"
-#include "Caller.h"
 #include "Helper.h"
-#include "Parameters.h"
+//#include "Parameters.h"
 #include "clip.h"
 
 //
@@ -80,6 +80,7 @@ static const struct option longopts[] = {
 };
 
 void parseOptions(int argc, char** argv);
+void output(const std::string& filename, const std::vector<Deletion>& dels);
 
 //
 // Main
@@ -96,30 +97,40 @@ int main(int argc, char *argv[]) {
         std::cout << "Sd: " << opt::insertSd << std::endl;
     }
 
-    Parameters params = { opt::allowedNum,
-                          opt::mode,
-                          opt::minOverlap,
-                          1.0f - opt::errorRate,
-                          opt::insertMean,
-                          opt::insertSd };
-
-/*
-    BamTools::BamReader bamReader;
-    bamReader.Open(opt::bamFile);
+//    Parameters params = { opt::allowedNum,
+//                          opt::mode,
+//                          opt::minOverlap,
+//                          1.0f - opt::errorRate,
+//                          opt::insertMean,
+//                          opt::insertSd };
 
     ClipReader creader(opt::bamFile, opt::allowedNum, opt::mode);
-    std::vector<Deletion> deletions;
+
+    BamTools::BamReader bamReader;
+    if (!bamReader.Open(opt::bamFile))
+        error("Could not open the input BAM file.");
+    if (!bamReader.LocateIndex())
+        error("Could not locate the index file");
+
+    FaidxWrapper faidx(opt::refFile);
+
+    int insLength = opt::insertMean + 3 * opt::insertSd;
+    double identityRate = 1.0f - opt::errorRate;
 
     AbstractClip *pClip;
-    while (!(pClip = creader.nextClip())) {
+    std::vector<Deletion> deletions;
+    while ((pClip = creader.nextClip())) {
         try {
-            deletions.push_back(pClip->call(bamReader, faidx,
-                                            opt::insertMean + 3 * opt::insertSd, opt::minOverlap, 1.0f - opt::errorRate));
+            auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate);
+            deletions.push_back(del);
         } catch (ErrorException& ex) {
+            std::cout << ex.getMessage() << std::endl;
         }
     }
-*/
 
+    output(opt::outFile, deletions);
+
+/*
     Caller caller(opt::bamFile, params);
 
     std::vector<SoftClip> clips;
@@ -129,6 +140,7 @@ int main(int argc, char *argv[]) {
     caller.call(clips, dels);
 
     caller.output(opt::outFile, dels);
+*/
 
     return 0;
 }
@@ -191,6 +203,12 @@ void parseOptions(int argc, char** argv)
         die = true;
     }
 
+    if(opt::refFile.empty())
+    {
+        std::cerr << PROGRAM_NAME ": the reference file must be specified\n";
+        die = true;
+    }
+
     if (die)
     {
         std::cout << "\n" << DFINDER_USAGE_MESSAGE;
@@ -210,4 +228,10 @@ void parseOptions(int argc, char** argv)
         opt::outFile = out_prefix + ".calls";
     }
 
+}
+
+void output(const std::string &filename, const std::vector<Deletion> &dels) {
+    std::ofstream out(filename.c_str());
+    out << "ID\tCHROM\tSTART\tEND\tTYPE\tLENGTH\tALT\tHOMSEQ\tGENOTYPE" << std::endl;
+    copy(dels.begin(), dels.end(), std::ostream_iterator<Deletion>(out, "\n"));
 }

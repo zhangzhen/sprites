@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 2.8)
 
 project(dfinder)
 
-include_directories($ENV{BAMTOOLS_HOME}/include)
-link_directories($ENV{BAMTOOLS_HOME}/lib)
+include_directories($ENV{BAMTOOLS_HOME}/include $ENV{SAMTOOLS_HOME})
+link_directories($ENV{BAMTOOLS_HOME}/lib $ENV{SAMTOOLS_HOME})
 add_definitions(-std=c++0x)
 
-add_executable(dfinder main.cpp SoftClip.cpp error.cpp Helper.cpp
+add_executable(dfinder main.cpp error.cpp Helper.cpp
 Deletion.cpp Thirdparty/overlapper.cpp Thirdparty/multiple_alignment.cpp
-BamStatCalculator.cpp Caller.cpp SoftClipReader.cpp clip.cpp FaidxWrapper.cpp)
-target_link_libraries(dfinder bamtools)
+BamStatCalculator.cpp ClipReader.cpp clip.cpp FaidxWrapper.cpp)
+target_link_libraries(dfinder bamtools bam)
 
 add_executable(countReads countReads.cpp Deletion.cpp DeletionReader.cpp SoftClip.cpp SoftClipReader.cpp
 SoftClipCounter.cpp error.cpp)

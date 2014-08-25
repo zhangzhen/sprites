@@ -1,11 +1,8 @@
 #include "Deletion.h"
+#include "Helper.h"
 #include <cassert>
 
 using namespace std;
-
-Deletion::Deletion()
-{
-}
 
 Deletion::Deletion(int id,
                    std::string referenceName,
@@ -80,5 +77,5 @@ std::ostream& operator <<(ostream &stream, const Deletion &del)
 bool Deletion::checkRep() const
 {
     return (rightBp > leftBp) &&
-            (length <= SVLEN_THRESHOLD);
+            (length <= Helper::SVLEN_THRESHOLD);
 }
