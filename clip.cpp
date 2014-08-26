@@ -76,13 +76,13 @@ ForwardBClip::ForwardBClip(int referenceId, int mapPosition, int clipPosition, i
 
 Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
-    for (auto it = regions.begin(); it != regions.end(); ++it) {
+    for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
         SequenceOverlap overlap = Overlapper::computeOverlapSW((*it).sequence(faidx), sequence, ungapped_params);
         if (overlap.getOverlapLength() > minOverlap &&
                 overlap.getPercentIdentity() >= minIdentity &&
                 overlap.match[1].start == 0) {
             int rightBp = clipPosition - 1;
-            int leftBp = (overlap.getOverlapLength()  > cigar[0].Length) ? (*it).start + overlap.match[0].start + cigar[0].Length -1
+            int leftBp = (overlap.getOverlapLength()  > cigar[0].Length) ? (*it).start + overlap.match[0].start + cigar[0].Length - 1
                     : (*it).start + overlap.match[0].end;
             int len = leftBp - rightBp;
             if (overlap.getOverlapLength() < cigar[0].Length) len += cigar[0].Length - overlap.getOverlapLength();
@@ -104,13 +104,13 @@ void ForwardBClip::fetchAnchors(BamReader &reader, int insLength, std::vector<in
     int start = leftmostPosition();
     int end = start + insLength + length();
 
-    if (!reader.SetRegion(referenceId, start, referenceId, end))
+    if (!reader.SetRegion(referenceId, start - 1, referenceId, end))
         error("Could not set the region.");
 
     BamAlignment al;
     while(reader.GetNextAlignmentCore(al)) {
-        if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.Position > al.MatePosition) {
-            anchors.push_back(al.MatePosition);
+        if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.RefID == al.MateRefID && al.Position > al.MatePosition) {
+            anchors.push_back(al.MatePosition + 1);
         }
     }
 
@@ -187,13 +187,13 @@ void ReverseEClip::fetchAnchors(BamReader &reader, int insLength, std::vector<in
     int end = leftmostPosition() + length();
     int start = end - insLength + length();
 
-    if (!reader.SetRegion(referenceId, start, referenceId, end))
+    if (!reader.SetRegion(referenceId, start - 1, referenceId, end))
         error("Could not set the region.");
 
     BamAlignment al;
     while(reader.GetNextAlignmentCore(al)) {
-        if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.Position < al.MatePosition) {
-            anchors.push_back(al.MatePosition);
+        if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.RefID == al.MateRefID && al.Position < al.MatePosition) {
+            anchors.push_back(al.MatePosition + 1);
         }
     }
 }
@@ -206,5 +206,5 @@ TargetRegion ReverseEClip::tRegion(const string &referenceName, int anchor, int 
 
 string TargetRegion::sequence(FaidxWrapper& faidx) const
 {
-    return faidx.fetch(referenceName, start, end);
+    return faidx.fetch(referenceName, start - 1, end - 1);
 }
