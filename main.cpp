@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <sstream>
 #include <iterator>
+#include <queue>
 
 #include "error.h"
 #include "Deletion.h"
@@ -128,7 +129,54 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    output(opt::outFile, deletions);
+    sort(deletions.begin(), deletions.end(), [](const Deletion &d1, const Deletion &d2) {
+        if (d1.getLeftBp() < d2.getLeftBp()) return true;
+        if (d1.getLeftBp() == d2.getLeftBp() && d1.getRightBp() > d2.getRightBp()) return true;
+        return false;
+    });
+
+    std::vector<std::vector<Deletion> > delClusters;
+    auto first = deletions.begin();
+    auto last = deletions.end();
+    auto next = first;
+    auto prev = first;
+
+    std::queue<Deletion> q;
+
+    while (++next != last) {
+        if ((*first).contains(*next)) {
+            first = next;
+            prev = first;
+            continue;
+        }
+        q.push(*prev);
+        if ((*first).dovetailsTo(*next)) {
+            prev = next;
+            continue;
+        }
+        std::vector<Deletion> dClu;
+        while (!q.empty()) {
+            dClu.push_back(q.front());
+            q.pop();
+        }
+        delClusters.push_back(dClu);
+        first = next;
+        prev = first;
+    }
+    q.push(*prev);
+    std::vector<Deletion> dClu;
+    while (!q.empty()) {
+        dClu.push_back(q.front());
+        q.pop();
+    }
+    delClusters.push_back(dClu);
+
+    std::vector<Deletion> mergedDels;
+    transform(delClusters.begin(), delClusters.end(), back_inserter(mergedDels), [](const std::vector<Deletion> &dels) {
+       return dels[0];
+    });
+
+    output(opt::outFile, mergedDels);
 
 /*
     Caller caller(opt::bamFile, params);
@@ -232,6 +280,6 @@ void parseOptions(int argc, char** argv)
 
 void output(const std::string &filename, const std::vector<Deletion> &dels) {
     std::ofstream out(filename.c_str());
-    out << "ID\tCHROM\tSTART\tEND\tTYPE\tLENGTH\tALT\tHOMSEQ\tGENOTYPE" << std::endl;
+    out << "CHROM\tSTART\tEND\tTYPE\tLENGTH\tALT\tHOMSEQ\tGENOTYPE" << std::endl;
     copy(dels.begin(), dels.end(), std::ostream_iterator<Deletion>(out, "\n"));
 }

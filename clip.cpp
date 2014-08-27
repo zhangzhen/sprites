@@ -87,7 +87,7 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
             int len = leftBp - rightBp;
             if (overlap.getOverlapLength() < cigar[0].Length) len += cigar[0].Length - overlap.getOverlapLength();
             if (len > Helper::SVLEN_THRESHOLD) error("Deletion is too short.");
-            return Deletion(0, (*it).referenceName, leftBp, rightBp, len);
+            return Deletion((*it).referenceName, leftBp, rightBp, len);
         }
     }
     error("No deletion is found.");
@@ -177,7 +177,7 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
             int len = leftBp - rightBp;
             if (overlap.getOverlapLength() < cigar[cigar.size() - 1].Length) len += cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
             if (len > Helper::SVLEN_THRESHOLD) error("Deletion is too short.");
-            return Deletion(0, (*it).referenceName,leftBp, rightBp, len);
+            return Deletion((*it).referenceName,leftBp, rightBp, len);
         }
     }
     error("No deletion is found.");

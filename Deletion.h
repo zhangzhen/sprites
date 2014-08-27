@@ -6,7 +6,7 @@
 
 class Deletion {
 public:
-    Deletion(int id, std::string referenceName, int leftBp, int rightBp, int length,
+    Deletion(std::string referenceName, int leftBp, int rightBp, int length,
              std::string alternative=".", std::string homseq=".", std::string genotype=".");
 
     virtual ~Deletion();
@@ -22,8 +22,6 @@ public:
     bool isHomogeneous() const {
         return genotype == "1/1" || genotype == "1|1";
     }
-
-    int getId() const;
 
     std::string getReferenceName() const;
 
@@ -41,8 +39,10 @@ public:
 
     friend std::ostream& operator <<(std::ostream& stream, const Deletion& del);
 
+    bool contains(const Deletion &other);
+    bool dovetailsTo(const Deletion &other);
+
 private:
-    int id;
     std::string referenceName;
     int leftBp;
     int rightBp;

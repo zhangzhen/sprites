@@ -4,15 +4,13 @@
 
 using namespace std;
 
-Deletion::Deletion(int id,
-                   std::string referenceName,
+Deletion::Deletion(std::string referenceName,
                    int leftBp,
                    int rightBp,
                    int length,
                    std::string alternative,
                    std::string homseq,
                    std::string genotype) :
-    id(id),
     referenceName(referenceName),
     leftBp(leftBp),
     rightBp(rightBp),
@@ -26,10 +24,6 @@ Deletion::Deletion(int id,
 Deletion::~Deletion() {
 }
 
-int Deletion::getId() const
-{
-    return id;
-}
 std::string Deletion::getReferenceName() const
 {
     return referenceName;
@@ -65,9 +59,19 @@ std::string Deletion::getGenotype() const
     return genotype;
 }
 
+bool Deletion::contains(const Deletion &other)
+{
+    return leftBp <= other.leftBp && rightBp >= other.rightBp;
+}
+
+bool Deletion::dovetailsTo(const Deletion &other)
+{
+    return leftBp < other.leftBp && rightBp < other.rightBp && rightBp > other.leftBp;
+}
+
 std::ostream& operator <<(ostream &stream, const Deletion &del)
 {
-    stream << del.id << "\t" << del.referenceName << "\t"
+    stream << del.referenceName << "\t"
            << del.leftBp << "\t" << del.rightBp << "\tDEL\t"
            << del.length << "\t" << del.alternative << "\t"
            << del.homseq << "\t" << del.genotype;
