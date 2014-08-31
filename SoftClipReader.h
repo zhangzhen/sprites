@@ -3,7 +3,6 @@
 
 #include "SoftClip.h"
 #include "api/BamReader.h"
-#include "clip.h"
 
 #include <string>
 

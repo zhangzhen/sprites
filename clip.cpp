@@ -175,6 +175,9 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
                     : clipPosition;
             leftBp--;   // left breakpoint refers the position of the last base prior to the clipped part conforming to the VCF format.
             int len = leftBp - rightBp;
+            if (rightBp == 19344746) {
+                cout << "error: right breakpoint has a problem." << endl;
+            }
             if (overlap.getOverlapLength() < cigar[cigar.size() - 1].Length) len += cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
             if (len > Helper::SVLEN_THRESHOLD) error("Deletion is too short.");
             return Deletion((*it).referenceName,leftBp, rightBp, len);
