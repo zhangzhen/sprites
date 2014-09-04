@@ -76,17 +76,26 @@ ForwardBClip::ForwardBClip(int referenceId, int mapPosition, int clipPosition, i
 
 Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
+//    error("No deletion is found.");
     for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
-        SequenceOverlap overlap = Overlapper::computeOverlapSW((*it).sequence(faidx), sequence, ungapped_params);
+        string s1 = (*it).sequence(faidx);
+        reverse(s1.begin(), s1.end());
+        string s2 = sequence;
+        reverse(s2.begin(), s2.end());
+        SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, s2, ungapped_params);
+        for (size_t i = 0; i < 2; ++i)
+            overlap.match[i].flipStrand(overlap.length[i]);
         if (overlap.getOverlapLength() > minOverlap &&
-                overlap.getPercentIdentity() >= minIdentity &&
-                overlap.match[1].start == 0) {
+                overlap.getPercentIdentity() >= minIdentity) {
             int rightBp = clipPosition - 1;
             int leftBp = (overlap.getOverlapLength()  > cigar[0].Length) ? (*it).start + overlap.match[0].start + cigar[0].Length - 1
                     : (*it).start + overlap.match[0].end;
             int len = leftBp - rightBp;
             if (overlap.getOverlapLength() < cigar[0].Length) len += cigar[0].Length - overlap.getOverlapLength();
-            if (len > Helper::SVLEN_THRESHOLD) error("Deletion is too short.");
+            if (len > Helper::SVLEN_THRESHOLD) continue;
+//            if (rightBp == 2806409) {
+//                cout << "Debug: abnormal length" << endl;
+//            }
             return Deletion((*it).referenceName, leftBp, rightBp, len);
         }
     }
@@ -165,21 +174,23 @@ ReverseEClip::ReverseEClip(int referenceId, int mapPosition, int clipPosition, i
 
 Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
+    error("No deletion is found.");
     for (auto it = regions.begin(); it != regions.end(); ++it) {
-        SequenceOverlap overlap = Overlapper::computeOverlapSW((*it).sequence(faidx), sequence, ungapped_params);
+        string s1 = (*it).sequence(faidx);
+        SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, sequence, ungapped_params);
         if (overlap.getOverlapLength() > minOverlap &&
-                overlap.getPercentIdentity() >= minIdentity &&
-                overlap.match[1].end == overlap.length[1] - 1) {
+                overlap.getPercentIdentity() >= minIdentity) {
             int rightBp = (*it).start + overlap.match[0].start - 1;
             int leftBp = (overlap.getOverlapLength()  > cigar[cigar.size() - 1].Length) ? clipPosition - overlap.getOverlapLength() + cigar[cigar.size() - 1].Length
                     : clipPosition;
             leftBp--;   // left breakpoint refers the position of the last base prior to the clipped part conforming to the VCF format.
             int len = leftBp - rightBp;
-            if (rightBp == 19344746) {
-                cout << "error: right breakpoint has a problem." << endl;
-            }
+//            if (rightBp == 97474921) {
+//                overlap.printAlignment(s1, sequence);
+//                cout << "debug: right breakpoint has a problem." << endl;
+//            }
             if (overlap.getOverlapLength() < cigar[cigar.size() - 1].Length) len += cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
-            if (len > Helper::SVLEN_THRESHOLD) error("Deletion is too short.");
+            if (len > Helper::SVLEN_THRESHOLD) continue;
             return Deletion((*it).referenceName,leftBp, rightBp, len);
         }
     }

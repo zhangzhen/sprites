@@ -409,7 +409,7 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
             int up = score_matrix[i][j-1] + params.gap_penalty;
             int left = score_matrix[i-1][j] + params.gap_penalty;
 
-            score_matrix[i][j] = max3(diagonal, up, left);
+            score_matrix[i][j] = std::max(0, max3(diagonal, up, left));
         }
     }
 
@@ -418,16 +418,13 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
     // for the pair of strings. We start the backtracking from
     // that cell
     int max_value = std::numeric_limits<int>::min();
-    size_t max_row_index = 0;
+    size_t max_row_index = num_rows - 1;
     size_t max_column_index = 0;
 
-    for(size_t i = 1; i < num_columns; ++i) {
-        for(size_t j = 1; j < num_rows; ++j) {
-            if(score_matrix[i][j] > max_value) {
-                max_value = score_matrix[i][j];
-                max_column_index = i;
-                max_row_index = j;
-            }
+    for (size_t i =1; i < num_columns; ++i) {
+        if (score_matrix[i][max_row_index] > max_value) {
+            max_value = score_matrix[i][max_row_index];
+            max_column_index = i;
         }
     }
 
