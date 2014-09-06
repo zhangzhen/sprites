@@ -125,8 +125,13 @@ int main(int argc, char *argv[]) {
             auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate);
             deletions.push_back(del);
         } catch (ErrorException& ex) {
-            std::cout << ex.getMessage() << std::endl;
+//            std::cout << ex.getMessage() << std::endl;
         }
+    }
+
+    if (deletions.empty()) {
+        std::cout << "No deletion was found." << std::endl;
+        return 0;
     }
 
     sort(deletions.begin(), deletions.end(), [](const Deletion &d1, const Deletion &d2) {
