@@ -31,42 +31,17 @@ AbstractClip::~AbstractClip() {
 
 Deletion AbstractClip::call(BamReader &reader, FaidxWrapper &faidx, int insLength, int minOverlap, double minIdentity)
 {
+    string refName = Helper::getReferenceName(reader, referenceId);
+
+    vector<IRange> ranges;
+    fetchSpanningRanges(reader, insLength, ranges);
+
+    if (ranges.empty()) error("No deletion is found");
+
     vector<TargetRegion> regions;
-    tRegions(reader, insLength, regions);
+    toTargetRegions(refName, insLength, ranges, regions);
+
     return call(faidx, regions, minOverlap, minIdentity);
-}
-
-void AbstractClip::tRegions(BamReader &reader, int insLength, std::vector<TargetRegion> &regions) {
-
-    vector<int> anchors;
-    fetchAnchors(reader, insLength, anchors);
-
-    if (anchors.empty()) return;
-
-    sort(anchors.begin(), anchors.end());
-
-    regions.push_back(tRegion(Helper::getReferenceName(reader, referenceId), anchors[0], insLength));
-
-    if (anchors.size() == 1) {
-        return;
-    }
-
-    std::vector<int> diffs(anchors.size());
-
-    adjacent_difference(anchors.begin(), anchors.end(), diffs.begin());
-
-    for (size_t i = 1; i < diffs.size(); ++i) {
-        int start;
-        TargetRegion tr = tRegion(Helper::getReferenceName(reader, referenceId), anchors[i], insLength);
-        if (diffs[i] <= length() + insLength) {
-            start = regions.back().start;
-            regions.pop_back();
-        } else {
-            start = tr.start;
-        }
-        regions.push_back({tr.referenceName, start, tr.end});
-    }
-
 }
 
 
@@ -76,8 +51,8 @@ ForwardBClip::ForwardBClip(int referenceId, int mapPosition, int clipPosition, i
 
 Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
-    error("No deletion is found.");
-    for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
+//    error("No deletion is found.");
+    for (auto it = regions.begin(); it != regions.end(); ++it) {
         string s1 = (*it).sequence(faidx);
         reverse(s1.begin(), s1.end());
         string s2 = sequence;
@@ -92,28 +67,18 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
                     : (*it).start + overlap.match[0].end;
             int len = leftBp - rightBp;
             if (overlap.getOverlapLength() < cigar[0].Length) len += cigar[0].Length - overlap.getOverlapLength();
-            if (len > Helper::SVLEN_THRESHOLD) continue;
-            if (rightBp == 29434668) {
-                cout << (*it).start << endl;
-                overlap.printAlignment((*it).sequence(faidx), sequence);
-                cout << "Debug: abnormal length" << endl;
-            }
+            if (len > Helper::SVLEN_THRESHOLD) break;
+//            overlap.printAlignment((*it).sequence(faidx), sequence);
             return Deletion((*it).referenceName, leftBp, rightBp, len);
         }
     }
     error("No deletion is found.");
 }
 
-TargetRegion ForwardBClip::tRegion(const string &referenceName, int anchor, int insLength) {
-    return { referenceName,
-              anchor,
-              anchor + length() + insLength };
-}
-
-void ForwardBClip::fetchAnchors(BamReader &reader, int insLength, std::vector<int> &anchors) {
-
+void ForwardBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges)
+{
     int start = clipPosition;
-    int end = start + insLength - length();
+    int end = clipPosition + insLength - 2 * length();
 
     if (!reader.SetRegion(referenceId, start - 1, referenceId, end))
         error("Could not set the region.");
@@ -122,11 +87,29 @@ void ForwardBClip::fetchAnchors(BamReader &reader, int insLength, std::vector<in
     while(reader.GetNextAlignment(al)) {
         if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.RefID == al.MateRefID
                 && al.Position > al.MatePosition && al.MatePosition + Helper::SVLEN_THRESHOLD <= clipPosition) {
-            if (clipPosition == 29434669) cout << al.Position + 1 << "\t" << al.MatePosition + 1 << endl;
-            anchors.push_back(al.MatePosition + 1);
+            ranges.push_back({al.MatePosition + 1, al.Position + 1});
         }
     }
 
+}
+
+void ForwardBClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
+{
+    sort(ranges.begin(), ranges.end());
+
+    int rightmostPos = clipPosition - Helper::SVLEN_THRESHOLD;
+
+    for (auto it = ranges.begin(); it != ranges.end(); ++it) {
+        if ((*it).start > rightmostPos + length()) break;
+        int s = (*it).start;
+        int e = insLength - length() - ((*it).end - clipPosition) + s;
+        if (e > rightmostPos) {
+            e = rightmostPos;
+            regions.push_back({referenceName, s, e});
+            break;
+        }
+        regions.push_back({referenceName, s, e});
+    }
 }
 
 
@@ -135,15 +118,14 @@ ReverseBClip::ReverseBClip(int referenceId, int mapPosition, int clipPosition, i
 
 }
 
-void ReverseBClip::fetchAnchors(BamReader &reader, int insLength, std::vector<int> &anchors) {
-    anchors.push_back(matePosition);
+void ReverseBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges)
+{
+
 }
 
-TargetRegion ReverseBClip::tRegion(const string &referenceName, int anchor, int insLength) {
-    return { referenceName,
-             anchor,
-             anchor + insLength
-    };
+void ReverseBClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
+{
+
 }
 
 Deletion ReverseBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
@@ -156,24 +138,78 @@ ForwardEClip::ForwardEClip(int referenceId, int mapPosition, int clipPosition, i
     : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, cigar) {
 }
 
+void ForwardEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges)
+{
+    ranges.push_back({clipPosition, matePosition});
+}
+
+void ForwardEClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
+{
+    int pe = ranges[0].end;
+    int leftmostPos = clipPosition + Helper::SVLEN_THRESHOLD;
+}
+
 Deletion ForwardEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
 
 }
 
-void ForwardEClip::fetchAnchors(BamReader &reader, int insLength, std::vector<int> &anchors) {
-    anchors.push_back(matePosition);
-}
-
-TargetRegion ForwardEClip::tRegion(const string &referenceName, int anchor, int insLength) {
-    return {referenceName,
-             anchor + length(),
-             anchor - insLength };
-}
 
 
 ReverseEClip::ReverseEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const std::vector<CigarOp> &cigar)
     : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, cigar) {
+}
+
+void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges)
+{
+    int start = clipPosition - insLength + length();
+    int end = clipPosition - length();
+
+//    if (mapPosition == 33621625) {
+//        cout << start << "\t" << end << endl;
+//        cout << "-------------------------" << endl;
+//    }
+
+    if (!reader.SetRegion(referenceId, start - 1, referenceId, end))
+        error("Could not set the region.");
+
+    BamAlignment al;
+    while(reader.GetNextAlignmentCore(al)) {
+        if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.RefID == al.MateRefID
+                && al.Position < al.MatePosition && al.MatePosition >= clipPosition + Helper::SVLEN_THRESHOLD) {
+            ranges.push_back({al.Position + 1, al.MatePosition + 1});
+        }
+    }
+}
+
+void ReverseEClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
+{
+    sort(ranges.begin(), ranges.end(),
+         [](const IRange &lhs, const IRange &rhs) { if (lhs.end != rhs.end) return lhs.end > rhs.end; return lhs.start > rhs.end; });
+
+//    if (mapPosition == 33621625) {
+//        for (auto it = ranges.begin(); it != ranges.end(); ++it) {
+//            cout << (*it).start << "\t" << (*it).end << endl;
+//        }
+//    }
+
+    int leftmostPos = clipPosition + Helper::SVLEN_THRESHOLD;
+
+    for (auto it = ranges.begin(); it != ranges.end(); ++it) {
+        if ((*it).end < leftmostPos) break;
+//        if ((*it).start > clipPosition) continue;
+        int e = (*it).end;
+        int s = clipPosition - (*it).start + e - (insLength - length());
+//        if (mapPosition == 33621625) {
+//            cout << "Debug: placeholder" << endl;
+//        }
+        if (s < leftmostPos) {
+            s = leftmostPos;
+            regions.push_back({referenceName, s, e});
+            break;
+        }
+        regions.push_back({referenceName, s, e});
+    }
 }
 
 Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
@@ -189,38 +225,18 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
                     : clipPosition;
             leftBp--;   // left breakpoint refers the position of the last base prior to the clipped part conforming to the VCF format.
             int len = leftBp - rightBp;
-//            if (rightBp == 97474921) {
-//                overlap.printAlignment(s1, sequence);
-//                cout << "debug: right breakpoint has a problem." << endl;
-//            }
             if (overlap.getOverlapLength() < cigar[cigar.size() - 1].Length) len += cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
-            if (len > Helper::SVLEN_THRESHOLD) continue;
+            if (len > Helper::SVLEN_THRESHOLD) break;
+//            if (rightBp == 33621971) {
+//                cout << "Debug: placeholder" << endl;
+//            }
+//            overlap.printAlignment((*it).sequence(faidx), sequence);
             return Deletion((*it).referenceName,leftBp, rightBp, len);
         }
     }
     error("No deletion is found.");
 }
 
-void ReverseEClip::fetchAnchors(BamReader &reader, int insLength, std::vector<int> &anchors) {
-    int end = leftmostPosition() + length();
-    int start = end - insLength + length();
-
-    if (!reader.SetRegion(referenceId, start - 1, referenceId, end))
-        error("Could not set the region.");
-
-    BamAlignment al;
-    while(reader.GetNextAlignmentCore(al)) {
-        if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.RefID == al.MateRefID && al.Position < al.MatePosition) {
-            anchors.push_back(al.MatePosition + 1);
-        }
-    }
-}
-
-TargetRegion ReverseEClip::tRegion(const string &referenceName, int anchor, int insLength) {
-    return { referenceName,
-             anchor - insLength,
-             anchor + length() };
-}
 
 string TargetRegion::sequence(FaidxWrapper& faidx) const
 {

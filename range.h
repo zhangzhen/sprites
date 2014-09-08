@@ -8,6 +8,8 @@ struct IRange {
     int end;
 
     int length() const;
+
+    bool operator<(const IRange &other) const;
 };
 
 struct IRangeEndPoint {
@@ -15,7 +17,7 @@ struct IRangeEndPoint {
     std::size_t ownerId;
     bool isStart;
 
-    friend bool operator<(const IRangeEndPoint &lhs, const IRangeEndPoint &rhs);
+    bool operator<(const IRangeEndPoint &other) const;
 };
 
 typedef std::vector<std::size_t> IRangeIdCluster;

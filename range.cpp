@@ -41,12 +41,6 @@ void clusterRanges(const vector<IRange> &ranges, vector<IRangeIdCluster> &cluste
 }
 
 
-bool operator<(const IRangeEndPoint &lhs, const IRangeEndPoint &rhs)
-{
-    return lhs.position < rhs.position;
-}
-
-
 void refineRanges(const std::vector<IRange> &in, const std::vector<IRangeIdCluster> &clusters, std::vector<IRange> &out)
 {
     for (auto i = clusters.begin(); i != clusters.end(); ++i) {
@@ -63,8 +57,19 @@ int IRange::length() const
     return end - start + 1;
 }
 
+bool IRange::operator<(const IRange &other) const
+{
+    if (start != other.start) return start < other.start;
+    return end < other.end;
+}
 
 void processRanges(const std::vector<IRange> &in, std::vector<IRange> &out)
 {
 
+}
+
+
+bool IRangeEndPoint::operator<(const IRangeEndPoint &other) const
+{
+    return position < other.position;
 }
