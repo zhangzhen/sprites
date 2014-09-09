@@ -120,7 +120,9 @@ int main(int argc, char *argv[]) {
 
     AbstractClip *pClip;
     std::vector<Deletion> deletions;
+    int i = 0;
     while ((pClip = creader.nextClip())) {
+        i++;
         try {
             auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate);
             deletions.push_back(del);
@@ -128,6 +130,9 @@ int main(int argc, char *argv[]) {
 //            std::cout << ex.getMessage() << std::endl;
         }
     }
+
+    std::cout << i << std::endl;
+//    return 0;
 
     if (deletions.empty()) {
         std::cout << "No deletion was found." << std::endl;

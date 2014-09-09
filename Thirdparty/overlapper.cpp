@@ -23,6 +23,7 @@
 // SOFTWARE.
 // ------------------------------------------------------------------------------
 #include "overlapper.h"
+#include "../error.h"
 #include <assert.h>
 #include <vector>
 #include <algorithm>
@@ -486,6 +487,7 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
     // Compact the expanded cigar string into the canonical run length encoding
     // The backtracking produces a cigar string in reversed order, flip it
     std::reverse(cigar.begin(), cigar.end());
+    if (cigar.empty()) error("No overlap was found");
 //    assert(!cigar.empty());
     output.cigar = compactCigar(cigar);
     return output;

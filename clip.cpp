@@ -60,6 +60,7 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, s2, ungapped_params);
         for (size_t i = 0; i < 2; ++i)
             overlap.match[i].flipStrand(overlap.length[i]);
+
         if (overlap.getOverlapLength() > minOverlap &&
                 overlap.getPercentIdentity() >= minIdentity * 100) {
             int rightBp = clipPosition - 1;
@@ -86,7 +87,7 @@ void ForwardBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
     BamAlignment al;
     while(reader.GetNextAlignment(al)) {
         if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.RefID == al.MateRefID
-                && al.Position > al.MatePosition && al.MatePosition + Helper::SVLEN_THRESHOLD <= clipPosition) {
+                && al.Position > al.MatePosition && al.MatePosition + length() - Helper::SVLEN_THRESHOLD <= clipPosition) {
             ranges.push_back({al.MatePosition + 1, al.Position + 1});
         }
     }
@@ -97,12 +98,12 @@ void ForwardBClip::toTargetRegions(const string &referenceName, int insLength, s
 {
     sort(ranges.begin(), ranges.end());
 
-    int rightmostPos = clipPosition - Helper::SVLEN_THRESHOLD;
+    int rightmostPos = clipPosition + Helper::SVLEN_THRESHOLD;
 
     for (auto it = ranges.begin(); it != ranges.end(); ++it) {
         if ((*it).start > rightmostPos + length()) break;
-        int s = (*it).start;
-        int e = insLength - length() - ((*it).end - clipPosition) + s;
+        int s = (*it).start + length() - cigar[0].Length;
+        int e = insLength - length() - ((*it).end - clipPosition) + (*it).start;
         if (e > rightmostPos) {
             e = rightmostPos;
             regions.push_back({referenceName, s, e});
@@ -146,12 +147,34 @@ void ForwardEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
 void ForwardEClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
 {
     int pe = ranges[0].end;
-    int leftmostPos = clipPosition + Helper::SVLEN_THRESHOLD;
+    int leftmostPos = clipPosition - Helper::SVLEN_THRESHOLD;
+    int len1 = length() - cigar[cigar.size() - 1].Length;
+    int cPrime = pe  + len1 - insLength;
+    if (cPrime < leftmostPos) cPrime = leftmostPos;
+    regions.push_back({referenceName, cPrime, pe});
 }
 
 Deletion ForwardEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
-
+    string s1 = regions[0].sequence(faidx);
+    SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, sequence, ungapped_params);
+//    if (mapPosition == 2863866) {
+//        cout << "Debug: placehold" << endl;
+//        overlap.printAlignment(s1, sequence);
+//    }
+    if (overlap.getOverlapLength() > minOverlap &&
+            overlap.getPercentIdentity() >= minIdentity * 100) {
+        int rightBp = regions[0].start + overlap.match[0].start - 1;
+        int leftBp = (overlap.getOverlapLength()  > cigar[cigar.size() - 1].Length) ? clipPosition - overlap.getOverlapLength() + cigar[cigar.size() - 1].Length
+                : clipPosition;
+        leftBp--;   // left breakpoint refers the position of the last base prior to the clipped part conforming to the VCF format.
+        int len = leftBp - rightBp;
+        if (overlap.getOverlapLength() < cigar[cigar.size() - 1].Length) len += cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
+        if (len > Helper::SVLEN_THRESHOLD) error("No deletion was found.");
+        overlap.printAlignment(s1, sequence);
+        return Deletion(regions[0].referenceName, leftBp, rightBp, len);
+    }
+    error("No deletion was found.");
 }
 
 
@@ -176,7 +199,7 @@ void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
     BamAlignment al;
     while(reader.GetNextAlignmentCore(al)) {
         if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.RefID == al.MateRefID
-                && al.Position < al.MatePosition && al.MatePosition >= clipPosition + Helper::SVLEN_THRESHOLD) {
+                && al.Position < al.MatePosition && al.MatePosition >= clipPosition - Helper::SVLEN_THRESHOLD) {
             ranges.push_back({al.Position + 1, al.MatePosition + 1});
         }
     }
@@ -193,13 +216,13 @@ void ReverseEClip::toTargetRegions(const string &referenceName, int insLength, s
 //        }
 //    }
 
-    int leftmostPos = clipPosition + Helper::SVLEN_THRESHOLD;
+    int leftmostPos = clipPosition - Helper::SVLEN_THRESHOLD;
 
     for (auto it = ranges.begin(); it != ranges.end(); ++it) {
         if ((*it).end < leftmostPos) break;
 //        if ((*it).start > clipPosition) continue;
-        int e = (*it).end;
-        int s = clipPosition - (*it).start + e - (insLength - length());
+        int e = (*it).end + cigar[cigar.size() - 1].Length;
+        int s = clipPosition - (*it).start + (*it).end - (insLength - length());
 //        if (mapPosition == 33621625) {
 //            cout << "Debug: placeholder" << endl;
 //        }

@@ -41,7 +41,6 @@ AbstractClip *ClipReader::nextClip() {
         vector<int> clipSizes, readPositions, genomePositions;
         if (!al.GetSoftClips(clipSizes, readPositions, genomePositions)) continue;
         int size = clipSizes.size();
-
         if (al.IsProperPair()) {
             if (!al.IsReverseStrand() && al.Position == genomePositions[0] &&
                     clipSizes[0] > allowedNum &&
@@ -66,10 +65,10 @@ AbstractClip *ClipReader::nextClip() {
                                         al.CigarData);
             }
         }
-
         if (inEnhancedMode()) {
-            if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.Position < al.MatePosition &&
-                    al.Position != genomePositions[size - 1] && clipSizes[size - 1] > allowedNum &&
+            if ((al.AlignmentFlag == 161 || al.AlignmentFlag == 97) && al.RefID == al.MateRefID &&
+                    al.MapQuality > 0 && al.Position < al.MatePosition && al.InsertSize > 540 &&
+                    clipSizes[1] > 10 &&
                     (size == 1 || (size == 2 && clipSizes[0] <= allowedNum))) {
                 return new ForwardEClip(al.RefID,
                                         al.Position + 1,
@@ -78,6 +77,7 @@ AbstractClip *ClipReader::nextClip() {
                                         al.QueryBases,
                                         al.CigarData);
             }
+            /*
             if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.Position > al.MatePosition &&
                     al.Position == genomePositions[0] && clipSizes[0] > allowedNum &&
                     (size == 1 || (size == 2 && clipSizes[1] <= allowedNum))) {
@@ -88,6 +88,7 @@ AbstractClip *ClipReader::nextClip() {
                                         al.QueryBases,
                                         al.CigarData);
             }
+            */
         }
 
     }
