@@ -5,10 +5,10 @@
 
 using namespace std;
 
-void clusterRanges(const vector<IRange> &ranges, vector<IRangeIdCluster> &clusters)
+void clusterRanges(const vector<IRange> &ranges, std::vector<IdCluster> &clusters)
 {
     vector<IRangeEndPoint> endPoints;
-    for (auto i =0; i < ranges.size(); ++i) {
+    for (size_t i = 0; i < ranges.size(); ++i) {
         endPoints.push_back({ranges[i].start, i, true});
         endPoints.push_back({ranges[i].end, i, false});
     }
@@ -21,7 +21,7 @@ void clusterRanges(const vector<IRange> &ranges, vector<IRangeIdCluster> &cluste
         if ((*it).isStart) buffer.push((*it).ownerId);
         else {
             if (usedIds.count((*it).ownerId)) continue;
-            IRangeIdCluster clu;
+            IdCluster clu;
             while (!buffer.empty()) {
                 clu.push_back(buffer.front());
                 usedIds.insert(buffer.front());
@@ -30,7 +30,7 @@ void clusterRanges(const vector<IRange> &ranges, vector<IRangeIdCluster> &cluste
             if (!clu.empty()) clusters.push_back(clu);
         }
     }
-    IRangeIdCluster clu;
+    IdCluster clu;
     while (!buffer.empty()) {
         clu.push_back(buffer.front());
         usedIds.insert(buffer.front());
@@ -41,7 +41,7 @@ void clusterRanges(const vector<IRange> &ranges, vector<IRangeIdCluster> &cluste
 }
 
 
-void refineRanges(const std::vector<IRange> &in, const std::vector<IRangeIdCluster> &clusters, std::vector<IRange> &out)
+void refineRanges(const std::vector<IRange> &in, const std::vector<IdCluster> &clusters, std::vector<IRange> &out)
 {
     for (auto i = clusters.begin(); i != clusters.end(); ++i) {
         vector<int> rangeLengths;

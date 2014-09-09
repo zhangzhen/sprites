@@ -13,6 +13,7 @@
 #include "Helper.h"
 //#include "Parameters.h"
 #include "clip.h"
+#include "range.h"
 
 //
 // Getopt
@@ -139,54 +140,18 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    sort(deletions.begin(), deletions.end(), [](const Deletion &d1, const Deletion &d2) {
-        if (d1.getLeftBp() < d2.getLeftBp()) return true;
-        if (d1.getLeftBp() == d2.getLeftBp() && d1.getRightBp() > d2.getRightBp()) return true;
-        return false;
-    });
+//    copy(deletions.begin(), deletions.end(), std::ostream_iterator<Deletion>(std::cout, "\n"));
+//    std::cout << std::endl;
 
-    std::vector<std::vector<Deletion> > delClusters;
-    auto first = deletions.begin();
-    auto last = deletions.end();
-    auto next = first;
-    auto prev = first;
+    std::vector<IRange> ranges(deletions.size());
+    transform(deletions.begin(), deletions.end(), ranges.begin(), [](const Deletion &d) { IRange r = {d.getLeftBp(), d.getRightBp()}; return r; });
+    std::vector<IdCluster> idClusters;
+    clusterRanges(ranges, idClusters);
 
-    std::queue<Deletion> q;
+    std::vector<Deletion> finalDels;
+    transform(idClusters.begin(), idClusters.end(), back_inserter(finalDels), [&](const IdCluster &clu) { return deletions[clu[clu.size() - 1]]; });
 
-    while (++next != last) {
-        if ((*first).contains(*next)) {
-            first = next;
-            prev = first;
-            continue;
-        }
-        q.push(*prev);
-        if ((*first).dovetailsTo(*next)) {
-            prev = next;
-            continue;
-        }
-        std::vector<Deletion> dClu;
-        while (!q.empty()) {
-            dClu.push_back(q.front());
-            q.pop();
-        }
-        delClusters.push_back(dClu);
-        first = next;
-        prev = first;
-    }
-    q.push(*prev);
-    std::vector<Deletion> dClu;
-    while (!q.empty()) {
-        dClu.push_back(q.front());
-        q.pop();
-    }
-    delClusters.push_back(dClu);
-
-    std::vector<Deletion> mergedDels;
-    transform(delClusters.begin(), delClusters.end(), back_inserter(mergedDels), [](const std::vector<Deletion> &dels) {
-       return dels[0];
-    });
-
-    output(opt::outFile, mergedDels);
+    output(opt::outFile, finalDels);
 
 /*
     Caller caller(opt::bamFile, params);

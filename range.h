@@ -20,10 +20,10 @@ struct IRangeEndPoint {
     bool operator<(const IRangeEndPoint &other) const;
 };
 
-typedef std::vector<std::size_t> IRangeIdCluster;
+typedef std::vector<std::size_t> IdCluster;
 
 void processRanges(const std::vector<IRange> &in, std::vector<IRange> &out);
-void clusterRanges(const std::vector<IRange> &ranges, std::vector<IRangeIdCluster> &clusters);
-void refineRanges(const std::vector<IRange> &in, const std::vector<IRangeIdCluster> &clusters, std::vector<IRange> &out);
+void clusterRanges(const std::vector<IRange> &ranges, std::vector<IdCluster> &clusters);
+void refineRanges(const std::vector<IRange> &in, const std::vector<IdCluster> &clusters, std::vector<IRange> &out);
 
 #endif // RANGE_H
