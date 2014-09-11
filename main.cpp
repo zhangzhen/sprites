@@ -14,6 +14,7 @@
 //#include "Parameters.h"
 #include "clip.h"
 #include "range.h"
+#include "Thirdparty/Timer.h"
 
 //
 // Getopt
@@ -119,6 +120,7 @@ int main(int argc, char *argv[]) {
     int insLength = opt::insertMean + 3 * opt::insertSd;
     double identityRate = 1.0f - opt::errorRate;
 
+    Timer* pTimer = new Timer("calling deletions");
     AbstractClip *pClip;
     std::vector<Deletion> deletions;
     int i = 0;
@@ -131,6 +133,7 @@ int main(int argc, char *argv[]) {
 //            std::cout << ex.getMessage() << std::endl;
         }
     }
+    delete pTimer;
 
     std::cout << i << std::endl;
 //    return 0;
@@ -152,18 +155,6 @@ int main(int argc, char *argv[]) {
     transform(idClusters.begin(), idClusters.end(), back_inserter(finalDels), [&](const IdCluster &clu) { return deletions[clu[clu.size() - 1]]; });
 
     output(opt::outFile, finalDels);
-
-/*
-    Caller caller(opt::bamFile, params);
-
-    std::vector<SoftClip> clips;
-    caller.readClipsForRightBp(clips);
-
-    std::vector<Deletion> dels;
-    caller.call(clips, dels);
-
-    caller.output(opt::outFile, dels);
-*/
 
     return 0;
 }
