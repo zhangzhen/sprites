@@ -61,16 +61,18 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         for (size_t i = 0; i < 2; ++i)
             overlap.match[i].flipStrand(overlap.length[i]);
 
-//        if (clipPosition == 55605752) {
+        if (mapPosition == 60735213) {
+//            cout << overlap.getOverlapLength() << endl;
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
-//        }
+        }
         if (overlap.getOverlapLength() > minOverlap &&
                 overlap.getPercentIdentity() >= minIdentity * 100) {
+            int delta = cigar[0].Length - overlap.getOverlapLength();
             int rightBp = clipPosition - 1;
-            int leftBp = (overlap.getOverlapLength()  > cigar[0].Length) ? (*it).start + overlap.match[0].start + cigar[0].Length - 1
-                    : (*it).start + overlap.match[0].end;
+            int leftBp = (*it).start + overlap.match[0].end;
+            if (delta < 0) leftBp += delta;
             int len = leftBp - rightBp;
-            if (overlap.getOverlapLength() < cigar[0].Length) len += cigar[0].Length - overlap.getOverlapLength();
+            if (delta > 0) len += delta;
             if (len > Helper::SVLEN_THRESHOLD) break;
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
             return Deletion((*it).referenceName, leftBp, rightBp, len);
@@ -161,7 +163,7 @@ void ForwardEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
 void ForwardEClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
 {
     int pe = ranges[0].end + length();
-    int leftmostPos = clipPosition - Helper::SVLEN_THRESHOLD;
+    int leftmostPos = clipPosition;
     int len1 = length() - cigar[cigar.size() - 1].Length;
     int cPrime = ranges[0].end  + len1 - insLength;
     if (cPrime < leftmostPos) cPrime = leftmostPos;
@@ -223,7 +225,7 @@ void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
 
 void ReverseEClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
 {
-    int leftmostPos = clipPosition - Helper::SVLEN_THRESHOLD;
+    int leftmostPos = clipPosition;
 
     std::vector<IRange> newRanges(ranges.size());
     transform(ranges.begin(), ranges.end(), newRanges.begin(), [=](const IRange &ran) { IRange r = {ran.end - insLength + 2 * length(), ran.end + length()}; return r; });
@@ -255,17 +257,18 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
     for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
         string s1 = (*it).sequence(faidx);
         SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, sequence, ungapped_params);
-        if (mapPosition == 49243901) {
-            overlap.printAlignment((*it).sequence(faidx), sequence);
+        if (mapPosition == 19341369) {
+//            cout << overlap.getOverlapLength() << "\t" << (*it).start << endl;
+//            overlap.printAlignment((*it).sequence(faidx), sequence);
         }
         if (overlap.getOverlapLength() > minOverlap &&
                 overlap.getPercentIdentity() >= minIdentity * 100) {
+            int delta = cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
             int rightBp = (*it).start + overlap.match[0].start - 1;
-            int leftBp = (overlap.getOverlapLength()  > cigar[cigar.size() - 1].Length) ? clipPosition - overlap.getOverlapLength() + cigar[cigar.size() - 1].Length
-                    : clipPosition;
-            leftBp--;   // left breakpoint refers the position of the last base prior to the clipped part conforming to the VCF format.
+            int leftBp = clipPosition - 1;
+            if (delta < 0) leftBp += delta;
             int len = leftBp - rightBp;
-            if (overlap.getOverlapLength() < cigar[cigar.size() - 1].Length) len += cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
+            if (delta > 0) len += delta;
             if (len > Helper::SVLEN_THRESHOLD) break;
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
             return Deletion((*it).referenceName,leftBp, rightBp, len);

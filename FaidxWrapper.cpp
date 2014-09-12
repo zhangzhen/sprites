@@ -26,6 +26,6 @@ string FaidxWrapper::fetch(const string &chrom, int start, int end)
     char *s = faidx_fetch_seq(fai, (char *)chrom.c_str(), start, end, &len);
     if (s == NULL) error("cannot fetch the reference sequence");
     string str(s);
-    transform(str.begin(), str.end(),str.begin(), ::toupper);
+    transform(str.begin(), str.end(), str.begin(), ::toupper);
     return str;
 }

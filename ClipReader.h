@@ -19,7 +19,7 @@ public:
 
     AbstractClip* nextClip();
 
-private:
+private:    
     BamTools::BamReader reader;
     int allowedNum;
     int mode;
