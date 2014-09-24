@@ -22,7 +22,7 @@
 #define PROGRAM_NAME "dfinder"
 #define PROGRAM_VERSION "1.0"
 #define PROGRAM_BUGREPORT "zhangz@csu.edu.cn"
-#define DEFAULT_MIN_OVERLAP 21
+const int DEFAULT_MIN_OVERLAP=12;
 
 static const char *DFINDER_VERSION_MESSAGE =
 PROGRAM_NAME " Version " PROGRAM_VERSION "\n"
@@ -39,7 +39,7 @@ static const char *DFINDER_USAGE_MESSAGE =
 "      -r, --reffile=FILE           read the reference sequence from FILE"
 "      -o, --outfile=FILE               write the deletion calls to FILE (default: BAMFILE.calls)\n"
 "      -e, --error-rate=F               the maximum error rate allowed between two sequences to consider them overlapped (default: 0.04)\n"
-"      -m, --min-overlap=LEN            minimum overlap required between two reads (default: 31)\n"
+"      -m, --min-overlap=LEN            minimum overlap required between two reads (default: 12)\n"
 "      -n, --allowed-num=SIZE              a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
 "\nThe following two option must appear together (if ommitted, attempt ot learn the mean and the standard deviation of insert size):\n"
 "      -i, --insert-mean=N              the mean of insert size\n"

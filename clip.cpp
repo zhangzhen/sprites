@@ -65,7 +65,7 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 //            cout << overlap.getOverlapLength() << endl;
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
         }
-        if (overlap.getOverlapLength() > minOverlap &&
+        if (overlap.getOverlapLength() >= minOverlap &&
                 overlap.getPercentIdentity() >= minIdentity * 100) {
             int delta = cigar[0].Length - overlap.getOverlapLength();
             int rightBp = clipPosition - 1;
@@ -179,7 +179,7 @@ Deletion ForwardEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 //        cout << "Debug: placehold" << endl;
 //        overlap.printAlignment(s1, sequence);
 //    }
-    if (overlap.getOverlapLength() > minOverlap &&
+    if (overlap.getOverlapLength() >= minOverlap &&
             overlap.getPercentIdentity() >= minIdentity * 100) {
         int rightBp = regions[0].start + overlap.match[0].start - 1;
         int leftBp = (overlap.getOverlapLength()  > cigar[cigar.size() - 1].Length) ? clipPosition - overlap.getOverlapLength() + cigar[cigar.size() - 1].Length
@@ -261,7 +261,7 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 //            cout << overlap.getOverlapLength() << "\t" << (*it).start << endl;
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
         }
-        if (overlap.getOverlapLength() > minOverlap &&
+        if (overlap.getOverlapLength() >= minOverlap &&
                 overlap.getPercentIdentity() >= minIdentity * 100) {
             int delta = cigar[cigar.size() - 1].Length - overlap.getOverlapLength();
             int rightBp = (*it).start + overlap.match[0].start - 1;
