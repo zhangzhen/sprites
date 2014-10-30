@@ -2,6 +2,7 @@
 #define RANGE_H
 
 #include <vector>
+#include <string>
 
 struct IRange {
     int start;
@@ -22,8 +23,6 @@ struct IRangeEndPoint {
 
 typedef std::vector<std::size_t> IdCluster;
 
-void processRanges(const std::vector<IRange> &in, std::vector<IRange> &out);
 void clusterRanges(const std::vector<IRange> &ranges, std::vector<IdCluster> &clusters);
-void refineRanges(const std::vector<IRange> &in, const std::vector<IdCluster> &clusters, std::vector<IRange> &out);
 
 #endif // RANGE_H

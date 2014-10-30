@@ -2,11 +2,13 @@
 #include <algorithm>
 #include <set>
 #include <queue>
+#include <cassert>
 
 using namespace std;
 
 void clusterRanges(const vector<IRange> &ranges, std::vector<IdCluster> &clusters)
 {
+
     vector<IRangeEndPoint> endPoints;
     for (size_t i = 0; i < ranges.size(); ++i) {
         endPoints.push_back({ranges[i].start, i, true});
@@ -41,17 +43,6 @@ void clusterRanges(const vector<IRange> &ranges, std::vector<IdCluster> &cluster
 }
 
 
-void refineRanges(const std::vector<IRange> &in, const std::vector<IdCluster> &clusters, std::vector<IRange> &out)
-{
-    for (auto i = clusters.begin(); i != clusters.end(); ++i) {
-        vector<int> rangeLengths;
-        for (auto j = (*i).begin(); j != (*i).end(); ++j) {
-            rangeLengths.push_back(in[*j].length());
-        }
-    }
-}
-
-
 int IRange::length() const
 {
     return end - start + 1;
@@ -62,12 +53,6 @@ bool IRange::operator<(const IRange &other) const
     if (start != other.start) return start < other.start;
     return end < other.end;
 }
-
-void processRanges(const std::vector<IRange> &in, std::vector<IRange> &out)
-{
-
-}
-
 
 bool IRangeEndPoint::operator<(const IRangeEndPoint &other) const
 {
