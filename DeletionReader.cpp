@@ -11,20 +11,19 @@ std::vector<Deletion> DeletionReader::readDelsFromFile(const std::string &filena
     std::vector<Deletion> dels;
 
     string referenceName;
-    int leftBp;
-    int rightBp;
+    string referenceName2;
+    int start1;
+    int end1;
+    int start2;
+    int end2;
     int length;
-    string svtype;
-    string alternative;
-    string homseq;
-    string genotype;
 
     string head;
     getline(input, head);
 
-    while (input >> referenceName >> leftBp >> rightBp >> svtype >> length >> alternative >> homseq >> genotype) {
-        Deletion del (referenceName, leftBp, rightBp, length,
-                   alternative, homseq, genotype);
+    while (input >> referenceName >> start1 >> end1 >> referenceName2 >> start2 >> end2 >> length) {
+        Deletion del (referenceName, start1, end1, start2,
+                   end2, length);
         dels.push_back(del);
     }
 

@@ -173,10 +173,10 @@ void count(const vector<Deletion> &dels) {
             i++;
             continue;
         }
-        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).getLeftBp() << "\t[left]" << endl;
-        int cntLeftBp = counter.countLeftBp(referenceId, (*itr).getLeftBp());
-        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).getRightBp() << "\t[right]" << endl;
-        int cntRightBp = counter.countRightBp(referenceId, (*itr).getRightBp());
+        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).getStart2() << "\t[left]" << endl;
+        int cntLeftBp = counter.countLeftBp(referenceId, (*itr).getStart2());
+        cout << ">>>>>>>>>>>>>>>>>>>>>> " << (*itr).getEnd2() << "\t[right]" << endl;
+        int cntRightBp = counter.countRightBp(referenceId, (*itr).getEnd2());
         cout << cntLeftBp << "\t" << cntRightBp << endl;
         int s = cntLeftBp + cntRightBp;
         if (s == 0) {

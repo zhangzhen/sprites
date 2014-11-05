@@ -34,3 +34,23 @@ std::string Helper::getReferenceName(BamTools::BamReader &reader, int referenceI
     assert(referenceId >= 0 && referenceId < reader.GetReferenceCount());
     return reader.GetReferenceData()[referenceId].RefName;
 }
+
+
+int getOffsetForward(const string &s1, const string &s2)
+{
+    assert(s1.size() == s2.size());
+    for (int i = 0; i < s1.size(); i++) {
+        if (s1[i] != s2[i]) return i;
+    }
+    return 0;
+}
+
+
+int getOffsetReverse(const string &s1, const string &s2)
+{
+    assert(s1.size() == s2.size());
+    for (int i = 0; i < s1.size(); i++) {
+        if (s1[s1.size() - 1 - i] != s2[s1.size() - 1 - i]) return i;
+    }
+    return 0;
+}

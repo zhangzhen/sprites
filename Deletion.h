@@ -6,36 +6,23 @@
 
 class Deletion {
 public:
-    Deletion(std::string referenceName, int leftBp, int rightBp, int length,
-             std::string alternative=".", std::string homseq=".", std::string genotype=".");
+    Deletion(const std::string& referenceName, int start1, int end1, int start2, int end2, int length);
 
     virtual ~Deletion();
 
-    bool hasInsertedSeq() const {
-        return alternative.length() > 1;
-    }
+    std::string getReferenceName() const { return referenceName; }
 
-    bool hasHomseq() const {
-        return homseq == "-";
-    }
+    int getStart1() const { return start1; }
 
-    bool isHomogeneous() const {
-        return genotype == "1/1" || genotype == "1|1";
-    }
+    int getEnd1() const { return end1; }
 
-    std::string getReferenceName() const;
+    int getStart2() const { return start2; }
 
-    int getLeftBp() const;
+    int getEnd2() const { return end2; }
 
-    int getRightBp() const;
+    int getLength() const { return length; }
 
-    int getLength() const;
-
-    std::string getAlternative() const;
-
-    std::string getHomseq() const;
-
-    std::string getGenotype() const;
+    std::string toBedpe() const;
 
     friend std::ostream& operator <<(std::ostream& stream, const Deletion& del);
 
@@ -44,12 +31,11 @@ public:
 
 private:
     std::string referenceName;
-    int leftBp;
-    int rightBp;
+    int start1;
+    int end1;
+    int start2;
+    int end2;
     int length;
-    std::string alternative;
-    std::string homseq;
-    std::string genotype;
 
     bool checkRep() const;
 

@@ -15,4 +15,6 @@ SoftClipCounter.cpp error.cpp)
 target_link_libraries(countReads bamtools)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -Wall")
+
+message(${CMAKE_CXX_FLAGS_RELEASE})

@@ -11,6 +11,8 @@
 std::string stripFilename(const std::string& filename);
 std::string stripExtension(const std::string& filename);
 std::string stripDirectories(const std::string& filename);
+int getOffsetForward(const std::string& s1, const std::string& s2);
+int getOffsetReverse(const std::string& s1, const std::string& s2);
 
 namespace Helper {
 std::string getReferenceName(BamTools::BamReader& reader, int referenceId);

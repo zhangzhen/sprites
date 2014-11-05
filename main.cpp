@@ -165,9 +165,10 @@ int main(int argc, char *argv[]) {
     std::vector<Deletion> finalDels;
 
     for (const auto &ds: deletionsByChroms) {
+//        finalDels.insert(finalDels.end(), ds.begin(), ds.end());
         std::vector<IRange> ranges;
         ranges.reserve(ds.size());
-        transform(ds.begin(), ds.end(), back_inserter(ranges), [](const Deletion &d) { IRange r = {d.getLeftBp(), d.getRightBp()}; return r; });
+        transform(ds.begin(), ds.end(), back_inserter(ranges), [](const Deletion &d) { IRange r = {d.getStart2(), d.getEnd2()}; return r; });
         std::vector<IdCluster> idClusters;
         clusterRanges(ranges, idClusters);
         transform(idClusters.begin(), idClusters.end(), back_inserter(finalDels), [&](const IdCluster &clu) { return ds[clu[clu.size() - 1]]; });
@@ -258,13 +259,12 @@ void parseOptions(int argc, char** argv)
     std::string out_prefix = stripFilename(opt::bamFile);
     if(opt::outFile.empty())
     {
-        opt::outFile = out_prefix + ".calls";
+        opt::outFile = out_prefix + ".bedpe";
     }
 
 }
 
 void output(const std::string &filename, const std::vector<Deletion> &dels) {
     std::ofstream out(filename.c_str());
-    out << "CHROM\tSTART\tEND\tTYPE\tLENGTH\tALT\tHOMSEQ\tGENOTYPE" << std::endl;
     copy(dels.begin(), dels.end(), std::ostream_iterator<Deletion>(out, "\n"));
 }

@@ -1,85 +1,54 @@
 #include "Deletion.h"
 #include "Helper.h"
 #include <cassert>
+#include <sstream>
 
 using namespace std;
 
-Deletion::Deletion(std::string referenceName,
-                   int leftBp,
-                   int rightBp,
-                   int length,
-                   std::string alternative,
-                   std::string homseq,
-                   std::string genotype) :
+Deletion::Deletion(const string &referenceName,
+                   int start1,
+                   int end1,
+                   int start2,
+                   int end2,
+                   int length) :
     referenceName(referenceName),
-    leftBp(leftBp),
-    rightBp(rightBp),
-    length(length),
-    alternative(alternative),
-    homseq(homseq),
-    genotype(genotype) {
+    start1(start1),
+    end1(end1),
+    start2(start2),
+    end2(end2),
+    length(length) {
     assert(checkRep());
 }
 
 Deletion::~Deletion() {
 }
 
-std::string Deletion::getReferenceName() const
-{
-    return referenceName;
-}
-
-int Deletion::getLeftBp() const
-{
-    return leftBp;
-}
-
-int Deletion::getRightBp() const
-{
-    return rightBp;
-}
-
-int Deletion::getLength() const
-{
-    return length;
-}
-
-std::string Deletion::getAlternative() const
-{
-    return alternative;
-}
-
-std::string Deletion::getHomseq() const
-{
-    return homseq;
-}
-
-std::string Deletion::getGenotype() const
-{
-    return genotype;
+string Deletion::toBedpe() const {
+    stringstream fmt;
+    fmt << referenceName << "\t" << start1 - 1 << "\t" << end1 << "\t"
+              << referenceName << "\t" << start2 -1 << "\t" << end2;
+    return fmt.str();
 }
 
 bool Deletion::contains(const Deletion &other)
 {
-    return leftBp <= other.leftBp && rightBp >= other.rightBp;
+    return start2 <= other.start2 && end2 >= other.end2;
 }
 
 bool Deletion::dovetailsTo(const Deletion &other)
 {
-    return leftBp < other.leftBp && rightBp < other.rightBp && rightBp > other.leftBp;
+    return start2 < other.start2 && end2 < other.end2 && end2 > other.start2;
 }
 
 std::ostream& operator <<(ostream &stream, const Deletion &del)
 {
-    stream << del.referenceName << "\t"
-           << del.leftBp << "\t" << del.rightBp << "\tDEL\t"
-           << del.length << "\t" << del.alternative << "\t"
-           << del.homseq << "\t" << del.genotype;
+    stream << del.toBedpe();
     return stream;
 }
 
 bool Deletion::checkRep() const
 {
-    return (rightBp > leftBp) &&
+    return (start1 <= end1) &&
+            (start2 <= end2) &&
             (length <= Helper::SVLEN_THRESHOLD);
 }

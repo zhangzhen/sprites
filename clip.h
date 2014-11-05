@@ -22,7 +22,9 @@ struct TargetRegion
 
 class AbstractClip {
 public:
-    AbstractClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
+    AbstractClip(int referenceId, int mapPosition, int clipPosition,
+                 int matePosition, const std::string& sequence,
+                 const std::vector<BamTools::CigarOp>& cigar);
 
     int length() const;
 
