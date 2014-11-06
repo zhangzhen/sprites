@@ -57,7 +57,7 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         reverse(s1.begin(), s1.end());
         string s2 = sequence;
         reverse(s2.begin(), s2.end());
-        SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, s2, ungapped_params);
+        SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, s2, minOverlap, minIdentity, ungapped_params);
         for (size_t i = 0; i < 2; ++i)
             overlap.match[i].flipStrand(overlap.length[i]);
 
@@ -66,23 +66,23 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
 //            cout << endl;
 //        }
-        if (overlap.getOverlapLength() >= minOverlap &&
-                overlap.getPercentIdentity() >= minIdentity * 100) {
-            int delta = overlap.getOverlapLength() - cigar[0].Length;
-            int rightBp = clipPosition - 1;
-            int leftBp = (*it).start + overlap.match[0].start + cigar[0].Length - 1;
-            int len = leftBp - rightBp;
-            int start1 = delta > 0 ? leftBp : leftBp + delta;
-            int start2 = delta > 0 ? leftBp + delta : leftBp;
-            int end1 = delta > 0 ? rightBp : rightBp + delta;
-            int end2 = delta > 0 ? rightBp + delta : rightBp;
-            if (end2 == 22390748) {
-                cout << "breakpoint" << endl;
-            }
-            if (len > Helper::SVLEN_THRESHOLD) break;
-//            overlap.printAlignment((*it).sequence(faidx), sequence);
-            return Deletion((*it).referenceName, start1, start2, end1, end2, len);
+        int delta = overlap.getOverlapLength() - cigar[0].Length;
+        int rightBp = clipPosition - 1;
+        int leftBp = (*it).start + overlap.match[0].start + cigar[0].Length - 1;
+        int len = leftBp - rightBp;
+        int start1 = delta > 0 ? leftBp : leftBp + delta;
+//            int start1 = leftBp;
+        int start2 = delta > 0 ? leftBp + delta : leftBp;
+        int end1 = delta > 0 ? rightBp : rightBp + delta;
+//            int end1 = rightBp;
+        int end2 = delta > 0 ? rightBp + delta : rightBp;
+        if (end2 == 500179) {
+            overlap.printAlignment((*it).sequence(faidx), sequence);
+            cout << endl;
         }
+        if (len > Helper::SVLEN_THRESHOLD) break;
+//            overlap.printAlignment((*it).sequence(faidx), sequence);
+        return Deletion((*it).referenceName, start1, start2, end1, end2, len);
     }
     error("No deletion is found.");
 }
@@ -111,7 +111,7 @@ void ForwardBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
 
 void ForwardBClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
 {
-    int rightmostPos = clipPosition + Helper::SVLEN_THRESHOLD + length();
+    int rightmostPos = clipPosition + length();
 
     std::vector<IRange> newRanges(ranges.size());
     transform(ranges.begin(), ranges.end(), newRanges.begin(), [=](const IRange &ran) { IRange r = {ran.start, ran.start + insLength - length()}; return r; });
@@ -179,7 +179,7 @@ void ForwardEClip::toTargetRegions(const string &referenceName, int insLength, s
 Deletion ForwardEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
     string s1 = regions[0].sequence(faidx);
-    SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, sequence);
+    SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, sequence, minOverlap, minIdentity, ungapped_params);
 //    overlap.printAlignment(s1, sequence);
 //    if (mapPosition == 2863866) {
 //        cout << "Debug: placehold" << endl;
@@ -231,7 +231,7 @@ void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
 
 void ReverseEClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
 {
-    int leftmostPos = clipPosition - Helper::SVLEN_THRESHOLD - length();
+    int leftmostPos = clipPosition - length();
 
     std::vector<IRange> newRanges(ranges.size());
     transform(ranges.begin(), ranges.end(), newRanges.begin(), [=](const IRange &ran) { IRange r = {ran.end - insLength + 2 * length(), ran.end + length()}; return r; });
@@ -262,33 +262,33 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 //    error("No deletion is found.");
     for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
         string s1 = (*it).sequence(faidx);
-        SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, sequence, ungapped_params);
-        if (mapPosition == 18847386) {
-            cout << overlap.getOverlapLength() << "\t" << (*it).start << endl;
+        SequenceOverlap overlap = Overlapper::computeOverlapSW(s1, sequence, minOverlap, minIdentity, ungapped_params);
+//        if (mapPosition == 18847386) {
+//            cout << overlap.getOverlapLength() << "\t" << (*it).start << endl;
+//            overlap.printAlignment((*it).sequence(faidx), sequence);
+//            cout << endl;
+//        }
+        int delta = overlap.getOverlapLength() - cigar[cigar.size() - 1].Length;
+        int leftBp = clipPosition - 1;
+        int rightBp = (*it).start + overlap.match[0].end - cigar[cigar.size() - 1].Length;
+        int len = leftBp - rightBp;
+        int start1 = delta > 0 ? leftBp - delta : leftBp;
+//            int start1 = leftBp;
+        int start2 = delta > 0 ? leftBp : leftBp - delta;
+        int end1 = delta > 0 ? rightBp - delta : rightBp;
+//            int end1 = rightBp;
+        int end2 = delta > 0 ? rightBp : rightBp - delta;
+        if (end2 == 135314531) {
             overlap.printAlignment((*it).sequence(faidx), sequence);
             cout << endl;
         }
-        if (overlap.getOverlapLength() >= minOverlap &&
-                overlap.getPercentIdentity() >= minIdentity * 100) {
-            int delta = overlap.getOverlapLength() - cigar[cigar.size() - 1].Length;
-            int leftBp = clipPosition - 1;
-            int rightBp = (*it).start + overlap.match[0].end - cigar[cigar.size() - 1].Length;
-            int len = leftBp - rightBp;
-            int start1 = delta > 0 ? leftBp - delta : leftBp;
-            int start2 = delta > 0 ? leftBp : leftBp - delta;
-            int end1 = delta > 0 ? rightBp - delta : rightBp;
-            int end2 = delta > 0 ? rightBp : rightBp - delta;
 
-            if (end2 == 22390748) {
-                cout << "breakpoint" << endl;
-            }
 //            if (leftBp == 35892071) {
 //                cout << mapPosition << endl;
 //            }
-            if (len > Helper::SVLEN_THRESHOLD) break;
+        if (len > Helper::SVLEN_THRESHOLD) break;
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
-            return Deletion((*it).referenceName,start1, start2, end1, end2, len);
-        }
+        return Deletion((*it).referenceName,start1, start2, end1, end2, len);
     }
     error("No deletion is found.");
 }

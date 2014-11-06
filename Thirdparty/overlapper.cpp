@@ -32,6 +32,7 @@
 #include <sstream>
 #include <limits>
 #include <stdio.h>
+#include <numeric>
 
 OverlapperParams default_params = { 2, -6, -3 };
 OverlapperParams ungapped_params = { 2, -10000, -3 };
@@ -382,7 +383,7 @@ SequenceOverlap Overlapper::computeOverlap(const std::string& s1, const std::str
     return output;
 }
 
-SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::string& s2, const OverlapperParams params)
+SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params)
 {
     // Exit with invalid intervals if either string is zero length
     SequenceOverlap output;
@@ -418,79 +419,84 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
     // last row or last column is the maximum scoring overlap
     // for the pair of strings. We start the backtracking from
     // that cell
-    int max_value = std::numeric_limits<int>::min();
-    size_t max_row_index = num_rows - 1;
-    size_t max_column_index = 0;
 
-    for (size_t i =1; i < num_columns; ++i) {
-        if (score_matrix[i][max_row_index] > max_value) {
-            max_value = score_matrix[i][max_row_index];
-            max_column_index = i;
-        }
+    std::vector<size_t> last_row_indexes(num_columns - 1);
+    for (size_t i = 1; i < num_columns; ++i) {
+        last_row_indexes[i-1] = i;
     }
+    std::sort(last_row_indexes.begin(), last_row_indexes.end(),
+         [&score_matrix, num_rows](size_t i1, size_t i2) {return score_matrix[i1][num_rows - 1] > score_matrix[i2][num_rows - 1];});
 
-    // Compute the location at which to start the backtrack
-    size_t i = max_column_index;
-    size_t j = max_row_index;
+    for (auto max_row_index: last_row_indexes) {
+        auto max_row_value = score_matrix[max_row_index][num_rows - 1];
 
-    // Set the alignment endpoints to be the index of the last aligned base
-    output.match[0].end = i - 1;
-    output.match[1].end = j - 1;
-    output.length[0] = s1.length();
-    output.length[1] = s2.length();
-#ifdef DEBUG_OVERLAPPER
-    printf("Endpoints selected: (%d %d) with score %d\n", output.match[0].end, output.match[1].end, output.score);
-#endif
+        // Compute the location at which to start the backtrack
+        size_t i = max_row_index;
+        size_t j = num_rows - 1;
+        output.score = max_row_value;
 
-    output.edit_distance = 0;
-    output.total_columns = 0;
+        // Set the alignment endpoints to be the index of the last aligned base
+        output.match[0].end = i - 1;
+        output.match[1].end = j - 1;
+        output.length[0] = s1.length();
+        output.length[1] = s2.length();
+    #ifdef DEBUG_OVERLAPPER
+        printf("Endpoints selected: (%d %d) with score %d\n", output.match[0].end, output.match[1].end, output.score);
+    #endif
 
-    std::string cigar;
-    while(i > 0 && j > 0 && score_matrix[i][j] > 0) {
-        // Compute the possible previous locations of the path
-        int idx_1 = i - 1;
-        int idx_2 = j - 1;
+        output.edit_distance = 0;
+        output.total_columns = 0;
 
-        bool is_match = s1[idx_1] == s2[idx_2];
-        int diagonal = score_matrix[i - 1][j - 1] + (is_match ? params.match_score : params.mismatch_penalty);
-        int up = score_matrix[i][j-1] + params.gap_penalty;
-        int left = score_matrix[i-1][j] + params.gap_penalty;
+        std::string cigar;
+        while(i > 0 && j > 0 && score_matrix[i][j] > 0) {
+            // Compute the possible previous locations of the path
+            int idx_1 = i - 1;
+            int idx_2 = j - 1;
 
-        // If there are multiple possible paths to this cell
-        // we break ties in order of insertion,deletion,match
-        // this helps left-justify matches for homopolymer runs
-        // of unequal lengths
-        if(score_matrix[i][j] == up) {
-            cigar.push_back('I');
-            j -= 1;
-            output.edit_distance += 1;
-        } else if(score_matrix[i][j] == left) {
-            cigar.push_back('D');
-            i -= 1;
-            output.edit_distance += 1;
-        } else {
-            assert(score_matrix[i][j] == diagonal);
-            if(!is_match)
+            bool is_match = s1[idx_1] == s2[idx_2];
+            int diagonal = score_matrix[i - 1][j - 1] + (is_match ? params.match_score : params.mismatch_penalty);
+            int up = score_matrix[i][j-1] + params.gap_penalty;
+            int left = score_matrix[i-1][j] + params.gap_penalty;
+
+            // If there are multiple possible paths to this cell
+            // we break ties in order of insertion,deletion,match
+            // this helps left-justify matches for homopolymer runs
+            // of unequal lengths
+            if(score_matrix[i][j] == up) {
+                cigar.push_back('I');
+                j -= 1;
                 output.edit_distance += 1;
-            cigar.push_back('M');
-            i -= 1;
-            j -= 1;
+            } else if(score_matrix[i][j] == left) {
+                cigar.push_back('D');
+                i -= 1;
+                output.edit_distance += 1;
+            } else {
+                assert(score_matrix[i][j] == diagonal);
+                if(!is_match)
+                    output.edit_distance += 1;
+                cigar.push_back('M');
+                i -= 1;
+                j -= 1;
+            }
+
+            output.total_columns += 1;
         }
 
-        output.total_columns += 1;
+        // Set the alignment startpoints
+        output.match[0].start = i;
+        output.match[1].start = j;
+
+        if (output.getOverlapLength() >= minOverlap &&
+                output.getPercentIdentity() >= minIdentity * 100) {
+            // Compact the expanded cigar string into the canonical run length encoding
+            // The backtracking produces a cigar string in reversed order, flip it
+            assert(!cigar.empty());
+            std::reverse(cigar.begin(), cigar.end());
+            output.cigar = compactCigar(cigar);
+            return output;
+        }
     }
-
-    // Set the alignment startpoints
-    output.match[0].start = i;
-    output.match[1].start = j;
-
-    // Compact the expanded cigar string into the canonical run length encoding
-    // The backtracking produces a cigar string in reversed order, flip it
-    std::reverse(cigar.begin(), cigar.end());
-    if (cigar.empty()) error("No overlap was found");
-//    assert(!cigar.empty());
-    output.cigar = compactCigar(cigar);
-    return output;
+    error("No overlap was found.");
 }
 
 // Returns the index into a cell vector for for the ith column and jth row

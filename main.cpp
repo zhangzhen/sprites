@@ -266,5 +266,6 @@ void parseOptions(int argc, char** argv)
 
 void output(const std::string &filename, const std::vector<Deletion> &dels) {
     std::ofstream out(filename.c_str());
-    copy(dels.begin(), dels.end(), std::ostream_iterator<Deletion>(out, "\n"));
+    size_t i = 1;
+    std::for_each(std::begin(dels), std::end(dels), [&i, &out](const Deletion &d){out << d << "\tDEL" << "::" << i << std::endl; i++;});
 }
