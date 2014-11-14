@@ -26,8 +26,9 @@ public:
 
     friend std::ostream& operator <<(std::ostream& stream, const Deletion& del);
 
-    bool contains(const Deletion &other);
-    bool dovetailsTo(const Deletion &other);
+    bool overlaps(const Deletion &other) const;
+    bool operator<(const Deletion &other) const;
+    bool operator==(const Deletion &other) const;
 
 private:
     std::string referenceName;

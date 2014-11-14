@@ -143,35 +143,36 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    std::vector<std::vector<Deletion> > deletionsByChroms;
+    std::sort(deletions.begin(), deletions.end());
+    deletions.erase(std::unique(deletions.begin(), deletions.end()), deletions.end());
+
+    std::vector<std::vector<Deletion> > delClusters;
     std::vector<Deletion> buffer;
     auto first = deletions.begin();
-    auto prev = first;
     auto last = deletions.end();
     buffer.push_back(*first);
     while (++first != last) {
-        if ((*first).getReferenceName() != (*prev).getReferenceName()) {
-            deletionsByChroms.push_back(buffer);
+        if (!(*first).overlaps(buffer[0])) {
+            delClusters.push_back(buffer);
             buffer.clear();
         }
         buffer.push_back(*first);
-        prev = first;
     }
-    if (!buffer.empty()) deletionsByChroms.push_back(buffer);
-
-//    copy(deletions.begin(), deletions.end(), std::ostream_iterator<Deletion>(std::cout, "\n"));
-//    std::cout << std::endl;
+    if (!buffer.empty()) delClusters.push_back(buffer);
 
     std::vector<Deletion> finalDels;
-
-    for (const auto &ds: deletionsByChroms) {
-//        finalDels.insert(finalDels.end(), ds.begin(), ds.end());
-        std::vector<IRange> ranges;
-        ranges.reserve(ds.size());
-        transform(ds.begin(), ds.end(), back_inserter(ranges), [](const Deletion &d) { IRange r = {d.getStart2(), d.getEnd2()}; return r; });
-        std::vector<IdCluster> idClusters;
-        clusterRanges(ranges, idClusters);
-        transform(idClusters.begin(), idClusters.end(), back_inserter(finalDels), [&](const IdCluster &clu) { return ds[clu[clu.size() - 1]]; });
+    finalDels.reserve(delClusters.size());
+    for (auto &clu: delClusters) {
+        if (clu.size() == 1) finalDels.push_back(clu[0]);
+        else {
+            Deletion d(clu[0].getReferenceName(),
+                    clu[0].getStart1(),
+                    clu[clu.size()-1].getEnd1(),
+                    clu[0].getStart2(),
+                    clu[clu.size()-1].getEnd2(),
+                    clu[0].getLength());
+            finalDels.push_back(d);
+        }
     }
 
     output(opt::outFile, finalDels);

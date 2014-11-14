@@ -30,14 +30,27 @@ string Deletion::toBedpe() const {
     return fmt.str();
 }
 
-bool Deletion::contains(const Deletion &other)
+bool Deletion::overlaps(const Deletion &other) const
 {
-    return start2 <= other.start2 && end2 >= other.end2;
+    if (referenceName != other.referenceName || length != other.length) return false;
+    return (start1-1 >= other.start1-1 && start1-1 <= other.end1) ||
+            (other.start1-1 >= start1-1 && other.start1-1 <= end1);
 }
 
-bool Deletion::dovetailsTo(const Deletion &other)
+bool Deletion::operator<(const Deletion &other) const
 {
-    return start2 < other.start2 && end2 < other.end2 && end2 > other.start2;
+    if (referenceName != other.referenceName) return referenceName < other.referenceName;
+    if (start1 != other.start1) return start1 < other.start1;
+    if (start2 != other.start2) return start2 < other.start2;
+    if (end1 != other.end1) return end1 < other.end1;
+    return end2 < other.end2;
+}
+
+bool Deletion::operator==(const Deletion &other) const
+{
+    return referenceName == other.referenceName &&
+            start1 == other.start1 && start2 == other.start2 &&
+            end1 == other.end1 && end2 == other.end2;
 }
 
 std::ostream& operator <<(ostream &stream, const Deletion &del)
