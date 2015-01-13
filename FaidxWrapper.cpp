@@ -15,9 +15,9 @@ FaidxWrapper::~FaidxWrapper()
     if (fai != NULL) fai_destroy(fai);
 }
 
-size_t FaidxWrapper::size()
+int FaidxWrapper::size()
 {
-    return faidx_fetch_nseq(fai);
+    return faidx_nseq(fai);
 }
 
 string FaidxWrapper::fetch(const string &chrom, int start, int end)

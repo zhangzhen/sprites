@@ -1,7 +1,7 @@
 #ifndef FAIDXWRAPPER_H
 #define FAIDXWRAPPER_H
 
-#include "faidx.h"
+#include "htslib/faidx.h"
 #include <string>
 
 class FaidxWrapper
@@ -9,7 +9,7 @@ class FaidxWrapper
 public:
     FaidxWrapper(const std::string& fasta);
     virtual ~FaidxWrapper();
-    size_t size();
+    int size();
     std::string fetch(const std::string& chrom, int start, int end);
 
 private:

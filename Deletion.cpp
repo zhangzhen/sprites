@@ -26,7 +26,7 @@ Deletion::~Deletion() {
 string Deletion::toBedpe() const {
     stringstream fmt;
     fmt << referenceName << "\t" << start1 - 1 << "\t" << end1 << "\t"
-              << referenceName << "\t" << start2 -1 << "\t" << end2;
+              << referenceName << "\t" << start2 - 1 << "\t" << end2;
     return fmt.str();
 }
 

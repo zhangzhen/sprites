@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
     }
     delete pTimer;
 
-    std::cout << i << std::endl;
+//    std::cout << i << std::endl;
 //    return 0;
 
     if (deletions.empty()) {

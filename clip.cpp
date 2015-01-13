@@ -72,19 +72,15 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
             if (ci.Type == 'D') offset += ci.Length;
             else if (ci.Type == 'I') offset -= ci.Length;
         }
-        int rightBp = clipPosition - 1 + offset;
+        int rightBp = clipPosition + offset;
         int leftBp = (*it).start + overlap.match[0].start + cigar[0].Length - 1;
-        int len = leftBp - rightBp;
+        int len = leftBp - rightBp + 1;
         int start1 = delta > 0 ? leftBp : leftBp + delta;
 //            int start1 = leftBp;
         int start2 = delta > 0 ? leftBp + delta : leftBp;
         int end1 = delta > 0 ? rightBp : rightBp + delta;
 //            int end1 = rightBp;
         int end2 = delta > 0 ? rightBp + delta : rightBp;
-        if (end2 == 88519721 || end2 == 88519723) {
-            overlap.printAlignment((*it).sequence(faidx), sequence);
-            cout << endl;
-        }
         if (len > Helper::SVLEN_THRESHOLD) break;
 //            overlap.printAlignment((*it).sequence(faidx), sequence);
         return Deletion((*it).referenceName, start1, start2, end1, end2, len);
@@ -280,18 +276,14 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
             else if (ci.Type == 'I') offset -= ci.Length;
         }
         int leftBp = clipPosition - 1 - offset;
-        int rightBp = (*it).start + overlap.match[0].end - cigar[cigar.size() - 1].Length;
-        int len = leftBp - rightBp;
+        int rightBp = (*it).start + overlap.match[0].end - cigar[cigar.size() - 1].Length + 1;
+        int len = leftBp - rightBp + 1;
         int start1 = delta > 0 ? leftBp - delta : leftBp;
 //            int start1 = leftBp;
         int start2 = delta > 0 ? leftBp : leftBp - delta;
         int end1 = delta > 0 ? rightBp - delta : rightBp;
 //            int end1 = rightBp;
         int end2 = delta > 0 ? rightBp : rightBp - delta;
-        if (end2 == 88519721 || end2 == 88519723) {
-            overlap.printAlignment((*it).sequence(faidx), sequence);
-            cout << endl;
-        }
 
 //            if (leftBp == 35892071) {
 //                cout << mapPosition << endl;
