@@ -8,7 +8,7 @@ add_definitions(-std=c++0x)
 
 add_executable(dfinder main.cpp error.cpp Helper.cpp
 Deletion.cpp Thirdparty/overlapper.cpp BamStatCalculator.cpp ClipReader.cpp clip.cpp FaidxWrapper.cpp range.cpp)
-target_link_libraries(dfinder hts bamtools)
+target_link_libraries(dfinder libhts.a bamtools pthread)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -Wall")

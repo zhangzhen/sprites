@@ -55,7 +55,7 @@ namespace opt
     static std::string outFile;
     static double errorRate = 0.04;
     static int minOverlap = DEFAULT_MIN_OVERLAP;
-    static int allowedNum = 5;
+    static int allowedNum = 12;
     static int mode = 0;
 
     static bool bLearnInsert = true;
@@ -122,21 +122,55 @@ int main(int argc, char *argv[]) {
 
     Timer* pTimer = new Timer("calling deletions");
     AbstractClip *pClip;
-    std::vector<Deletion> deletions;
-    int i = 0;
+    std::vector<AbstractClip*> clips;
     while ((pClip = creader.nextClip())) {
-        i++;
+        clips.push_back(pClip);
+    }
+
+    sort(clips.begin(), clips.end(),
+         [](AbstractClip* pc1, AbstractClip* pc2){ return pc1->getClipPosition() < pc2->getClipPosition(); });
+
+    size_t k = 50;
+    for (size_t i = 0; i < clips.size() - 1; ++i) {
+        for (size_t j = i + 1; j < std::min(i + k, clips.size()); ++j) {
+            if (clips[i]->hasConflictWith(clips[j])) {
+                clips[i]->setConflictFlag(true);
+                clips[j]->setConflictFlag(true);
+            }
+        }
+    }
+
+    std::cout << clips.size() << std::endl;
+
+    std::vector<AbstractClip*> newClips;
+    std::copy_if(clips.begin(), clips.end(), back_inserter(newClips),
+                   [](AbstractClip* pc){ return !pc->getConflictFlag(); });
+
+    std::cout << newClips.size() << std::endl;
+
+    std::vector<std::vector<AbstractClip*> > clipClusters;
+    cluster(newClips, clipClusters,
+            [](AbstractClip* pc1, AbstractClip* pc2){ return pc1->getClipPosition() == pc2->getClipPosition(); });
+
+    std::cout << clipClusters.size() << std::endl;
+
+    std::vector<AbstractClip*> finalClips;
+    finalClips.reserve(clipClusters.size());
+    std::transform(clipClusters.begin(), clipClusters.end(), back_inserter(finalClips),
+                   [](const std::vector<AbstractClip*>& v){ return v[v.size()/2]; });
+
+    std::vector<Deletion> deletions;
+    for (auto pClip: finalClips) {
+        if (pClip->getConflictFlag()) continue;
         try {
             auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate);
             deletions.push_back(del);
         } catch (ErrorException& ex) {
-//            std::cout << ex.getMessage() << std::endl;
+    //            std::cout << ex.getMessage() << std::endl;
         }
     }
-    delete pTimer;
 
-//    std::cout << i << std::endl;
-//    return 0;
+    delete pTimer;
 
     if (deletions.empty()) {
         std::cout << "No deletion was found." << std::endl;
@@ -147,32 +181,14 @@ int main(int argc, char *argv[]) {
     deletions.erase(std::unique(deletions.begin(), deletions.end()), deletions.end());
 
     std::vector<std::vector<Deletion> > delClusters;
-    std::vector<Deletion> buffer;
-    auto first = deletions.begin();
-    auto last = deletions.end();
-    buffer.push_back(*first);
-    while (++first != last) {
-        if (!(*first).overlaps(buffer[0])) {
-            delClusters.push_back(buffer);
-            buffer.clear();
-        }
-        buffer.push_back(*first);
-    }
-    if (!buffer.empty()) delClusters.push_back(buffer);
+
+    cluster(deletions, delClusters,
+            [](const Deletion& d1, const Deletion& d2){ return d1.overlaps(d2); });
 
     std::vector<Deletion> finalDels;
     finalDels.reserve(delClusters.size());
     for (auto &clu: delClusters) {
-        if (clu.size() == 1) finalDels.push_back(clu[0]);
-        else {
-            Deletion d(clu[0].getReferenceName(),
-                    clu[0].getStart1(),
-                    clu[clu.size()-1].getEnd1(),
-                    clu[0].getStart2(),
-                    clu[clu.size()-1].getEnd2(),
-                    clu[0].getLength());
-            finalDels.push_back(d);
-        }
+        finalDels.push_back(clu[0]);
     }
 
     output(opt::outFile, finalDels);

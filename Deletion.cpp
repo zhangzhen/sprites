@@ -32,9 +32,11 @@ string Deletion::toBedpe() const {
 
 bool Deletion::overlaps(const Deletion &other) const
 {
-    if (referenceName != other.referenceName || length != other.length) return false;
-    return (start1-1 >= other.start1-1 && start1-1 <= other.end1) ||
-            (other.start1-1 >= start1-1 && other.start1-1 <= end1);
+    if (referenceName != other.referenceName) return false;
+    return ((start1-1 >= other.start1-1 && start1-1 <= other.end1) ||
+            (other.start1-1 >= start1-1 && other.start1-1 <= end1)) &&
+            ((start2-1 >= other.start2-1 && start2-1 <= other.end2) ||
+             (other.start2-1 >= start2-1 && other.start2-1 <= end2));
 }
 
 bool Deletion::operator<(const Deletion &other) const

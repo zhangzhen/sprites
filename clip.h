@@ -29,10 +29,18 @@ public:
     int length() const;
 
     int leftmostPosition() const;
+    int getClipPosition() const {
+        return clipPosition;
+    }
 
     virtual ~AbstractClip();
 
     Deletion call(BamTools::BamReader& reader, FaidxWrapper &faidx, int insLength, int minOverlap, double minIdentity);
+
+    bool hasConflictWith(AbstractClip *other);
+    virtual std::string getType() = 0;
+    bool getConflictFlag() const;
+    void setConflictFlag(bool value);
 
 protected:
 
@@ -46,6 +54,8 @@ protected:
     int matePosition;
     std::string sequence;
     std::vector<BamTools::CigarOp> cigar;
+
+    bool conflictFlag;
 };
 
 class ForwardBClip : public AbstractClip {
@@ -56,9 +66,14 @@ private:
     virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges);
     virtual void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
 
-    virtual Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion>& regions, int minOverlap, double minIdentity);
+    virtual Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion>& regions, int minOverlap, double minIdentity);    
+
+    // AbstractClip interface
+public:
+    std::string getType();
 };
 
+/*
 class ReverseBClip : public AbstractClip {
 public:
     ReverseBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
@@ -80,6 +95,7 @@ private:
 
     virtual Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion>& regions, int minOverlap, double minIdentity);
 };
+*/
 
 class ReverseEClip : public AbstractClip {
 public:
@@ -90,6 +106,10 @@ private:
     virtual void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
 
     virtual Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion>& regions, int minOverlap, double minIdentity);
+
+    // AbstractClip interface
+public:
+    std::string getType();
 };
 
 #endif // CLIP_H

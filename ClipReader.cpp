@@ -45,7 +45,7 @@ AbstractClip *ClipReader::nextClip() {
             if (!al.IsReverseStrand() && al.Position == genomePositions[0] &&
                     clipSizes[0] > allowedNum &&
                     (size == 1 ||
-                     (size == 2 && clipSizes[1] <= allowedNum))) {
+                     (size == 2 && clipSizes[1] <= 5))) {
                 return new ForwardBClip(al.RefID,
                                         al.Position + 1,
                                         genomePositions[0] + 1,
@@ -56,7 +56,7 @@ AbstractClip *ClipReader::nextClip() {
             if (al.IsReverseStrand() && al.Position != genomePositions[size - 1] &&
                     clipSizes[size - 1] > allowedNum &&
                     (size == 1 ||
-                     (size == 2 && clipSizes[0] <= allowedNum))) {
+                     (size == 2 && clipSizes[0] <= 5))) {
                 return new ReverseEClip(al.RefID,
                                         al.Position + 1,
                                         genomePositions[size - 1] + 1,
@@ -66,6 +66,7 @@ AbstractClip *ClipReader::nextClip() {
             }
         }
 
+/*
         if (inEnhancedMode()) {
             if ((al.AlignmentFlag == 161 || al.AlignmentFlag == 97) && al.RefID == al.MateRefID &&
 //                    al.MapQuality > 0 && al.Position < al.MatePosition && al.InsertSize > 600 &&
@@ -90,9 +91,9 @@ AbstractClip *ClipReader::nextClip() {
                                         al.CigarData);
             }
         }
+*/
 
     }
-
     return NULL;
 }
 
