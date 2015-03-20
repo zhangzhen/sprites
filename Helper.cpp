@@ -36,7 +36,7 @@ std::string Helper::getReferenceName(BamTools::BamReader &reader, int referenceI
 }
 
 
-int getOffsetForward(const string &s1, const string &s2)
+int numOfTheLongestPrefix(const string &s1, const string &s2)
 {
     assert(s1.size() == s2.size());
     for (int i = 0; i < s1.size(); i++) {
@@ -46,7 +46,7 @@ int getOffsetForward(const string &s1, const string &s2)
 }
 
 
-int getOffsetReverse(const string &s1, const string &s2)
+int numOfThelongestSuffix(const string &s1, const string &s2)
 {
     assert(s1.size() == s2.size());
     for (int i = 0; i < s1.size(); i++) {

@@ -23,7 +23,7 @@ int FaidxWrapper::size()
 string FaidxWrapper::fetch(const string &chrom, int start, int end)
 {
     int len;
-    char *s = faidx_fetch_seq(fai, (char *)chrom.c_str(), start, end, &len);
+    char *s = faidx_fetch_seq(fai, (char *)chrom.c_str(), start - 1, end - 1, &len);
     if (s == NULL) error("cannot fetch the reference sequence");
     string str(s);
     transform(str.begin(), str.end(), str.begin(), ::toupper);

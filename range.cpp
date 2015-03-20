@@ -43,6 +43,28 @@ void clusterRanges(const vector<IRange> &ranges, std::vector<IdCluster> &cluster
 }
 
 
+void append(size_t startIndex, size_t endIndex, std::vector<IdCluster> &clusters)
+{
+    IdCluster buffer(endIndex - startIndex);
+    std::iota(std::begin(buffer), std::end(buffer), startIndex);
+    clusters.push_back(buffer);
+}
+
+void clusterRanges2(const vector<IRange> &ranges, std::vector<IdCluster> &clusters)
+{
+    size_t startIndex = 0;
+
+    for (size_t i = 1; i < ranges.size(); ++i) {
+        if (!ranges[i-1].overlaps(ranges[i])) {
+            append(startIndex, i, clusters);
+            startIndex = i;
+        }
+    }
+    append(startIndex, ranges.size(), clusters);
+
+}
+
+
 int IRange::length() const
 {
     return end - start + 1;
@@ -52,6 +74,12 @@ bool IRange::operator<(const IRange &other) const
 {
     if (start != other.start) return start < other.start;
     return end < other.end;
+}
+
+bool IRange::overlaps(const IRange &other) const
+{
+    return (start >= other.start && start < other.end) ||
+            (other.start >= start && other.start < end);
 }
 
 bool IRangeEndPoint::operator<(const IRangeEndPoint &other) const

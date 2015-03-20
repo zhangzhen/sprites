@@ -6,7 +6,13 @@
 
 class Deletion {
 public:
-    Deletion(const std::string& referenceName, int start1, int end1, int start2, int end2, int length);
+    Deletion(const std::string& referenceName,
+             int start1,
+             int end1,
+             int start2,
+             int end2,
+             int length,
+             const std::string& fromTag);
 
     virtual ~Deletion();
 
@@ -21,6 +27,8 @@ public:
     int getEnd2() const { return end2; }
 
     int getLength() const { return length; }
+
+    std::string getFromTag() const { return fromTag; }
 
     std::string toBedpe() const;
 
@@ -37,6 +45,7 @@ private:
     int start2;
     int end2;
     int length;
+    std::string fromTag;
 
     bool checkRep() const;
 

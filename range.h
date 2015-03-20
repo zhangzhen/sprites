@@ -11,6 +11,7 @@ struct IRange {
     int length() const;
 
     bool operator<(const IRange &other) const;
+    bool overlaps(const IRange& other) const;
 };
 
 struct IRangeEndPoint {
@@ -24,5 +25,6 @@ struct IRangeEndPoint {
 typedef std::vector<std::size_t> IdCluster;
 
 void clusterRanges(const std::vector<IRange> &ranges, std::vector<IdCluster> &clusters);
+void clusterRanges2(const std::vector<IRange> &ranges, std::vector<IdCluster> &clusters);
 
 #endif // RANGE_H

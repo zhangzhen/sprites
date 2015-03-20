@@ -10,13 +10,15 @@ Deletion::Deletion(const string &referenceName,
                    int end1,
                    int start2,
                    int end2,
-                   int length) :
+                   int length,
+                   const string& fromTag) :
     referenceName(referenceName),
     start1(start1),
     end1(end1),
     start2(start2),
     end2(end2),
-    length(length) {
+    length(length),
+    fromTag(fromTag) {
     assert(checkRep());
 }
 

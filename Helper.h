@@ -11,8 +11,10 @@
 std::string stripFilename(const std::string& filename);
 std::string stripExtension(const std::string& filename);
 std::string stripDirectories(const std::string& filename);
-int getOffsetForward(const std::string& s1, const std::string& s2);
-int getOffsetReverse(const std::string& s1, const std::string& s2);
+int numOfTheLongestPrefix(const std::string& s1, const std::string& s2);
+int numOfThelongestSuffix(const std::string& s1, const std::string& s2);
+
+int extend(const std::string& read, int offset, int leftOrigin, int rightOrigin);
 
 template<class T, class Compare>
 void cluster(const std::vector<T>& orig, std::vector<std::vector<T> >& clusters, Compare comp) {

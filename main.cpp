@@ -120,12 +120,13 @@ int main(int argc, char *argv[]) {
     int insLength = opt::insertMean + 3 * opt::insertSd;
     double identityRate = 1.0f - opt::errorRate;
 
-    Timer* pTimer = new Timer("calling deletions");
+    Timer* pTimer = new Timer("Preprocessing split reads");
     AbstractClip *pClip;
     std::vector<AbstractClip*> clips;
     while ((pClip = creader.nextClip())) {
         clips.push_back(pClip);
     }
+    delete pTimer;
 
     sort(clips.begin(), clips.end(),
          [](AbstractClip* pc1, AbstractClip* pc2){ return pc1->getClipPosition() < pc2->getClipPosition(); });
@@ -140,27 +141,30 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::cout << clips.size() << std::endl;
+    std::cout << "#Reads with soft-clipping (original): " << clips.size() << std::endl;
 
     std::vector<AbstractClip*> newClips;
     std::copy_if(clips.begin(), clips.end(), back_inserter(newClips),
                    [](AbstractClip* pc){ return !pc->getConflictFlag(); });
 
-    std::cout << newClips.size() << std::endl;
+    std::cout << "#Reads with soft-clipping after resolving conflicts: " << newClips.size() << std::endl;
 
+/*
     std::vector<std::vector<AbstractClip*> > clipClusters;
-    cluster(newClips, clipClusters,
+    cluster(clips, clipClusters,
             [](AbstractClip* pc1, AbstractClip* pc2){ return pc1->getClipPosition() == pc2->getClipPosition(); });
 
-    std::cout << clipClusters.size() << std::endl;
+    std::cout << "#Reads with soft-clipping after clustering: " << clipClusters.size() << std::endl;
 
     std::vector<AbstractClip*> finalClips;
     finalClips.reserve(clipClusters.size());
     std::transform(clipClusters.begin(), clipClusters.end(), back_inserter(finalClips),
                    [](const std::vector<AbstractClip*>& v){ return v[v.size()/2]; });
+*/
 
+    pTimer = new Timer("Calling deletions");
     std::vector<Deletion> deletions;
-    for (auto pClip: finalClips) {
+    for (auto pClip: clips) {
         if (pClip->getConflictFlag()) continue;
         try {
             auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate);
@@ -169,7 +173,6 @@ int main(int argc, char *argv[]) {
     //            std::cout << ex.getMessage() << std::endl;
         }
     }
-
     delete pTimer;
 
     if (deletions.empty()) {
@@ -177,6 +180,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    pTimer = new Timer("Merging deletions");
     std::sort(deletions.begin(), deletions.end());
     deletions.erase(std::unique(deletions.begin(), deletions.end()), deletions.end());
 
@@ -190,6 +194,7 @@ int main(int argc, char *argv[]) {
     for (auto &clu: delClusters) {
         finalDels.push_back(clu[0]);
     }
+    delete pTimer;
 
     output(opt::outFile, finalDels);
 
@@ -284,5 +289,6 @@ void parseOptions(int argc, char** argv)
 void output(const std::string &filename, const std::vector<Deletion> &dels) {
     std::ofstream out(filename.c_str());
     size_t i = 1;
-    std::for_each(std::begin(dels), std::end(dels), [&i, &out](const Deletion &d){out << d << "\tDEL" << "::" << i << std::endl; i++;});
+    std::for_each(std::begin(dels), std::end(dels), [&i, &out](const Deletion &d)
+    {out << d << "\tDEL." << i << "." << d.getFromTag() << std::endl; i++;});
 }

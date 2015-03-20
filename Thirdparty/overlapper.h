@@ -137,6 +137,7 @@ struct OverlapperParams
 // Global variables
 extern OverlapperParams default_params; // { 2, -5, -3 };
 extern OverlapperParams ungapped_params; // { 2, -10000, -3 };
+extern OverlapperParams svseq2_params; // { 1, -3, -1 };
 
 //
 namespace Overlapper
@@ -145,6 +146,7 @@ namespace Overlapper
 // Compute the highest-scoring overlap between s1 and s2.
 // This is a naive O(M*N) algorithm with a linear gap penalty.
 SequenceOverlap computeOverlap(const std::string& s1, const std::string& s2, const OverlapperParams params = default_params);
+SequenceOverlap computeOverlapSG(const std::string& s1, const std::string& s2, const OverlapperParams params = default_params);
 
 SequenceOverlap computeOverlapSW(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params = default_params);
 
