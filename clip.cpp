@@ -31,12 +31,12 @@ int AbstractClip::leftmostPosition() const {
 AbstractClip::~AbstractClip() {
 }
 
-Deletion AbstractClip::call(BamReader &reader, FaidxWrapper &faidx, int insLength, int minOverlap, double minIdentity)
+Deletion AbstractClip::call(BamReader &reader, FaidxWrapper &faidx, int insLength, int minOverlap, double minIdentity, int minMapQual)
 {
     string refName = Helper::getReferenceName(reader, referenceId);
 
     vector<IRange> ranges;
-    fetchSpanningRanges(reader, insLength, ranges);
+    fetchSpanningRanges(reader, insLength, ranges, minMapQual);
 //    vector<int> sizes;
 //    fecthSizesForSpanningPairs(reader, insLength, sizes);
 
@@ -141,7 +141,7 @@ string ForwardBClip::getType()
     return "5F";
 }
 
-void ForwardBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges)
+void ForwardBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual)
 {
     int start = clipPosition;
     int end = clipPosition + insLength - 2 * length();
@@ -155,7 +155,7 @@ void ForwardBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
         al.GetTag("XT", xt);
         xt = xt.substr(0,1);
         if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.RefID == al.MateRefID
-                && al.MapQuality > 0 && xt == "U"
+                && al.MapQuality >= minMapQual && xt == "U"
                 && al.Position > al.MatePosition && al.MatePosition + length() - Helper::SVLEN_THRESHOLD <= clipPosition) {
             ranges.push_back({al.MatePosition + 1, al.Position + 1});
         }
@@ -276,7 +276,7 @@ ReverseEClip::ReverseEClip(int referenceId, int mapPosition, int clipPosition, i
     : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, cigar) {
 }
 
-void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges)
+void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual)
 {
     int start = clipPosition - insLength + length();
     int end = clipPosition - length();
@@ -291,7 +291,7 @@ void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
         xt = xt.substr(0,1);
         if (al.Position < start - 1) continue;
         if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.RefID == al.MateRefID
-                && al.MapQuality > 0 && xt == "U"
+                && al.MapQuality >= minMapQual && xt == "U"
                 && al.Position < al.MatePosition && al.MatePosition >= clipPosition - Helper::SVLEN_THRESHOLD) {
             ranges.push_back({al.Position + 1, al.MatePosition + 1});
         }

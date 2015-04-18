@@ -42,7 +42,7 @@ public:
 
     virtual ~AbstractClip();
 
-    Deletion call(BamTools::BamReader& reader, FaidxWrapper &faidx, int insLength, int minOverlap, double minIdentity);
+    Deletion call(BamTools::BamReader& reader, FaidxWrapper &faidx, int insLength, int minOverlap, double minIdentity, int minMapQual);
 
     bool hasConflictWith(AbstractClip *other);
     virtual std::string getType() = 0;
@@ -52,7 +52,7 @@ public:
 protected:
 
     virtual Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion>& regions, int minOverlap, double minIdentity) = 0;
-    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges) = 0;
+    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual) = 0;
     virtual void fecthSizesForSpanningPairs(BamTools::BamReader &reader, int inslength, std::vector<int>& sizes) = 0;
     virtual void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions) = 0;
 
@@ -83,7 +83,7 @@ public:
     ForwardBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
 
 private:
-    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges);
+    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual);
     virtual void fecthSizesForSpanningPairs(BamTools::BamReader& reader, int insLength, std::vector<int>& sizes);
     virtual void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
 
@@ -140,7 +140,7 @@ public:
     ReverseEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
 
 private:
-    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges);
+    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual);
     virtual void fecthSizesForSpanningPairs(BamTools::BamReader& reader, int insLength, std::vector<int>& sizes);
     virtual void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
 

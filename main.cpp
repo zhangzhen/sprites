@@ -19,10 +19,11 @@
 //
 // Getopt
 //
-#define PROGRAM_NAME "dfinder"
+#define PROGRAM_NAME "sprites"
 #define PROGRAM_VERSION "1.0"
 #define PROGRAM_BUGREPORT "zhangz@csu.edu.cn"
 const int DEFAULT_MIN_OVERLAP=12;
+const int DEFAULT_MIN_MAPQUAL=1;
 
 static const char *DFINDER_VERSION_MESSAGE =
 PROGRAM_NAME " Version " PROGRAM_VERSION "\n"
@@ -36,11 +37,12 @@ static const char *DFINDER_USAGE_MESSAGE =
 "\n"
 "      --help                           display this help and exit\n"
 "      -v, --verbose                    display verbose output\n"
-"      -r, --reffile=FILE           read the reference sequence from FILE"
+"      -r, --reffile=FILE               read the reference sequence from FILE\n"
 "      -o, --outfile=FILE               write the deletion calls to FILE (default: BAMFILE.calls)\n"
 "      -e, --error-rate=F               the maximum error rate allowed between two sequences to consider them overlapped (default: 0.04)\n"
 "      -m, --min-overlap=LEN            minimum overlap required between two reads (default: 12)\n"
-"      -n, --allowed-num=SIZE              a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
+"      -q, --mapping-qual=MAPQ          minimum mapping quality of a read (default: 1)\n"
+"      -n, --allowed-num=SIZE           a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
 "\nThe following two option must appear together (if ommitted, attempt ot learn the mean and the standard deviation of insert size):\n"
 "      -i, --insert-mean=N              the mean of insert size\n"
 "          --enhanced-mode              enable the enhanced mode, in which reads of type 2 are considered besides type 1\n"
@@ -55,6 +57,7 @@ namespace opt
     static std::string outFile;
     static double errorRate = 0.04;
     static int minOverlap = DEFAULT_MIN_OVERLAP;
+    static int minMapQual = DEFAULT_MIN_MAPQUAL;
     static int allowedNum = 12;
     static int mode = 0;
 
@@ -63,15 +66,16 @@ namespace opt
     static int insertSd;
 }
 
-static const char* shortopts = "o:r:e:m:n:i:s:v";
+static const char* shortopts = "o:q:r:e:m:n:i:s:v";
 
 enum { OPT_HELP = 1, OPT_VERSION, OPT_ENHANCED_MODE };
 
 static const struct option longopts[] = {
     { "verbose",        no_argument,       NULL, 'v' },
     { "min-overlap",    required_argument, NULL, 'm' },
-    { "allowed-num",       required_argument, NULL, 'n' },
-    {"reffile", required_argument, NULL, 'r'},
+    { "mapping-qual",   required_argument, NULL, 'q' },
+    { "allowed-num",    required_argument, NULL, 'n' },
+    { "reffile",        required_argument, NULL, 'r'},
     { "outfile",        required_argument, NULL, 'o' },
     { "error-rate",     required_argument, NULL, 'e' },
     { "insert-mean",    required_argument, NULL, 'i' },
@@ -149,7 +153,6 @@ int main(int argc, char *argv[]) {
 
     std::cout << "#Reads with soft-clipping after resolving conflicts: " << newClips.size() << std::endl;
 
-/*
     std::vector<std::vector<AbstractClip*> > clipClusters;
     cluster(clips, clipClusters,
             [](AbstractClip* pc1, AbstractClip* pc2){ return pc1->getClipPosition() == pc2->getClipPosition(); });
@@ -160,14 +163,13 @@ int main(int argc, char *argv[]) {
     finalClips.reserve(clipClusters.size());
     std::transform(clipClusters.begin(), clipClusters.end(), back_inserter(finalClips),
                    [](const std::vector<AbstractClip*>& v){ return v[v.size()/2]; });
-*/
 
     pTimer = new Timer("Calling deletions");
     std::vector<Deletion> deletions;
-    for (auto pClip: clips) {
+    for (auto pClip: finalClips) {
         if (pClip->getConflictFlag()) continue;
         try {
-            auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate);
+            auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate, opt::minMapQual);
             deletions.push_back(del);
         } catch (ErrorException& ex) {
     //            std::cout << ex.getMessage() << std::endl;
@@ -216,7 +218,8 @@ void parseOptions(int argc, char** argv)
         {
             case 'n': arg >> opt::allowedNum; break;
             case 'm': arg >> opt::minOverlap; break;
-            case 'r' : arg >> opt::refFile; break;
+            case 'q': arg >> opt::minMapQual; break;
+            case 'r': arg >> opt::refFile; break;
             case 'o': arg >> opt::outFile; break;
             case 'e': arg >> opt::errorRate; break;
             case '?': die = true; break;
