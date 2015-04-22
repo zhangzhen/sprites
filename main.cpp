@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
     }
     delete pTimer;
 
+/*
     sort(clips.begin(), clips.end(),
          [](AbstractClip* pc1, AbstractClip* pc2){ return pc1->getClipPosition() < pc2->getClipPosition(); });
 
@@ -163,11 +164,12 @@ int main(int argc, char *argv[]) {
     finalClips.reserve(clipClusters.size());
     std::transform(clipClusters.begin(), clipClusters.end(), back_inserter(finalClips),
                    [](const std::vector<AbstractClip*>& v){ return v[v.size()/2]; });
+*/
 
     pTimer = new Timer("Calling deletions");
     std::vector<Deletion> deletions;
-    for (auto pClip: finalClips) {
-        if (pClip->getConflictFlag()) continue;
+    for (auto pClip: clips) {
+//        if (pClip->getConflictFlag()) continue;
         try {
             auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate, opt::minMapQual);
             deletions.push_back(del);

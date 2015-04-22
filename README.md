@@ -16,4 +16,20 @@ Support for Linux
 
 ##Installation
 
+#### Requirements
+- HTSlib ([http://www.htslib.org/](http://www.htslib.org/))
+- BamTools ([https://github.com/pezmaster31/bamtools](https://github.com/pezmaster31/bamtools))
+- CMake
+
+##### Install
+```
+git clone git@github.com:zhangzhen/sprites.git
+cd sprites
+export BAMTOOLS_HOME=/path/to/bamtools
+export HTSLIB_HOME=/path/to/htslib
+mkdir build
+cd build
+
+cp build/sprites /usr/local/bin/
+```
 ##Usage

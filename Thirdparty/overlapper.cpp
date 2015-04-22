@@ -543,9 +543,9 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
     std::sort(last_row_indexes.begin(), last_row_indexes.end(),
          [&score_matrix, num_rows](size_t i1, size_t i2) {return score_matrix[i1][num_rows - 1] > score_matrix[i2][num_rows - 1];});
 
-//    int cnt = 0;
+    int cnt = 0;
     for (auto max_row_index: last_row_indexes) {
-//        if (cnt > 2) break;
+        if (cnt > 4) break;
         auto max_row_value = score_matrix[max_row_index][num_rows - 1];
 
         // Compute the location at which to start the backtrack
@@ -614,7 +614,7 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
             return output;
         }
 
-//        cnt++;
+        cnt++;
     }
     error("No overlap was found.");
 }
