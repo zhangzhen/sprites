@@ -19,7 +19,7 @@ Support for Linux
 #### Requirements
 - HTSlib ([http://www.htslib.org/](http://www.htslib.org/))
 - BamTools ([https://github.com/pezmaster31/bamtools](https://github.com/pezmaster31/bamtools))
-- CMake
+- CMake ([http://www.cmake.org](http://www.cmake.org))
 
 ##### Install
 ```
@@ -29,7 +29,8 @@ export BAMTOOLS_HOME=/path/to/bamtools
 export HTSLIB_HOME=/path/to/htslib
 mkdir build
 cd build
-
+cmake ..
+make
 cp build/sprites /usr/local/bin/
 ```
 ##Usage
