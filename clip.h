@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 struct TargetRegion
 {
@@ -48,6 +49,11 @@ public:
     virtual std::string getType() = 0;
     bool getConflictFlag() const;
     void setConflictFlag(bool value);
+    std::string toString() {
+        std::stringstream ss;
+        ss << getClipPosition() << "\t" << getType();
+        return ss.str();
+    }
 
 protected:
 
@@ -111,29 +117,43 @@ protected:
     int offsetFromThatEnd(std::string referenceName, FaidxWrapper &faidx, int orignal);
 };
 
-/*
 class ReverseBClip : public AbstractClip {
+
+    // AbstractClip interface
 public:
     ReverseBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
+    std::string getType();
 
-private:
-    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges);
-    virtual void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
-
-    virtual Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion>& regions, int minOverlap, double minIdentity);
+protected:
+    Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity);
+    void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual);
+    void fecthSizesForSpanningPairs(BamTools::BamReader &reader, int inslength, std::vector<int> &sizes);
+    void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
+    int lengthOfSoftclippedPart();
+    std::string softclippedPart();
+    std::string mappedPart();
+    int offsetFromThisEnd(std::string referenceName, FaidxWrapper &faidx);
+    int offsetFromThatEnd(std::string referenceName, FaidxWrapper &faidx, int orignal);
 };
 
 class ForwardEClip : public AbstractClip {
+
+    // AbstractClip interface
 public:
     ForwardEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
+    std::string getType();
 
-private:
-    virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges);
-    virtual void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
-
-    virtual Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion>& regions, int minOverlap, double minIdentity);
+protected:
+    Deletion call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity);
+    void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual);
+    void fecthSizesForSpanningPairs(BamTools::BamReader &reader, int inslength, std::vector<int> &sizes);
+    void toTargetRegions(const std::string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions);
+    int lengthOfSoftclippedPart();
+    std::string softclippedPart();
+    std::string mappedPart();
+    int offsetFromThisEnd(std::string referenceName, FaidxWrapper &faidx);
+    int offsetFromThatEnd(std::string referenceName, FaidxWrapper &faidx, int orignal);
 };
-*/
 
 class ReverseEClip : public AbstractClip {
 public:

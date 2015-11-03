@@ -149,6 +149,7 @@ SequenceOverlap computeOverlap(const std::string& s1, const std::string& s2, con
 SequenceOverlap computeOverlapSG(const std::string& s1, const std::string& s2, const OverlapperParams params = default_params);
 
 SequenceOverlap computeOverlapSW(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params = default_params);
+SequenceOverlap computeOverlapSW2(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params = default_params);
 
 // Extend a match between s1 and s2 into a full overlap using banded dynamic programming.
 // start_1/start_2 give the starting positions of the current partial alignment. These coordinates

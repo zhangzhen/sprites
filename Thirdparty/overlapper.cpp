@@ -452,7 +452,7 @@ SequenceOverlap Overlapper::computeOverlapSG(const std::string& s1, const std::s
     output.total_columns = 0;
 
     std::string cigar;
-    while(j > 0) {
+    while(j > 0 && i > 0) {
         // Compute the possible previous locations of the path
         int idx_1 = i - 1;
         int idx_2 = j - 1;
@@ -535,6 +535,123 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
     // last row or last column is the maximum scoring overlap
     // for the pair of strings. We start the backtracking from
     // that cell
+    int max_value = std::numeric_limits<int>::min();
+    size_t max_row_index = num_rows - 1;
+    size_t max_column_index = 0;
+
+    for (size_t i =1; i < num_columns; ++i) {
+        if (score_matrix[i][max_row_index] > max_value) {
+            max_value = score_matrix[i][max_row_index];
+            max_column_index = i;
+        }
+    }
+
+    // Compute the location at which to start the backtrack
+    size_t i = max_column_index;
+    size_t j = max_row_index;
+
+    // Set the alignment endpoints to be the index of the last aligned base
+    output.match[0].end = i - 1;
+    output.match[1].end = j - 1;
+    output.length[0] = s1.length();
+    output.length[1] = s2.length();
+#ifdef DEBUG_OVERLAPPER
+    printf("Endpoints selected: (%d %d) with score %d\n", output.match[0].end, output.match[1].end, output.score);
+#endif
+
+    output.edit_distance = 0;
+    output.total_columns = 0;
+
+    std::string cigar;
+    while(i > 0 && j > 0 && score_matrix[i][j] > 0) {
+        // Compute the possible previous locations of the path
+        int idx_1 = i - 1;
+        int idx_2 = j - 1;
+
+        bool is_match = s1[idx_1] == s2[idx_2];
+        int diagonal = score_matrix[i - 1][j - 1] + (is_match ? params.match_score : params.mismatch_penalty);
+        int up = score_matrix[i][j-1] + params.gap_penalty;
+        int left = score_matrix[i-1][j] + params.gap_penalty;
+
+        // If there are multiple possible paths to this cell
+        // we break ties in order of insertion,deletion,match
+        // this helps left-justify matches for homopolymer runs
+        // of unequal lengths
+        if(score_matrix[i][j] == up) {
+            cigar.push_back('I');
+            j -= 1;
+            output.edit_distance += 1;
+        } else if(score_matrix[i][j] == left) {
+            cigar.push_back('D');
+            i -= 1;
+            output.edit_distance += 1;
+        } else {
+            assert(score_matrix[i][j] == diagonal);
+            if(!is_match)
+                output.edit_distance += 1;
+            cigar.push_back('M');
+            i -= 1;
+            j -= 1;
+        }
+
+        output.total_columns += 1;
+    }
+
+    // Set the alignment startpoints
+    output.match[0].start = i;
+    output.match[1].start = j;
+
+    // Compact the expanded cigar string into the canonical run length encoding
+    // The backtracking produces a cigar string in reversed order, flip it
+    if (output.getOverlapLength() >= minOverlap &&
+            output.getPercentIdentity() >= minIdentity * 100) {
+        std::reverse(cigar.begin(), cigar.end());
+        if (cigar.empty()) error("No overlap was found");
+    //    assert(!cigar.empty());
+        output.cigar = compactCigar(cigar);
+        return output;
+    }
+    error("No overlap was found.");
+}
+
+SequenceOverlap Overlapper::computeOverlapSW2(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params)
+{
+    // Exit with invalid intervals if either string is zero length
+    SequenceOverlap output;
+    if(s1.empty() || s2.empty()) {
+        std::cerr << "Overlapper::computeOverlapSW error: empty input sequence\n";
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize the scoring matrix
+    size_t num_columns = s1.size() + 1;
+    size_t num_rows = s2.size() + 1;
+
+    DPMatrix score_matrix;
+    score_matrix.resize(num_columns);
+    for(size_t i = 0; i < score_matrix.size(); ++i)
+        score_matrix[i].resize(num_rows);
+
+    // Calculate scores
+    for(size_t i = 1; i < num_columns; ++i) {
+        for(size_t j = 1; j < num_rows; ++j) {
+            // Calculate the score for entry (i,j)
+            int idx_1 = i - 1;
+            int idx_2 = j - 1;
+            int diagonal = score_matrix[i-1][j-1] + (s1[idx_1] == s2[idx_2] ? params.match_score : params.mismatch_penalty);
+            int up = score_matrix[i][j-1] + params.gap_penalty;
+//            int gap_pen = (j == num_rows - 1) ? 0 : params.gap_penalty;
+//            int left = score_matrix[i-1][j] + gap_pen;
+            int left = score_matrix[i-1][j] + params.gap_penalty;
+
+            score_matrix[i][j] = std::max(0, max3(diagonal, up, left));
+        }
+    }
+
+    // The location of the highest scoring match in the
+    // last row or last column is the maximum scoring overlap
+    // for the pair of strings. We start the backtracking from
+    // that cell
 
     std::vector<size_t> last_row_indexes(num_columns - 1);
     for (size_t i = 1; i < num_columns; ++i) {
@@ -543,9 +660,9 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
     std::sort(last_row_indexes.begin(), last_row_indexes.end(),
          [&score_matrix, num_rows](size_t i1, size_t i2) {return score_matrix[i1][num_rows - 1] > score_matrix[i2][num_rows - 1];});
 
-    int cnt = 0;
+//    int cnt = 0;
     for (auto max_row_index: last_row_indexes) {
-        if (cnt > 4) break;
+//        if (cnt > 2) break;
         auto max_row_value = score_matrix[max_row_index][num_rows - 1];
 
         // Compute the location at which to start the backtrack
@@ -575,6 +692,8 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
             int diagonal = score_matrix[i - 1][j - 1] + (is_match ? params.match_score : params.mismatch_penalty);
             int up = score_matrix[i][j-1] + params.gap_penalty;
             int left = score_matrix[i-1][j] + params.gap_penalty;
+//            int gap_pen = (j == num_rows - 1) ? 0 : params.gap_penalty;
+//            int left = score_matrix[i-1][j] + gap_pen;
 
             // If there are multiple possible paths to this cell
             // we break ties in order of insertion,deletion,match
@@ -614,7 +733,7 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
             return output;
         }
 
-        cnt++;
+//        cnt++;
     }
     error("No overlap was found.");
 }

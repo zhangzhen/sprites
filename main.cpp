@@ -16,6 +16,8 @@
 #include "range.h"
 #include "Thirdparty/Timer.h"
 
+#include "easylogging++.h"
+
 //
 // Getopt
 //
@@ -24,6 +26,7 @@
 #define PROGRAM_BUGREPORT "zhangz@csu.edu.cn"
 const int DEFAULT_MIN_OVERLAP=12;
 const int DEFAULT_MIN_MAPQUAL=1;
+const int DEFAULT_SD_CUTOFF=4;
 
 static const char *DFINDER_VERSION_MESSAGE =
 PROGRAM_NAME " Version " PROGRAM_VERSION "\n"
@@ -89,10 +92,14 @@ static const struct option longopts[] = {
 void parseOptions(int argc, char** argv);
 void output(const std::string& filename, const std::vector<Deletion>& dels);
 
+_INITIALIZE_EASYLOGGINGPP
+
 //
 // Main
 //
 int main(int argc, char *argv[]) {
+    LINFO << "This is my first log";
+
     parseOptions(argc, argv);
 
     if (opt::bLearnInsert) {
@@ -111,7 +118,7 @@ int main(int argc, char *argv[]) {
 //                          opt::insertMean,
 //                          opt::insertSd };
 
-    ClipReader creader(opt::bamFile, opt::allowedNum, opt::mode);
+    ClipReader creader(opt::bamFile, opt::allowedNum, opt::mode, opt::minMapQual, opt::insertMean + DEFAULT_SD_CUTOFF * opt::insertSd);
 
     BamTools::BamReader bamReader;
     if (!bamReader.Open(opt::bamFile))
@@ -124,13 +131,24 @@ int main(int argc, char *argv[]) {
     int insLength = opt::insertMean + 3 * opt::insertSd;
     double identityRate = 1.0f - opt::errorRate;
 
-    Timer* pTimer = new Timer("Preprocessing split reads");
+    std::vector<Deletion> deletions;
+
+//    Timer* pTimer = new Timer("Preprocessing split reads");
+    Timer* pTimer = new Timer("Calling deletions");
     AbstractClip *pClip;
-    std::vector<AbstractClip*> clips;
+//    std::vector<AbstractClip*> clips;
     while ((pClip = creader.nextClip())) {
-        clips.push_back(pClip);
+//        clips.push_back(pClip);
+        try {
+            auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate, opt::minMapQual);
+            deletions.push_back(del);
+        } catch (ErrorException& ex) {
+    //            std::cout << ex.getMessage() << std::endl;
+        }
     }
     delete pTimer;
+
+//    std::cout << "# Soft-clipping reads: " << clips.size() << std::endl;
 
 /*
     sort(clips.begin(), clips.end(),
@@ -166,8 +184,8 @@ int main(int argc, char *argv[]) {
                    [](const std::vector<AbstractClip*>& v){ return v[v.size()/2]; });
 */
 
+    /*
     pTimer = new Timer("Calling deletions");
-    std::vector<Deletion> deletions;
     for (auto pClip: clips) {
 //        if (pClip->getConflictFlag()) continue;
         try {
@@ -178,6 +196,7 @@ int main(int argc, char *argv[]) {
         }
     }
     delete pTimer;
+    */
 
     if (deletions.empty()) {
         std::cout << "No deletion was found." << std::endl;
@@ -197,6 +216,19 @@ int main(int argc, char *argv[]) {
     finalDels.reserve(delClusters.size());
     for (auto &clu: delClusters) {
         finalDels.push_back(clu[0]);
+        /*
+        if (clu.size() == 1) finalDels.push_back(clu[0]);
+        else {
+            Deletion d(clu[0].getReferenceName(),
+                    clu[0].getStart1(),
+                    clu[clu.size()-1].getEnd1(),
+                    clu[0].getStart2(),
+                    clu[clu.size()-1].getEnd2(),
+                    clu[0].getLength(),
+                    clu[0].getFromTag());
+            finalDels.push_back(d);
+        }
+        */
     }
     delete pTimer;
 
@@ -228,7 +260,7 @@ void parseOptions(int argc, char** argv)
             case 'v': opt::verbose++; break;
             case 'i': arg >> opt::insertMean; bInsertMean = true; break;
             case 's': arg >> opt::insertSd; bInsertSd = true; break;
-            case OPT_ENHANCED_MODE: opt::mode = true; break;
+            case OPT_ENHANCED_MODE: opt::mode = 1; break;
             case OPT_HELP:
                 std::cout << DFINDER_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);

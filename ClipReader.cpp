@@ -5,8 +5,8 @@
 using namespace std;
 using namespace BamTools;
 
-ClipReader::ClipReader(const string &filename, int allowedNum, int mode)
-    : allowedNum(allowedNum), mode(mode)
+ClipReader::ClipReader(const string &filename, int allowedNum, int mode, int minMapQual, int isizeCutoff)
+    : allowedNum(allowedNum), mode(mode), minMapQual(minMapQual), isizeCutoff(isizeCutoff)
 {
     if (!reader.Open(filename))
         error("Could not open the input BAM file.");
@@ -39,11 +39,13 @@ AbstractClip *ClipReader::nextClip() {
     BamAlignment al;
     while (reader.GetNextAlignment(al)) {
         vector<int> clipSizes, readPositions, genomePositions;
-        if (!al.GetSoftClips(clipSizes, readPositions, genomePositions)) continue;
+//        if (!al.GetSoftClips(clipSizes, readPositions, genomePositions)) continue;
+        if (al.MapQuality < minMapQual || !al.GetSoftClips(clipSizes, readPositions, genomePositions)) continue;
         int size = clipSizes.size();
+
         if (al.IsProperPair()) {
             if (!al.IsReverseStrand() && al.Position == genomePositions[0] &&
-                    clipSizes[0] > allowedNum &&
+                    clipSizes[0] >= allowedNum &&
                     (size == 1 ||
                      (size == 2 && clipSizes[1] <= 5))) {
                 return new ForwardBClip(al.RefID,
@@ -54,7 +56,7 @@ AbstractClip *ClipReader::nextClip() {
                                         al.CigarData);
             }
             if (al.IsReverseStrand() && al.Position != genomePositions[size - 1] &&
-                    clipSizes[size - 1] > allowedNum &&
+                    clipSizes[size - 1] >= allowedNum &&
                     (size == 1 ||
                      (size == 2 && clipSizes[0] <= 5))) {
                 return new ReverseEClip(al.RefID,
@@ -66,12 +68,12 @@ AbstractClip *ClipReader::nextClip() {
             }
         }
 
-/*
         if (inEnhancedMode()) {
-            if ((al.AlignmentFlag == 161 || al.AlignmentFlag == 97) && al.RefID == al.MateRefID &&
-//                    al.MapQuality > 0 && al.Position < al.MatePosition && al.InsertSize > 600 &&
-                    clipSizes[size - 1] >= 10 &&
-                    (size == 1 || (size == 2 && clipSizes[0] <= allowedNum))) {
+            if (al.RefID != al.MateRefID || abs(al.InsertSize) <= isizeCutoff)
+                continue;
+            if ((al.AlignmentFlag == 161 || al.AlignmentFlag == 97) && al.Position < al.MatePosition &&
+                    clipSizes[size - 1] >= allowedNum &&
+                    (size == 1 || (size == 2 && clipSizes[0] <= 5))) {
                 return new ForwardEClip(al.RefID,
                                         al.Position + 1,
                                         genomePositions[size - 1] + 1,
@@ -79,10 +81,9 @@ AbstractClip *ClipReader::nextClip() {
                                         al.QueryBases,
                                         al.CigarData);
             }
-            if ((al.AlignmentFlag == 81 || al.AlignmentFlag == 145) && al.RefID == al.MateRefID &&
-//                    al.MapQuality > 0 && al.Position > al.MatePosition && al.InsertSize > 600 &&
-                    clipSizes[0] >= 10 &&
-                    (size == 1 || (size == 2 && clipSizes[1] <= allowedNum))) {
+            if ((al.AlignmentFlag == 81 || al.AlignmentFlag == 145) && al.Position > al.MatePosition &&
+                    clipSizes[0] >= allowedNum &&
+                    (size == 1 || (size == 2 && clipSizes[1] <= 5))) {
                 return new ReverseBClip(al.RefID,
                                         al.Position + 1,
                                         genomePositions[0] + 1,
@@ -91,7 +92,6 @@ AbstractClip *ClipReader::nextClip() {
                                         al.CigarData);
             }
         }
-*/
 
     }
     return NULL;
