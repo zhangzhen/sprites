@@ -74,6 +74,9 @@ struct SequenceOverlap
     // Check that the record is properly formed
     bool isValid() const;
 
+    // added by Zhen Zhang
+    bool isQualified(int minOverlap, double minIdentity) const;
+
     // Return padded versions of the matching portions of the strings
     void makePaddedMatches(const std::string& s1, const std::string& s2,
                            std::string* p1, std::string* p2) const;
@@ -134,6 +137,26 @@ struct OverlapperParams
     int mismatch_penalty;
 };
 
+struct ScoreParam
+{
+
+    ScoreParam(int match, int mismatch, int gap, int gap_start = 0) :
+        match(match), mismatch(mismatch), gap(gap), gap_start(gap_start) {
+
+    }
+
+    int matchChar(char a, char b) const {
+        if (a == b) return match;
+        return mismatch;
+    }
+
+    int match;
+    int mismatch;
+    int gap;
+    int gap_start;
+
+};
+
 // Global variables
 extern OverlapperParams default_params; // { 2, -5, -3 };
 extern OverlapperParams ungapped_params; // { 2, -10000, -3 };
@@ -150,6 +173,8 @@ SequenceOverlap computeOverlapSG(const std::string& s1, const std::string& s2, c
 
 SequenceOverlap computeOverlapSW(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params = default_params);
 SequenceOverlap computeOverlapSW2(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params = default_params);
+
+SequenceOverlap ageAlign(const std::string& s1, const std::string& s2, const ScoreParam& score_param);
 
 // Extend a match between s1 and s2 into a full overlap using banded dynamic programming.
 // start_1/start_2 give the starting positions of the current partial alignment. These coordinates

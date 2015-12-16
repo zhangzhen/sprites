@@ -130,6 +130,10 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         int start2 = delta > 0 ? leftBp + delta : leftBp;
         int end1 = delta > 0 ? rightBp : rightBp + delta;
         int end2 = delta > 0 ? rightBp + delta : rightBp;
+//        if (start2 == 27688481) {
+//            cout << sequence << endl;
+//            cout << (*it).sequence(faidx) << endl;
+//        }
         if (len > Helper::SVLEN_THRESHOLD) continue;
         return Deletion((*it).referenceName, start1, start2, end1, end2, len, getType());
     }

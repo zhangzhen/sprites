@@ -98,7 +98,12 @@ _INITIALIZE_EASYLOGGINGPP
 // Main
 //
 int main(int argc, char *argv[]) {
-    LINFO << "This is my first log";
+
+/*
+    SequenceOverlap result = Overlapper::ageAlign("ACGGGGACT", "ACGTTACT", ScoreParam(1, -1, 2, 4));
+    LINFO << result;
+    return 0;
+*/
 
     parseOptions(argc, argv);
 
@@ -207,15 +212,17 @@ int main(int argc, char *argv[]) {
     std::sort(deletions.begin(), deletions.end());
     deletions.erase(std::unique(deletions.begin(), deletions.end()), deletions.end());
 
-    std::vector<std::vector<Deletion> > delClusters;
+//    std::vector<std::vector<Deletion> > delClusters;
 
-    cluster(deletions, delClusters,
-            [](const Deletion& d1, const Deletion& d2){ return d1.overlaps(d2); });
+//    cluster(deletions, delClusters,
+//            [](const Deletion& d1, const Deletion& d2){ return d1.overlaps(d2); });
 
     std::vector<Deletion> finalDels;
-    finalDels.reserve(delClusters.size());
-    for (auto &clu: delClusters) {
-        finalDels.push_back(clu[0]);
+    merge(deletions, finalDels,
+            [](const Deletion& d1, const Deletion& d2){ return d1.overlaps(d2); });
+//    finalDels.reserve(delClusters.size());
+//    for (auto &clu: delClusters) {
+//        finalDels.push_back(clu[0]);
         /*
         if (clu.size() == 1) finalDels.push_back(clu[0]);
         else {
@@ -229,7 +236,7 @@ int main(int argc, char *argv[]) {
             finalDels.push_back(d);
         }
         */
-    }
+//    }
     delete pTimer;
 
     output(opt::outFile, finalDels);

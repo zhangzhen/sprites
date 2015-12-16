@@ -33,6 +33,26 @@ void cluster(const std::vector<T>& orig, std::vector<std::vector<T> >& clusters,
     if (!buffer.empty()) clusters.push_back(buffer);
 }
 
+template<class T, class Compare>
+void merge(const std::vector<T>& orig, std::vector<T>& results, Compare comp) {
+    std::vector<bool> removed(orig.size(), false);
+
+    for (size_t i = 0; i < orig.size() - 1; ++i) {
+        for (size_t j = i + 1; j < orig.size(); ++j) {
+            if (!removed[j] && comp(orig[i], orig[j])) {
+                removed[j] = true;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < removed.size(); ++i) {
+        if (!removed[i]) {
+            results.push_back(orig[i]);
+        }
+    }
+
+}
+
 namespace Helper {
 std::string getReferenceName(BamTools::BamReader& reader, int referenceId);
 const int SVLEN_THRESHOLD = -50;

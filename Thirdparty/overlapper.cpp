@@ -66,6 +66,15 @@ bool SequenceOverlap::isValid() const
     return !cigar.empty() && match[0].isValid() && match[1].isValid();
 }
 
+bool SequenceOverlap::isQualified(int minOverlap, double minIdentity) const
+{
+    if (getOverlapLength() >= minOverlap &&
+        getPercentIdentity() >= minIdentity * 100) {
+        return true;
+    }
+    return false;
+}
+
 //
 double SequenceOverlap::getPercentIdentity() const
 {
@@ -1177,4 +1186,131 @@ std::string Overlapper::compactCigar(const std::string& ecigar)
     // Add last symbol/run
     compact_cigar << curr_run << curr_symbol;
     return compact_cigar.str();
+}
+
+
+SequenceOverlap Overlapper::ageAlign(const std::string &s1, const std::string &s2, const ScoreParam &score_param)
+{
+    SequenceOverlap output;
+
+    const int NONE = 0;
+    const int DIAGONAL = 1;
+    const int VERTICAL = 2;
+    const int HORIZONTAL = 3;
+
+    int orientation_table[] = {NONE, DIAGONAL, VERTICAL, HORIZONTAL};
+    int orientation_table_m[] = {NONE, HORIZONTAL, VERTICAL};
+
+    output.length[0] = s1.size();
+    output.length[1] = s2.size();
+
+    size_t num_columns = s1.size() + 1;
+    size_t num_rows = s2.size() + 1;
+
+    DPMatrix S(num_rows, DPCells(num_columns));
+    DPMatrix S_backtrace(num_rows, DPCells(num_columns));
+    DPMatrix S_lower(num_rows, DPCells(num_columns));
+    DPMatrix S_upper(num_rows, DPCells(num_columns));
+
+    // calculate score matrix
+    for (size_t i = 1; i < num_rows; ++i) {
+        for (size_t j = 1; j < num_columns; ++j) {
+            S_lower[i][j] = std::max(S_lower[i-1][j] - score_param.gap, S[i-1][j] - score_param.gap_start);
+            S_upper[i][j] = std::max(S_upper[i][j-1] - score_param.gap, S[i][j-1] - score_param.gap_start);
+            int middle_scores[] = {0, S[i-1][j-1] + score_param.matchChar(s1[j-1], s2[i-1]), S_lower[i][j], S_upper[i][j]};
+            const int N = sizeof(middle_scores) / sizeof(int);
+            auto max_it = std::max_element(middle_scores, middle_scores + N);
+            S[i][j] = *max_it;
+            S_backtrace[i][j] = orientation_table[std::distance(middle_scores, max_it)];
+        }
+    }
+
+    DPMatrix M_backtrace(num_rows, DPCells(num_columns));
+
+    for (size_t i = 1; i < num_rows; ++i) {
+        M_backtrace[i][0] = VERTICAL;
+    }
+
+    for (size_t j = 1; j < num_columns; ++j) {
+        M_backtrace[0][j] = HORIZONTAL;
+    }
+
+    // calculate maximum matrix
+    for (size_t i = 1; i < num_rows; ++i) {
+        for (size_t j = 1; j < num_columns; ++j) {
+            int scores[] = {S[i][j], S[i][j-1], S[i-1][j]};
+            const int N = sizeof(scores) / sizeof(int);
+            auto max_it = std::max_element(scores, scores + N);
+            S[i][j] = *max_it;
+            M_backtrace[i][j] = orientation_table_m[std::distance(scores, max_it)];
+        }
+    }
+
+    /*
+    for (size_t i = 0; i < num_rows; ++i) {
+        for (size_t j = 0; j < num_columns; ++j) {
+            std::cout << M_backtrace[i][j] << ' ';
+        }
+        std::cout << std::endl;
+    }
+    */
+
+    int max_score = S[num_rows-1][num_columns-1];
+    int max_row_index = 0;
+    int max_column_index = 0;
+
+    for (size_t i = 0; i < num_rows; ++i) {
+        for (size_t j = 0; j < num_columns; ++j) {
+            if (M_backtrace[i][j] == NONE && S[i][j] == max_score) {
+                max_row_index = i;
+                max_column_index = j;
+                goto theEnd;
+            }
+        }
+    }
+
+theEnd:
+    output.score = max_score;
+    output.match[0].end = max_column_index - 1;
+    output.match[1].end = max_row_index - 1;
+
+#ifdef DEBUG_OVERLAPPER
+    printf("Endpoints selected: (%d %d) with score %d\n", output.match[0].end, output.match[1].end, output.score);
+#endif
+
+    output.edit_distance = 0;
+    output.total_columns = 0;
+
+    int i = max_row_index;
+    int j = max_column_index;
+    std::string cigar;
+
+    while (S_backtrace[i][j] != NONE && i*j !=0) {
+        if (S_backtrace[i][j] == VERTICAL) {
+            cigar.push_back('I');
+            output.edit_distance += 1;
+            i--;
+        } else if(S_backtrace[i][j] == HORIZONTAL) {
+            cigar.push_back('D');
+            output.edit_distance += 1;
+            j--;
+        } else {
+            if (s1[j-1] != s2[i-1]) {
+                output.edit_distance += 1;
+            }
+            cigar.push_back('M');
+            i--;
+            j--;
+        }
+        output.total_columns += 1;
+    }
+
+    output.match[0].start = j;
+    output.match[1].start = i;
+
+    std::reverse(cigar.begin(), cigar.end());
+    assert(!cigar.empty());
+    output.cigar = compactCigar(cigar);
+
+    return output;
 }
