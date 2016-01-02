@@ -171,7 +171,9 @@ namespace Overlapper
 SequenceOverlap computeOverlap(const std::string& s1, const std::string& s2, const OverlapperParams params = default_params);
 SequenceOverlap computeOverlapSG(const std::string& s1, const std::string& s2, const OverlapperParams params = default_params);
 
-SequenceOverlap computeOverlapSW(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params = default_params);
+SequenceOverlap alignSuffix(const std::string& s1, const std::string& s2, const OverlapperParams params = default_params);
+SequenceOverlap alignPrefix(const std::string& s1, const std::string& s2, const OverlapperParams params = default_params);
+
 SequenceOverlap computeOverlapSW2(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params = default_params);
 
 SequenceOverlap ageAlignPrefix(const std::string& s1, const std::string& s2, const ScoreParam& score_param);

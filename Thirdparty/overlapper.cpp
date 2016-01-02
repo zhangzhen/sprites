@@ -508,7 +508,7 @@ SequenceOverlap Overlapper::computeOverlapSG(const std::string& s1, const std::s
     return output;
 }
 
-SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params)
+SequenceOverlap Overlapper::alignSuffix(const std::string& s1, const std::string& s2, const OverlapperParams params)
 {
     // Exit with invalid intervals if either string is zero length
     SequenceOverlap output;
@@ -612,15 +612,10 @@ SequenceOverlap Overlapper::computeOverlapSW(const std::string& s1, const std::s
 
     // Compact the expanded cigar string into the canonical run length encoding
     // The backtracking produces a cigar string in reversed order, flip it
-    if (output.getOverlapLength() >= minOverlap &&
-            output.getPercentIdentity() >= minIdentity * 100) {
-        std::reverse(cigar.begin(), cigar.end());
-        if (cigar.empty()) error("No overlap was found");
-    //    assert(!cigar.empty());
-        output.cigar = compactCigar(cigar);
-        return output;
-    }
-    error("No overlap was found.");
+    std::reverse(cigar.begin(), cigar.end());
+    assert(!cigar.empty());
+    output.cigar = compactCigar(cigar);
+    return output;
 }
 
 SequenceOverlap Overlapper::computeOverlapSW2(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params)
@@ -669,9 +664,9 @@ SequenceOverlap Overlapper::computeOverlapSW2(const std::string& s1, const std::
     std::sort(last_row_indexes.begin(), last_row_indexes.end(),
          [&score_matrix, num_rows](size_t i1, size_t i2) {return score_matrix[i1][num_rows - 1] > score_matrix[i2][num_rows - 1];});
 
-//    int cnt = 0;
+    int cnt = 0;
     for (auto max_row_index: last_row_indexes) {
-//        if (cnt > 2) break;
+        if (cnt >= 10) break;
         auto max_row_value = score_matrix[max_row_index][num_rows - 1];
 
         // Compute the location at which to start the backtrack
@@ -732,17 +727,22 @@ SequenceOverlap Overlapper::computeOverlapSW2(const std::string& s1, const std::
         output.match[0].start = i;
         output.match[1].start = j;
 
-        if (output.getOverlapLength() >= minOverlap &&
-                output.getPercentIdentity() >= minIdentity * 100) {
-            // Compact the expanded cigar string into the canonical run length encoding
-            // The backtracking produces a cigar string in reversed order, flip it
-            assert(!cigar.empty());
-            std::reverse(cigar.begin(), cigar.end());
-            output.cigar = compactCigar(cigar);
-            return output;
-        }
+//        std::string s0 = "CTGCCCCAAATACAGCTACTGCCACCACCAAGGCGGCTGTTGGTGCCCTGCAGTCAACAGCCAGTCTCTTCGTGGTCTCACTCTCTCTTCTACATCTCTCC";
+//        std::reverse(s0.begin(), s0.end());
 
-//        cnt++;
+        // Compact the expanded cigar string into the canonical run length encoding
+        // The backtracking produces a cigar string in reversed order, flip it
+        if (cigar.empty()) continue;
+        std::reverse(cigar.begin(), cigar.end());
+        output.cigar = compactCigar(cigar);
+
+//        if (s2 == s0)
+//            output.printAlignment(s1, s2);
+
+        if (output.isQualified(minOverlap, minIdentity))
+            return output;
+
+        cnt++;
     }
     error("No overlap was found.");
 }
@@ -1393,6 +1393,22 @@ SequenceOverlap Overlapper::ageAlignSuffix(const std::string &s1, const std::str
     std::reverse(s2_r.begin(), s2_r.end());
 
     SequenceOverlap output = ageAlignPrefix(s1_r, s2_r, score_param);
+
+    output.match[0].flipStrand(output.length[0]);
+    output.match[1].flipStrand(output.length[1]);
+
+    return output;
+}
+
+
+SequenceOverlap Overlapper::alignPrefix(const std::string &s1, const std::string &s2, const OverlapperParams params)
+{
+    std::string s1_r = s1;
+    std::reverse(s1_r.begin(), s1_r.end());
+    std::string s2_r = s2;
+    std::reverse(s2_r.begin(), s2_r.end());
+
+    SequenceOverlap output = alignSuffix(s1_r, s2_r, params);
 
     output.match[0].flipStrand(output.length[0]);
     output.match[1].flipStrand(output.length[1]);
