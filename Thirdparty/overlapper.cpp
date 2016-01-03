@@ -618,6 +618,21 @@ SequenceOverlap Overlapper::alignSuffix(const std::string& s1, const std::string
     return output;
 }
 
+SequenceOverlap Overlapper::alignPrefix(const std::string &s1, const std::string &s2, const OverlapperParams params)
+{
+    std::string s1_r = s1;
+    std::reverse(s1_r.begin(), s1_r.end());
+    std::string s2_r = s2;
+    std::reverse(s2_r.begin(), s2_r.end());
+
+    SequenceOverlap output = alignSuffix(s1_r, s2_r, params);
+
+    output.match[0].flipStrand(output.length[0]);
+    output.match[1].flipStrand(output.length[1]);
+
+    return output;
+}
+
 SequenceOverlap Overlapper::computeOverlapSW2(const std::string& s1, const std::string& s2, int minOverlap, double minIdentity, const OverlapperParams params)
 {
     // Exit with invalid intervals if either string is zero length
@@ -1320,25 +1335,40 @@ SequenceOverlap Overlapper::ageAlignPrefix(const std::string &s1, const std::str
     int max_score = 0;
     int max_row_index = 0;
     int max_column_index = 0;
+    int mbt_row_index = 0;
+    int mbt_column_index = 0;
 
-    for (size_t i = 0; i < num_rows-1; ++i) {
-        for (size_t j = 0; j < num_columns-1; ++j) {
-            int val = S[i][j] + R[i+1][j+1];
+    for (size_t i = num_rows-1; i > 0; --i) {
+        for (size_t j = num_columns-1; j > 0; --j) {
+            int val = S[i-1][j-1] + R[i][j];
             if (max_score < val) max_score = val;
         }
     }
 
-    for (size_t i = 0; i < num_rows-1; ++i) {
-        for (size_t j = 0; j < num_columns-1; ++j) {
-            if (M_backtrace[i][j] == NONE && S[i][j] + R[i+1][j+1] == max_score) {
-                max_row_index = i;
-                max_column_index = j;
+    for (size_t i = num_rows-1; i > 0; --i) {
+        for (size_t j = num_columns-1; j > 0; --j) {
+            if (MR_backtrace[i][j] == NONE && S[i-1][j-1] + R[i][j] == max_score) {
+                mbt_row_index = i-1;
+                mbt_column_index = j-1;
                 goto theEnd;
             }
         }
     }
 
 theEnd:
+    int i, j;
+    i = mbt_row_index;
+    j = mbt_column_index;
+    while (M_backtrace[i][j] != NONE) {
+        if (M_backtrace[i][j] == VERTICAL) {
+            i--;
+        } else if (M_backtrace[i][j] == HORIZONTAL) {
+            j--;
+        }
+    }
+    max_row_index = i;
+    max_column_index = j;
+
     output.score = max_score;
     output.match[0].end = max_column_index - 1;
     output.match[1].end = max_row_index - 1;
@@ -1350,8 +1380,8 @@ theEnd:
     output.edit_distance = 0;
     output.total_columns = 0;
 
-    int i = max_row_index;
-    int j = max_column_index;
+    i = max_row_index;
+    j = max_column_index;
     std::string cigar;
 
     while (S_backtrace[i][j] != NONE && i*j !=0) {
@@ -1387,31 +1417,179 @@ theEnd:
 
 SequenceOverlap Overlapper::ageAlignSuffix(const std::string &s1, const std::string &s2, const ScoreParam &score_param)
 {
-    std::string s1_r = s1;
-    std::reverse(s1_r.begin(), s1_r.end());
-    std::string s2_r = s2;
-    std::reverse(s2_r.begin(), s2_r.end());
+    SequenceOverlap output;
 
-    SequenceOverlap output = ageAlignPrefix(s1_r, s2_r, score_param);
+    const int NONE = 0;
+    const int DIAGONAL = 1;
+    const int VERTICAL = 2;
+    const int HORIZONTAL = 3;
 
-    output.match[0].flipStrand(output.length[0]);
-    output.match[1].flipStrand(output.length[1]);
+    int orientation_table[] = {NONE, DIAGONAL, VERTICAL, HORIZONTAL};
+    int orientation_table_m[] = {NONE, HORIZONTAL, VERTICAL};
 
-    return output;
-}
+    output.length[0] = s1.size();
+    output.length[1] = s2.size();
+
+    size_t num_columns = s1.size() + 2;
+    size_t num_rows = s2.size() + 2;
+
+    DPMatrix S(num_rows, DPCells(num_columns));
+    DPMatrix S_backtrace(num_rows, DPCells(num_columns));
+    DPMatrix S_lower(num_rows, DPCells(num_columns));
+    DPMatrix S_upper(num_rows, DPCells(num_columns));
+
+    // calculate score matrix
+    for (size_t i = 1; i < num_rows-1; ++i) {
+        for (size_t j = 1; j < num_columns-1; ++j) {
+            S_lower[i][j] = std::max(S_lower[i-1][j] - score_param.gap, S[i-1][j] - score_param.gap_start);
+            S_upper[i][j] = std::max(S_upper[i][j-1] - score_param.gap, S[i][j-1] - score_param.gap_start);
+            int middle_scores[] = {0, S[i-1][j-1] + score_param.matchChar(s1[j-1], s2[i-1]), S_lower[i][j], S_upper[i][j]};
+            const int N = sizeof(middle_scores) / sizeof(int);
+            auto max_it = std::max_element(middle_scores, middle_scores + N);
+            S[i][j] = *max_it;
+            S_backtrace[i][j] = orientation_table[std::distance(middle_scores, max_it)];
+        }
+    }
+
+    DPMatrix R(num_rows, DPCells(num_columns));
+    DPMatrix R_backtrace(num_rows, DPCells(num_columns));
+    DPMatrix R_lower(num_rows, DPCells(num_columns));
+    DPMatrix R_upper(num_rows, DPCells(num_columns));
+
+    for (size_t i = num_rows-2; i > 0; --i) {
+        for (size_t j = num_columns-2; j > 0; --j) {
+            R_lower[i][j] = std::max(R_lower[i+1][j] - score_param.gap, R[i+1][j] - score_param.gap_start);
+            R_upper[i][j] = std::max(R_upper[i][j+1] - score_param.gap, R[i][j+1] - score_param.gap_start);
+            int middle_scores[] = {0, R[i+1][j+1] + score_param.matchChar(s1[j-1], s2[i-1]), R_lower[i][j], R_upper[i][j]};
+            const int N = sizeof(middle_scores) / sizeof(int);
+            auto max_it = std::max_element(middle_scores, middle_scores + N);
+            R[i][j] = *max_it;
+            R_backtrace[i][j] = orientation_table[std::distance(middle_scores, max_it)];
+        }
+    }
 
 
-SequenceOverlap Overlapper::alignPrefix(const std::string &s1, const std::string &s2, const OverlapperParams params)
-{
-    std::string s1_r = s1;
-    std::reverse(s1_r.begin(), s1_r.end());
-    std::string s2_r = s2;
-    std::reverse(s2_r.begin(), s2_r.end());
+    DPMatrix M_backtrace(num_rows, DPCells(num_columns));
 
-    SequenceOverlap output = alignSuffix(s1_r, s2_r, params);
+    for (size_t i = 1; i < num_rows-1; ++i) {
+        M_backtrace[i][0] = VERTICAL;
+    }
 
-    output.match[0].flipStrand(output.length[0]);
-    output.match[1].flipStrand(output.length[1]);
+    for (size_t j = 1; j < num_columns-1; ++j) {
+        M_backtrace[0][j] = HORIZONTAL;
+    }
+
+    // calculate maximum matrix
+    for (size_t i = 1; i < num_rows-1; ++i) {
+        for (size_t j = 1; j < num_columns-1; ++j) {
+            int scores[] = {S[i][j], S[i][j-1], S[i-1][j]};
+            const int N = sizeof(scores) / sizeof(int);
+            auto max_it = std::max_element(scores, scores + N);
+            S[i][j] = *max_it;
+            M_backtrace[i][j] = orientation_table_m[std::distance(scores, max_it)];
+        }
+    }
+
+    DPMatrix MR_backtrace(num_rows, DPCells(num_columns));
+
+    for (size_t i = num_rows-2; i > 0; --i) {
+        MR_backtrace[i][num_columns-1] = VERTICAL;
+    }
+
+    for (size_t j = num_columns-2; j > 0; --j) {
+        MR_backtrace[num_rows-1][j] = HORIZONTAL;
+    }
+
+    // calculate maximum matrix
+    for (size_t i = num_rows-2; i > 0; --i) {
+        for (size_t j = num_columns-2; j > 0; --j) {
+            int scores[] = {R[i][j], R[i][j+1], R[i+1][j]};
+            const int N = sizeof(scores) / sizeof(int);
+            auto max_it = std::max_element(scores, scores + N);
+            R[i][j] = *max_it;
+            MR_backtrace[i][j] = orientation_table_m[std::distance(scores, max_it)];
+        }
+    }
+
+
+    int max_score = 0;
+    int mbt_row_index = 0;
+    int mbt_column_index = 0;
+    int max_row_index = 0;
+    int max_column_index = 0;
+
+    for (size_t i = 0; i < num_rows-1; ++i) {
+        for (size_t j = 0; j < num_columns-1; ++j) {
+            int val = S[i][j] + R[i+1][j+1];
+            if (max_score < val) max_score = val;
+        }
+    }
+
+    for (size_t i = 0; i < num_rows-1; ++i) {
+        for (size_t j = 0; j < num_columns-1; ++j) {
+            if (M_backtrace[i][j] == NONE && S[i][j] + R[i+1][j+1] == max_score) {
+                mbt_row_index = i;
+                mbt_column_index = j;
+                goto theEnd;
+            }
+        }
+    }
+
+theEnd:
+    int i, j;
+    i = mbt_row_index;
+    j = mbt_column_index;
+    while (MR_backtrace[i][j] != NONE) {
+        if (MR_backtrace[i][j] == VERTICAL) {
+            i++;
+        } else if (MR_backtrace[i][j] == HORIZONTAL) {
+            j++;
+        }
+    }
+    max_row_index = i;
+    max_column_index = j;
+
+    output.score = max_score;
+    output.match[0].start = max_column_index - 1;
+    output.match[1].start = max_row_index - 1;
+
+#ifdef DEBUG_OVERLAPPER
+    printf("Endpoints selected: (%d %d) with score %d\n", output.match[0].end, output.match[1].end, output.score);
+#endif
+
+    output.edit_distance = 0;
+    output.total_columns = 0;
+
+    i = max_row_index;
+    j = max_column_index;
+    std::string cigar;
+
+    while (R_backtrace[i][j] != NONE && (i != num_rows-1 || j != num_columns-1)) {
+        if (R_backtrace[i][j] == VERTICAL) {
+            cigar.push_back('I');
+            output.edit_distance += 1;
+            i++;
+        } else if(R_backtrace[i][j] == HORIZONTAL) {
+            cigar.push_back('D');
+            output.edit_distance += 1;
+            j++;
+        } else {
+            if (s1[j-1] != s2[i-1]) {
+                output.edit_distance += 1;
+            }
+            cigar.push_back('M');
+            i++;
+            j++;
+        }
+        output.total_columns += 1;
+    }
+
+    output.match[0].end = j-2;
+    output.match[1].end = i-2;
+
+    std::reverse(cigar.begin(), cigar.end());
+    assert(!cigar.empty());
+    output.cigar = compactCigar(cigar);
 
     return output;
 }

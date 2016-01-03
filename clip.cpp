@@ -104,28 +104,31 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
     ScoreParam score_param(1, -1, 2, 4);
     for (auto it = regions.begin(); it != regions.end(); ++it) {
         string s1 = (*it).sequence(faidx);
-        reverse(s1.begin(), s1.end());
+        if ((*it).end < clipPosition) {
+            s1 += mappedPart();
+        }
+//        reverse(s1.begin(), s1.end());
         string s2 = sequence;
-        reverse(s2.begin(), s2.end());
+//        reverse(s2.begin(), s2.end());
 
         SequenceOverlap overlap;
 
-        try {
-            overlap = Overlapper::computeOverlapSW2(s1, s2, minOverlap, minIdentity, ungapped_params);
-        } catch (ErrorException& ex) {
-            continue;
-        }
+//        try {
+//            overlap = Overlapper::computeOverlapSW2(s1, s2, minOverlap, minIdentity, ungapped_params);
+//        } catch (ErrorException& ex) {
+//            continue;
+//        }
 
-        for (size_t i = 0; i < 2; ++i)
-            overlap.match[i].flipStrand(overlap.length[i]);
+//        for (size_t i = 0; i < 2; ++i)
+//            overlap.match[i].flipStrand(overlap.length[i]);
 
 //        overlap = Overlapper::alignPrefix(s1, s2, ungapped_params);
 
 //        if (s2 == "GCCTACAGAGTGCAGAGCCAGCCCAGGACAGGGGACAATTACACAGGCGATGGTCCTAAGAACCGAACCTTCCAATCCCAAAACTCTAGACAGGTATCCAA")
 //            cout << s1 << endl;
-//        overlap = Overlapper::ageAlignPrefix(s1, s2, score_param);
-//        if (!overlap.isQualified(minOverlap, minIdentity))
-//            continue;
+        overlap = Overlapper::ageAlignPrefix(s1, s2, score_param);
+        if (!overlap.isQualified(minOverlap, minIdentity))
+            continue;
 
         int delta = overlap.getOverlapLength() - lengthOfSoftclippedPart();
         int offset = 0;
@@ -372,19 +375,26 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 
     for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
         string s1 = (*it).sequence(faidx);
+        if ((*it).start > clipPosition) {
+            s1 = mappedPart() + s1;
+        }
         string s2 = sequence;
         SequenceOverlap overlap;
 
-        try {
-            overlap = Overlapper::computeOverlapSW2(s1, s2, minOverlap, minIdentity, ungapped_params);
-        } catch (ErrorException& ex) {
-            continue;
-        }
+//        try {
+//            overlap = Overlapper::computeOverlapSW2(s1, s2, minOverlap, minIdentity, ungapped_params);
+//        } catch (ErrorException& ex) {
+//            continue;
+//        }
 
 //        overlap = Overlapper::alignSuffix(s1, s2, ungapped_params);
-//        overlap = Overlapper::ageAlignSuffix(s1, s2, score_param);
-//        if (!overlap.isQualified(minOverlap, minIdentity))
-//            continue;
+
+//        if (s2 == "TCACTTGAACCCAGGAGGCAGAGGTTCCAGTGAGCTGAGATCATGCCACTGCACTCCAGCCTGGGCAACAGAGCGAGGCTCCATCTCAAATAAATAATCAA")
+//            cout << "I'm here..." << endl;
+
+        overlap = Overlapper::ageAlignSuffix(s1, s2, score_param);
+        if (!overlap.isQualified(minOverlap, minIdentity))
+            continue;
 
         int delta = overlap.getOverlapLength() - lengthOfSoftclippedPart();
         int offset = 0;
@@ -394,6 +404,9 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         }
         int leftBp = clipPosition - 1 - offset;
         int rightBp = (*it).start + overlap.match[0].end - lengthOfSoftclippedPart() + 1;
+        if ((*it).start > clipPosition) {
+            rightBp -= lengthOfMappedPart();
+        }
 
 //        int delta = overlap.match[1].length() - lengthOfSoftclippedPart();
 //        int leftBp = clipPosition - 1;

@@ -42,7 +42,7 @@ static const char *DFINDER_USAGE_MESSAGE =
 "      -v, --verbose                    display verbose output\n"
 "      -r, --reffile=FILE               read the reference sequence from FILE\n"
 "      -o, --outfile=FILE               write the deletion calls to FILE (default: BAMFILE.calls)\n"
-"      -e, --error-rate=F               the maximum error rate allowed between two sequences to consider them overlapped (default: 0.04)\n"
+"      -e, --error-rate=F               the maximum error rate allowed between two sequences to consider them overlapped (default: 0.05)\n"
 "      -m, --min-overlap=LEN            minimum overlap required between two reads (default: 12)\n"
 "      -q, --mapping-qual=MAPQ          minimum mapping quality of a read (default: 1)\n"
 "      -n, --allowed-num=SIZE           a soft-clip is defined as valid, when the clipped part is not less than SIZE (default: 5)\n"
@@ -58,7 +58,7 @@ namespace opt
     static std::string bamFile;
     static std::string refFile;
     static std::string outFile;
-    static double errorRate = 0.04;
+    static double errorRate = 0.05;
     static int minOverlap = DEFAULT_MIN_OVERLAP;
     static int minMapQual = DEFAULT_MIN_MAPQUAL;
     static int allowedNum = 12;
@@ -109,10 +109,13 @@ int main(int argc, char *argv[]) {
 //            "AATTCACATATTGTGAGAATAAGAGAAATACTCTATATGGTACACTCATGACAATGACTAGGACACACTAAATACCCGTACTCAATTCAACAATGATCAGCATTATTACTGATTTACTAA"
 //            "TCTGCACTAATAAGCACAATAAGCTCTAACTAATAAGCAAAATAATTACTAACAATTATTTTAAATACTGTTAGTGGTACATACCTTATAATCTATAAAAGATTCTTGTTCCTGTTGACA"
 //            "CTGGGAAAGATAATCCTTCATATCATTCAATTCATC";
+//    std::reverse(s1.begin(), s1.end());
 //    std::string s2 = "TCACTTGAACCCAGGAGGCAGAGGTTCCAGTGAGCTGAGATCATGCCACTGCACTCCAGCCTGGGCAACAGAGCGAGGCTCCATCTCAAATAAATAATCAA";
+//    std::reverse(s2.begin(), s2.end());
 
 //    std::string s1 = "ACGGGGACT";
 //    std::string s2 = "ACGTTACT";
+//    SequenceOverlap result = Overlapper::ageAlignPrefix(s1, s2, ScoreParam(1, -1, 2, 4));
 //    SequenceOverlap result = Overlapper::ageAlignSuffix(s1, s2, ScoreParam(1, -1, 2, 4));
 //    LINFO << result;
 //    return 0;
