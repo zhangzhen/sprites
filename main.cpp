@@ -113,6 +113,12 @@ int main(int argc, char *argv[]) {
 //    std::string s2 = "TCACTTGAACCCAGGAGGCAGAGGTTCCAGTGAGCTGAGATCATGCCACTGCACTCCAGCCTGGGCAACAGAGCGAGGCTCCATCTCAAATAAATAATCAA";
 //    std::reverse(s2.begin(), s2.end());
 
+//    std::string s1 =
+//            "CATGCACACAGATGTGTACACAGAGATGCACACATGCACACAGAAATGGGCATGCACATGCACACAGATGTACACACATGGATGTTCACACACACACACATGCACGCAAACACAGCCCCTCTGCAGCTCTGCTG"
+//            "TCTGCCTCAGGTGGGGGCCATGCTGGGTGAAACTGTCATTTCTCCCTGTCTATAAGCTCCTGCCTTGAGGCTATGAAGACAAGAGGATGTGAACTGCTCTCTGGAGGCAGAAGACGTGGGTTCAAATCTTGGCT"
+//            "CTTCTCTGGGCCTCAGGTTTCTGGTCTGTAGACTAGGATATTGGAGTTTTACTCACGTTACTGGAGGGATGAGGGCCCTAAATCAGGAGCTGGGAACTGGTGCATGGTAAGTTGTGGGAGTGGAGGACT";
+//    std::string s2 = "CAGACACACACGTACGATCACATGCACACACGTGTACACAGAGAGGCACGCGCACATGCACACAGATGTGTACACAGAGATGCACACATGCACACAGAAATGGGCATG";
+
 //    std::string s1 = "ACGGGGACT";
 //    std::string s2 = "ACGTTACT";
 //    SequenceOverlap result = Overlapper::ageAlignPrefix(s1, s2, ScoreParam(1, -1, 2, 4));
@@ -157,8 +163,14 @@ int main(int argc, char *argv[]) {
     Timer* pTimer = new Timer("Calling deletions");
     AbstractClip *pClip;
 //    std::vector<AbstractClip*> clips;
+    int currentId = -1;
     while ((pClip = creader.nextClip())) {
 //        clips.push_back(pClip);
+        if (currentId != pClip->getReferenceId()) {
+            currentId = pClip->getReferenceId();
+            LINFO << "Proccessing " << currentId;
+        }
+//        LINFO << "Proccessing " << pClip->getName();
         try {
             auto del = pClip->call(bamReader, faidx, insLength, opt::minOverlap, identityRate, opt::minMapQual);
             deletions.push_back(del);

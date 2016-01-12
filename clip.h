@@ -31,7 +31,7 @@ struct TargetRegion
 class AbstractClip {
 public:
     AbstractClip(int referenceId, int mapPosition, int clipPosition,
-                 int matePosition, const std::string& sequence,
+                 int matePosition, const std::string& sequence, const std::string& name,
                  const std::vector<BamTools::CigarOp>& cigar);
 
     int length() const;
@@ -39,6 +39,14 @@ public:
     int leftmostPosition() const;
     int getClipPosition() const {
         return clipPosition;
+    }
+
+    std::string getName() const {
+        return name;
+    }
+
+    int getReferenceId() const {
+        return referenceId;
     }
 
     virtual ~AbstractClip();
@@ -79,6 +87,7 @@ protected:
     int clipPosition;
     int matePosition;
     std::string sequence;
+    std::string name;
     std::vector<BamTools::CigarOp> cigar;
 
     bool conflictFlag;
@@ -86,7 +95,8 @@ protected:
 
 class ForwardBClip : public AbstractClip {
 public:
-    ForwardBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
+    ForwardBClip(int referenceId, int mapPosition, int clipPosition, int matePosition,
+                 const std::string& sequence, const std::string& name, const std::vector<BamTools::CigarOp>& cigar);
 
 private:
     virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual);
@@ -121,7 +131,8 @@ class ReverseBClip : public AbstractClip {
 
     // AbstractClip interface
 public:
-    ReverseBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
+    ReverseBClip(int referenceId, int mapPosition, int clipPosition, int matePosition,
+                 const std::string& sequence, const std::string& name, const std::vector<BamTools::CigarOp>& cigar);
     std::string getType();
 
 protected:
@@ -140,7 +151,8 @@ class ForwardEClip : public AbstractClip {
 
     // AbstractClip interface
 public:
-    ForwardEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
+    ForwardEClip(int referenceId, int mapPosition, int clipPosition, int matePosition,
+                 const std::string& sequence, const std::string& name, const std::vector<BamTools::CigarOp>& cigar);
     std::string getType();
 
 protected:
@@ -157,7 +169,8 @@ protected:
 
 class ReverseEClip : public AbstractClip {
 public:
-    ReverseEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const std::string& sequence, const std::vector<BamTools::CigarOp>& cigar);
+    ReverseEClip(int referenceId, int mapPosition, int clipPosition, int matePosition,
+                 const std::string& sequence, const std::string& name, const std::vector<BamTools::CigarOp>& cigar);
 
 private:
     virtual void fetchSpanningRanges(BamTools::BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual);

@@ -9,12 +9,13 @@
 using namespace std;
 using namespace BamTools;
 
-AbstractClip::AbstractClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const vector<CigarOp>& cigar)
+AbstractClip::AbstractClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const string &name, const vector<CigarOp>& cigar)
     : referenceId(referenceId),
       mapPosition(mapPosition),
       clipPosition(clipPosition),
       matePosition(matePosition),
       sequence(sequence),
+      name(name),
       cigar(cigar),
       conflictFlag(false) {
 }
@@ -71,8 +72,8 @@ int AbstractClip::maxEditDistanceForSoftclippedPart()
 
 
 
-ForwardBClip::ForwardBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const vector<CigarOp>& cigar)
-    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, cigar) {
+ForwardBClip::ForwardBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const string &name, const vector<CigarOp>& cigar)
+    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, name, cigar) {
 }
 
 /*
@@ -124,8 +125,9 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 
 //        overlap = Overlapper::alignPrefix(s1, s2, ungapped_params);
 
-//        if (s2 == "GCCTACAGAGTGCAGAGCCAGCCCAGGACAGGGGACAATTACACAGGCGATGGTCCTAAGAACCGAACCTTCCAATCCCAAAACTCTAGACAGGTATCCAA")
-//            cout << s1 << endl;
+//        if (s2 == "ATTATATATTAAAATATATATAGCATATATATTATATATTAAAATATATATAGCATATATATTATATATTAAAATCCCTTTGTGATGAAAATACCTGTGAAGATGAGTGGCCGGGGACCAAAAGGAAGAATTGGAAGCGCGATGGTTGGA") {
+//            cout << (*it).start << "\t" << (*it).end << endl;
+//        }
         overlap = Overlapper::ageAlignPrefix(s1, s2, score_param);
         if (!overlap.isQualified(minOverlap, minIdentity))
             continue;
@@ -150,10 +152,11 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         int end1 = delta > 0 ? rightBp : rightBp + delta;
         int end2 = delta > 0 ? rightBp + delta : rightBp;
 
-//        if (start2 == 23483811) {
+//        if (start2 == 168315465) {
+//            cout << "[" << (*it).start << ", " << (*it).end << "]" << endl;
 //            cout << overlap << endl;
-//            cout << s2 << endl;
 //            cout << s1 << endl;
+//            cout << s2 << endl;
 //        }
 
         if (len > Helper::SVLEN_THRESHOLD) continue;
@@ -223,6 +226,8 @@ void ForwardBClip::fecthSizesForSpanningPairs(BamReader &reader, int insLength, 
 void ForwardBClip::toTargetRegions(const string &referenceName, int insLength, std::vector<IRange> &ranges, std::vector<TargetRegion> &regions)
 {
     int rightmostPos = clipPosition + length();
+//    if (sequence == "ATTATATATTAAAATATATATAGCATATATATTATATATTAAAATATATATAGCATATATATTATATATTAAAATCCCTTTGTGATGAAAATACCTGTGAAGATGAGTGGCCGGGGACCAAAAGGAAGAATTGGAAGCGCGATGGTTGGA")
+//        copy(ranges.begin(), ranges.end(), ostream_iterator<IRange>(cout, "\n"));
 
     std::vector<IRange> newRanges(ranges.size());
 //    transform(ranges.begin(), ranges.end(), newRanges.begin(), [=](const IRange &ran) { IRange r = {ran.start, ran.start + insLength + length()}; return r; });
@@ -284,8 +289,8 @@ Deletion ForwardEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 */
 
 
-ReverseEClip::ReverseEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const std::vector<CigarOp> &cigar)
-    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, cigar) {
+ReverseEClip::ReverseEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const string &name, const std::vector<CigarOp> &cigar)
+    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, name, cigar) {
 }
 
 void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::vector<IRange> &ranges, int minMapQual)
@@ -389,7 +394,7 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
 
 //        overlap = Overlapper::alignSuffix(s1, s2, ungapped_params);
 
-//        if (s2 == "TCACTTGAACCCAGGAGGCAGAGGTTCCAGTGAGCTGAGATCATGCCACTGCACTCCAGCCTGGGCAACAGAGCGAGGCTCCATCTCAAATAAATAATCAA")
+//        if (s2 == "CAGACACACACGTACGATCACATGCACACACGTGTACACAGAGAGGCACGCGCACATGCACACAGATGTGTACACAGAGATGCACACATGCACACAGAAATGGGCATG")
 //            cout << "I'm here..." << endl;
 
         overlap = Overlapper::ageAlignSuffix(s1, s2, score_param);
@@ -419,10 +424,11 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         int end1 = delta > 0 ? rightBp - delta : rightBp;
         int end2 = delta > 0 ? rightBp : rightBp - delta;
 
-//        if (start2 == 54151129) {
+//        if (start2 == 47351709) {
+//            cout << "[" << (*it).start << ", " << (*it).end << "]" << endl;
 //            cout << overlap << endl;
-//            cout << s2 << endl;
 //            cout << s1 << endl;
+//            cout << s2 << endl;
 //        }
 
         if (len > Helper::SVLEN_THRESHOLD) continue;
@@ -470,8 +476,8 @@ int ReverseEClip::offsetFromThatEnd(string referenceName, FaidxWrapper &faidx, i
 }
 
 
-ReverseBClip::ReverseBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const std::vector<CigarOp> &cigar)
-    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, cigar) {
+ReverseBClip::ReverseBClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const string &name, const std::vector<CigarOp> &cigar)
+    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, name, cigar) {
 }
 
 string ReverseBClip::getType()
@@ -481,14 +487,26 @@ string ReverseBClip::getType()
 
 Deletion ReverseBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
-    string s1 = regions[0].sequence(faidx);
-    reverse(s1.begin(), s1.end());
-    string s2 = sequence;
-    reverse(s2.begin(), s2.end());
-    SequenceOverlap overlap = Overlapper::computeOverlapSW2(s1, s2, minOverlap, minIdentity, ungapped_params);
+    ScoreParam score_param(1, -1, 2, 4);
 
-    for (size_t i = 0; i < 2; ++i)
-        overlap.match[i].flipStrand(overlap.length[i]);
+    string s1 = regions[0].sequence(faidx);
+    if (regions[0].end < clipPosition) {
+        s1 += mappedPart();
+    }
+//    reverse(s1.begin(), s1.end());
+    string s2 = sequence;
+//    reverse(s2.begin(), s2.end());
+
+    SequenceOverlap overlap;
+
+//    overlap = Overlapper::computeOverlapSW2(s1, s2, minOverlap, minIdentity, ungapped_params);
+
+//    for (size_t i = 0; i < 2; ++i)
+//        overlap.match[i].flipStrand(overlap.length[i]);
+
+    overlap = Overlapper::ageAlignPrefix(s1, s2, score_param);
+    if (!overlap.isQualified(minOverlap, minIdentity))
+        error("No deletion is found.");
 
     int delta = overlap.getOverlapLength() - lengthOfSoftclippedPart();
     int offset = 0;
@@ -553,8 +571,8 @@ int ReverseBClip::offsetFromThatEnd(string referenceName, FaidxWrapper &faidx, i
 {
 }
 
-ForwardEClip::ForwardEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const std::vector<CigarOp> &cigar)
-    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, cigar) {
+ForwardEClip::ForwardEClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const string &name, const std::vector<CigarOp> &cigar)
+    : AbstractClip(referenceId, mapPosition, clipPosition, matePosition, sequence, name, cigar) {
 }
 
 string ForwardEClip::getType()
@@ -565,7 +583,18 @@ string ForwardEClip::getType()
 Deletion ForwardEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion> &regions, int minOverlap, double minIdentity)
 {
     string s1 = regions[0].sequence(faidx);
-    SequenceOverlap overlap = Overlapper::computeOverlapSW2(s1, sequence, minOverlap, minIdentity, ungapped_params);
+    if (regions[0].start > clipPosition) {
+        s1 = mappedPart() + s1;
+    }
+
+    string s2 = sequence;
+
+    SequenceOverlap overlap;
+//    overlap = Overlapper::computeOverlapSW2(s1, sequence, minOverlap, minIdentity, ungapped_params);
+    ScoreParam score_param(1, -1, 2, 4);
+    overlap = Overlapper::ageAlignSuffix(s1, s2, score_param);
+    if (!overlap.isQualified(minOverlap, minIdentity))
+        error("No deletion is found.");
 
     int delta = overlap.getOverlapLength() - lengthOfSoftclippedPart();
     int offset = 0;
@@ -575,6 +604,9 @@ Deletion ForwardEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
     }
     int leftBp = clipPosition - 1 - offset;
     int rightBp = regions[0].start + overlap.match[0].end - lengthOfSoftclippedPart() + 1;
+    if (regions[0].start > clipPosition) {
+        rightBp -= lengthOfMappedPart();
+    }
 
     int len = leftBp - rightBp + 1;
     int start1 = delta > 0 ? leftBp - delta : leftBp;

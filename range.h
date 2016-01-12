@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 struct IRange {
     int start;
@@ -12,6 +13,7 @@ struct IRange {
 
     bool operator<(const IRange &other) const;
     bool overlaps(const IRange& other) const;
+    friend std::ostream& operator<<(std::ostream& out, const IRange& iRange);
 };
 
 struct IRangeEndPoint {

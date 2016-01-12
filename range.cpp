@@ -86,3 +86,9 @@ bool IRangeEndPoint::operator<(const IRangeEndPoint &other) const
 {
     return position < other.position;
 }
+
+ostream& operator<<(ostream& out, const IRange& iRange)
+{
+    out << "[" << iRange.start << ", " << iRange.end << "]";
+    return out;
+}
