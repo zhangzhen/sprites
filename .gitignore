@@ -7,3 +7,4 @@ dfinder
 result*
 output
 CMakeLists.txt.user
+build/
