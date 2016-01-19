@@ -3,6 +3,7 @@
 #include <set>
 #include <queue>
 #include <cassert>
+#include <numeric>
 
 using namespace std;
 
