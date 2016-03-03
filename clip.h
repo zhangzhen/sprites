@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <ostream>
 #include <sstream>
 
 struct TargetRegion
@@ -25,6 +26,8 @@ struct TargetRegion
     int length() const {
         return end - start + 1;
     }
+
+    friend std::ostream& operator<<(std::ostream& out, const TargetRegion& region);
 };
 
 

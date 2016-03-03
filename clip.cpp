@@ -9,6 +9,12 @@
 using namespace std;
 using namespace BamTools;
 
+ostream &operator<<(ostream &out, const TargetRegion &region)
+{
+    out << region.referenceName << ":" << region.start << "-" << region.end;
+    return out;
+}
+
 AbstractClip::AbstractClip(int referenceId, int mapPosition, int clipPosition, int matePosition, const string &sequence, const string &name, const vector<CigarOp>& cigar)
     : referenceId(referenceId),
       mapPosition(mapPosition),
@@ -45,6 +51,8 @@ Deletion AbstractClip::call(BamReader &reader, FaidxWrapper &faidx, int insLengt
 
     vector<TargetRegion> regions;
     toTargetRegions(refName, insLength, ranges, regions);
+    if (sequence == "CCCATAATCCCCTTAATAGGCCTAACACAATATCCAATTTTGTTTTAAATCTCAGCTTTCCTATGTGTTCTCTTGGTTGGTCAGGCTGGTCTCTAACTCCTGACCTCAGGTGATCTGCCAATCTTGGCCTCCCCAAGTGCTGGGATTACA")
+        copy(regions.begin(), regions.end(), ostream_iterator<TargetRegion>(cout, "\n"));
 
     return call(faidx, regions, minOverlap, minIdentity);
 }
@@ -152,7 +160,7 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         int end1 = delta > 0 ? rightBp : rightBp + delta;
         int end2 = delta > 0 ? rightBp + delta : rightBp;
 
-//        if (start2 == 168315465) {
+//        if (start2 == 67881097) {
 //            cout << "[" << (*it).start << ", " << (*it).end << "]" << endl;
 //            cout << overlap << endl;
 //            cout << s1 << endl;
@@ -424,7 +432,7 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         int end1 = delta > 0 ? rightBp - delta : rightBp;
         int end2 = delta > 0 ? rightBp : rightBp - delta;
 
-//        if (start2 == 47351709) {
+//        if (start2 == 9637210) {
 //            cout << "[" << (*it).start << ", " << (*it).end << "]" << endl;
 //            cout << overlap << endl;
 //            cout << s1 << endl;
