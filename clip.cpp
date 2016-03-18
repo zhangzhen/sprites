@@ -160,12 +160,13 @@ Deletion ForwardBClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         int end1 = delta > 0 ? rightBp : rightBp + delta;
         int end2 = delta > 0 ? rightBp + delta : rightBp;
 
-//        if (start2 == 67881097) {
-//            cout << "[" << (*it).start << ", " << (*it).end << "]" << endl;
-//            cout << overlap << endl;
-//            cout << s1 << endl;
-//            cout << s2 << endl;
-//        }
+        if (start2 == 158743658 && end2 == 158744056) {
+            cout << "[" << (*it).start << ", " << (*it).end << "]" << endl;
+            cout << overlap << endl;
+            cout << s1 << endl;
+            cout << s2 << endl;
+            cout << lengthOfSoftclippedPart() << endl;
+        }
 
         if (len > Helper::SVLEN_THRESHOLD) continue;
         return Deletion((*it).referenceName, start1, start2, end1, end2, len, getType());
@@ -197,11 +198,20 @@ void ForwardBClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
 //        al.GetTag("XT", xt);
 //        xt = xt.substr(0,1);
         if (al.IsReverseStrand() && !al.IsMateReverseStrand() && al.RefID == al.MateRefID
+                && abs(al.InsertSize) > insLength
                 && al.MapQuality >= minMapQual //&& xt == "U"
-                && al.Position > al.MatePosition && al.MatePosition + length() - Helper::SVLEN_THRESHOLD <= clipPosition) {
+                && al.Position > al.MatePosition //&& al.MatePosition + length() - Helper::SVLEN_THRESHOLD <= clipPosition
+           ) {
             ranges.push_back({al.MatePosition + 1, al.Position + 1});
+//            if (clipPosition == 61608090 || clipPosition == 93911244) {
+//                cout << abs(al.InsertSize) << ", ";
+//            }
         }
     }
+//    if (clipPosition == 61608090 || clipPosition == 93911244) {
+//        cout << endl;
+//    }
+
 
 }
 
@@ -322,8 +332,10 @@ void ReverseEClip::fetchSpanningRanges(BamReader &reader, int insLength, std::ve
 //        xt = xt.substr(0,1);
         if (al.Position < start - 1) continue;
         if (!al.IsReverseStrand() && al.IsMateReverseStrand() && al.RefID == al.MateRefID
+                && abs(al.InsertSize) > insLength
                 && al.MapQuality >= minMapQual //&& xt == "U"
-                && al.Position < al.MatePosition && al.MatePosition >= clipPosition - Helper::SVLEN_THRESHOLD) {
+                && al.Position < al.MatePosition //&& al.MatePosition >= clipPosition - Helper::SVLEN_THRESHOLD
+           ) {
             ranges.push_back({al.Position + 1, al.MatePosition + 1});
         }
     }
@@ -432,7 +444,7 @@ Deletion ReverseEClip::call(FaidxWrapper &faidx, const std::vector<TargetRegion>
         int end1 = delta > 0 ? rightBp - delta : rightBp;
         int end2 = delta > 0 ? rightBp : rightBp - delta;
 
-//        if (start2 == 9637210) {
+//        if (start2 == 152977067) {
 //            cout << "[" << (*it).start << ", " << (*it).end << "]" << endl;
 //            cout << overlap << endl;
 //            cout << s1 << endl;
