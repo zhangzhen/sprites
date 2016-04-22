@@ -28,7 +28,7 @@ You can download the pre-built binaries from the [Releases page](https://github.
 
 #### Building Sprites 
 ```
-git clone https://github.com:zhangzhen/sprites.git
+git clone https://github.com/zhangzhen/sprites.git
 cd sprites
 export BAMTOOLS_HOME=/path/to/bamtools
 export HTSLIB_HOME=/path/to/htslib
